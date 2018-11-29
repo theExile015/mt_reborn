@@ -343,12 +343,12 @@ type
 
   TUnit = record
     exist    : boolean;
-    alive, visible    : boolean;
+    alive, visible, complex : boolean;
     gSet     : TUnitSettings;
-    turn     : boolean;   // ход
-    in_act   : boolean;   // идёт анимация/действие
+    turn     : boolean;             // ход
+    in_act   : boolean;             // идёт анимация/действие
     pos      : TMPoint;
-    Direct   : integer;      // направление взгляда
+    Direct   : integer;             // направление взгляда
     Way      : array of TMPoint;
     WayPos, WayProg   : integer;
     TargetPos, fTargetPos: TMPoint;
@@ -359,7 +359,7 @@ type
     name     : UTF8String;
     cAP, mAP, cHP, mHP, cMP, mMP, Init, Rage : longword;
     to_kill  : boolean;   // удалить на следующем цикле
-    ani_frame, ani_delay, ani : word;
+    ani_frame, ani_delay, ani, ani_key : word;
     ani_bkwrd: boolean;
     auras    : array [1..16] of TAura;
   end;
@@ -420,6 +420,7 @@ var
 
   tex_UnkItem  : zglPTexture;
   tex_Units    : array [0..1, 0..5] of TCharPack;
+  tex_Creatures: array [0..10] of zglPTexture;
   tex_qPic     : array [1..10] of zglPTexture;
   tex_qMask    : array [1..10] of zglPTexture;
   tex_Cursors  : array [1..10] of zglPTexture;

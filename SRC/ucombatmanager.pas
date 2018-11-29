@@ -39,17 +39,9 @@ begin
   turn_mode := false;
   your_unit := 0;
   for i := 1 to high(cText) do
-      begin
-        cText[i].exist:=false;
-      end;
+      cText[i].exist:=false;
 
-  for i := 1 to high(ATB) do
-      begin
-        ATB[i].exist:=false;
-        ATB[i].name:='';
-        nATB[i].exist:=false;
-        nATB[i].name := '';
-      end;
+
 
   for i := 1 to length(units) - 1 do
       begin
@@ -62,6 +54,7 @@ begin
         units[i].sex:=0;
         units[i].in_act:=false;
       end;
+
   Map_CreateMask();
   fCam_X := (1920 - scr_w) / 2;
   fCam_Y := (1080 - scr_h) / 2;
@@ -269,6 +262,8 @@ begin
      if units[id].fTargetPos.x <> units[id].pos.y then units[id].pos := units[id].fTargetPos;
 
   // выставляем параметры аницмации
+  if units[id].complex then
+  begin
   case units[id].ani of
     0: begin f1 := 1;  f2 := 4;  asp := 8; end;   // стоим 4
     1: begin f1 := 5;  f2 := 12; asp := 4; end;   // бежим 8
@@ -279,15 +274,28 @@ begin
     6: begin f1 := 25; f2 := 28; asp := 5; end;   // каст 4
     7: begin f1 := 29; f2 := 32; asp := 6; end;   // стрельба 4
   end;
-  // коррекция на направление
-  f1 := f1 + units[id].Direct * 32;
-  f2 := f2 + units[id].Direct * 32;
+    // коррекция на направление
+    f1 := f1 + units[id].Direct * 32;
+    f2 := f2 + units[id].Direct * 32;
+  end else
+  begin
+    case units[id].ani of
+    0: begin f1 := 1;  f2 := 4;  asp := 8; end;   // стоим 4
+    1: begin f1 := 5;  f2 := 12; asp := 4; end;   // бежим 8
+    2: begin f1 := 13; f2 := 16; asp := 3; end;   // удар 4
+    3: begin f1 := 17; f2 := 18; asp := 6; end;   // урон 2
+    5: begin f1 := 19; f2 := 24; asp := 4; end;   // смерть 6
+  end;
+    // коррекция на направление
+    f1 := f1 + units[id].Direct * 24;
+    f2 := f2 + units[id].Direct * 24;
+  end;
+
   // кадры
   inc(units[id].ani_delay);
   if units[id].ani_delay > asp then
      begin
        units[id].ani_delay:=0;
-
        if (units[id].ani = 0) then
        begin
          if not units[id].ani_bkwrd then inc(units[id].ani_frame) else dec(units[id].ani_frame);
@@ -359,10 +367,14 @@ begin
             y := y + units[id].WayProg/16 * (y2 - y);
           end;
 
-       ASprite2d_Draw( tex_Units[units[id].sex, 0].body[units[id].gSet.body], x, y, 196, 196, 0, units[id].ani_frame, alpha );
-       ASprite2d_Draw( tex_Units[units[id].sex, 0].head[units[id].gSet.head], x, y, 196, 196, 0, units[id].ani_frame, alpha );
-       ASprite2d_Draw( tex_Units[units[id].sex, 0].MH[units[id].gSet.MH], x, y, 196, 196, 0, units[id].ani_frame, alpha );
-       ASprite2d_Draw( tex_Units[units[id].sex, 0].OH[units[id].gSet.OH], x, y, 196, 196, 0, units[id].ani_frame, alpha );
+       if units[id].complex then
+          begin
+            ASprite2d_Draw( tex_Units[units[id].sex, 0].body[units[id].gSet.body], x, y, 196, 196, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].sex, 0].head[units[id].gSet.head], x, y, 196, 196, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].sex, 0].MH[units[id].gSet.MH], x, y, 196, 196, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].sex, 0].OH[units[id].gSet.OH], x, y, 196, 196, 0, units[id].ani_frame, alpha );
+          else
+            ASprite2d_Draw( tex_Creatures[units[id].ani_key], x, y, 196, 196, units[id].ani_frame, alpha);
 
        if units[id].team = 2 then color := $aa7777 else color := $7777aa;
        w := text_GetWidth( fntCombat, units[id].name, 1) * 0.7;
