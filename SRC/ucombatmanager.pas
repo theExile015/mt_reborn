@@ -373,7 +373,7 @@ begin
             ASprite2d_Draw( tex_Units[units[id].sex, 0].head[units[id].gSet.head], x, y, 196, 196, 0, units[id].ani_frame, alpha );
             ASprite2d_Draw( tex_Units[units[id].sex, 0].MH[units[id].gSet.MH], x, y, 196, 196, 0, units[id].ani_frame, alpha );
             ASprite2d_Draw( tex_Units[units[id].sex, 0].OH[units[id].gSet.OH], x, y, 196, 196, 0, units[id].ani_frame, alpha );
-          else
+          end else
             ASprite2d_Draw( tex_Creatures[units[id].ani_key], x, y, 196, 196, units[id].ani_frame, alpha);
 
        if units[id].team = 2 then color := $aa7777 else color := $7777aa;

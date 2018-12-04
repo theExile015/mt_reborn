@@ -17,6 +17,8 @@ procedure DoCreateChar();
 procedure DoDelete();
 procedure DoEnterTheWorld();
 procedure SendEnterTheWorld();
+procedure DoOpenInv();
+procedure DoItemRequest(ID: integer);
 
 implementation
 
@@ -153,6 +155,54 @@ finally
        mStr.Free;
 end;
 end;
+
+procedure DoOpenInv();
+var _pkg  : TPkg013;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+       _head._FLAG := $f;
+       _head._ID   := 13;
+       _pkg.fail_code:= 1;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+finally
+       mStr.Free;
+end;
+end;
+
+procedure DoItemRequest(ID: integer);
+var _pkg  : TPkg014;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+       _head._FLAG := $f;
+       _head._ID   := 14;
+       _pkg.data.ID := ID;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
 
 end.
 

@@ -218,6 +218,15 @@ type
     Exp, SP, TP        : DWORD;
   end;
 
+  TInvItem = record
+    iID : DWORD;
+    gID : DWORD;
+    cDur: DWORD;
+    sub : DWORD;
+  end;
+
+  TInventory = array [1..130] of TInvItem;
+
   TCharStats = record
     Str, Agi, Con, Hst, Int, Spi  : DWORD;
     Hit, Crit, Block              : DWORD;
@@ -232,6 +241,7 @@ type
     Stats           : TCharStats;
     Numbers         : TCharNumbers;
     APH, iDMG       : word;
+    Inv             : TInventory;
   end;
 
   // тайл карьы
@@ -311,10 +321,7 @@ type
     name, discr : utf8string;
   end;
 
-  TItem = record
-    exist,
-    req,
-    proc       : boolean;
+  TItemData = record
     rare       : byte;
     iType, sub : byte;
     ID         : word;
@@ -322,6 +329,13 @@ type
     iID        : word;
     props      : TProps;
     price      : integer;
+  end;
+
+  TItem = record
+    exist,
+    req,
+    proc       : boolean;
+    data       : TItemData;
   end;
 
   TUnitSettings = record
@@ -404,6 +418,7 @@ var
   sc_ani, tut_timer     : integer;
   gSI, dSI              : byte;                   // индекс персонажа для удаления
   lProgress, lVProgress : integer;                // состояние загрузки ресурсов
+  In_Request            : boolean;                // В процессе запроса
 
 
   // ZEN VARS

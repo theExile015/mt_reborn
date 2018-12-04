@@ -21,6 +21,7 @@ uses
   uChat,
   uLocation,
   uSkillFl,
+  uXClick,
   uCombatManager;
 
 procedure Game_PreInit;
@@ -169,6 +170,7 @@ begin
 end;
 
 procedure Game_Update;
+var i: integer;
 begin
   inc(a_p);
   if a_p/2 = a_p div 2 then inc(sc_ani);
@@ -257,6 +259,19 @@ begin
 
   if gs = gsGame then
      Chat_Update();
+
+  if igs = igsInv then
+     begin
+       if not in_request then
+       for i := 1 to 130 do
+           if not items[mWins[5].dnds[i].data.contain].exist then
+           if not items[mWins[5].dnds[i].data.contain].req then
+              begin
+                items[mWins[5].dnds[i].data.contain].req := true;
+                DoItemRequest(mWins[5].dnds[i].data.contain);
+                sleep(20);
+              end;
+     end;
 
   location_Update();
   myGUI_Update;

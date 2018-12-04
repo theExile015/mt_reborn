@@ -195,17 +195,39 @@ begin
 
         tex_node := tex_LoadFromFile( dirRes + 'node.png');
 
-        tex_Units[0, 0].head[1] := tex_loadFromFile( 'Data\Chars\male\male_head1.png' );
-        tex_Units[0, 0].body[1] := tex_loadFromFile( 'Data\Chars\male\clothes.png');
-        tex_Units[0, 0].body[2] := tex_loadFromFile( 'Data\Chars\male\leather_armor.png');
-        tex_Units[0, 0].body[3] := tex_loadFromFile( 'Data\Chars\male\steel_armor.png');
-        tex_Units[0, 0].MH[1] := tex_loadFromFile( 'Data\Chars\male\dagger.png' );
-        tex_Units[0, 0].MH[2] := tex_loadFromFile( 'Data\Chars\male\greatstaff.png' );
-        tex_Units[0, 0].MH[3] := tex_loadFromFile( 'Data\Chars\male\greatsword.png' );
-        tex_Units[0, 0].MH[4] := tex_loadFromFile( 'Data\Chars\male\shortbow.png' );
-        tex_Units[0, 0].MH[5] := tex_loadFromFile( 'Data\Chars\male\shortsword.png' );
-        tex_Units[0, 0].OH[1] := tex_loadFromFile( 'Data\Chars\male\buckler.png' );
-        tex_Units[0, 0].OH[2] := tex_loadFromFile( 'Data\Chars\male\shield.png' );
+        if file_OpenArchive('Data\Chars.zep') then
+           begin
+
+
+        tex_Units[0, 0].head[1] := tex_loadFromFile( 'male_head1.png' );
+        tex_Units[0, 0].body[1] := tex_loadFromFile( 'clothes.png');
+        tex_Units[0, 0].body[2] := tex_loadFromFile( 'leather_armor.png');
+        tex_Units[0, 0].body[3] := tex_loadFromFile( 'steel_armor.png');
+        tex_Units[0, 0].MH[1] := tex_loadFromFile( 'dagger.png' );
+        tex_Units[0, 0].MH[2] := tex_loadFromFile( 'greatstaff.png' );
+        tex_Units[0, 0].MH[3] := tex_loadFromFile( 'greatsword.png' );
+        tex_Units[0, 0].MH[4] := tex_loadFromFile( 'shortbow.png' );
+        tex_Units[0, 0].MH[5] := tex_loadFromFile( 'shortsword.png' );
+        tex_Units[0, 0].OH[1] := tex_loadFromFile( 'buckler.png' );
+        tex_Units[0, 0].OH[2] := tex_loadFromFile( 'shield.png' );
+
+        tex_Units[1, 0].head[1] := tex_loadFromFile( 'Chars\female\head_long.png' );
+        tex_Units[1, 0].body[1] := tex_loadFromFile( 'Chars\female\clothes.png');
+        tex_Units[1, 0].body[2] := tex_loadFromFile( 'Chars\female\leather_armor.png');
+        tex_Units[1, 0].body[3] := tex_loadFromFile( 'Chars\female\steel_armor.png');
+        tex_Units[1, 0].MH[1] := tex_loadFromFile( 'Chars\female\dagger.png' );
+        tex_Units[1, 0].MH[2] := tex_loadFromFile( 'Chars\female\greatstaff.png' );
+        tex_Units[1, 0].MH[3] := tex_loadFromFile( 'Chars\female\greatsword.png' );
+        tex_Units[1, 0].MH[4] := tex_loadFromFile( 'Chars\female\shortbow.png' );
+        tex_Units[1, 0].MH[5] := tex_loadFromFile( 'Chars\female\shortsword.png' );
+        tex_Units[1, 0].OH[1] := tex_loadFromFile( 'Chars\female\buckler.png' );
+        tex_Units[1, 0].OH[2] := tex_loadFromFile( 'Chars\female\shield.png' );
+
+        file_CloseArchive();
+
+           end else
+               Writeln('Can''t open archive Chars.zep');
+
 
         tex_setFrameSize( tex_Units[0, 0].head[1], 128, 128);
         tex_setFrameSize( tex_Units[0, 0].body[1], 128, 128);
@@ -218,19 +240,6 @@ begin
         tex_setFrameSize( tex_Units[0, 0].MH[5], 128, 128);
         tex_setFrameSize( tex_Units[0, 0].OH[1], 128, 128);
         tex_setFrameSize( tex_Units[0, 0].OH[2], 128, 128);
-
-
-        tex_Units[1, 0].head[1] := tex_loadFromFile( 'Data\Chars\female\head_long.png' );
-        tex_Units[1, 0].body[1] := tex_loadFromFile( 'Data\Chars\female\clothes.png');
-        tex_Units[1, 0].body[2] := tex_loadFromFile( 'Data\Chars\female\leather_armor.png');
-        tex_Units[1, 0].body[3] := tex_loadFromFile( 'Data\Chars\female\steel_armor.png');
-        tex_Units[1, 0].MH[1] := tex_loadFromFile( 'Data\Chars\female\dagger.png' );
-        tex_Units[1, 0].MH[2] := tex_loadFromFile( 'Data\Chars\female\greatstaff.png' );
-        tex_Units[1, 0].MH[3] := tex_loadFromFile( 'Data\Chars\female\greatsword.png' );
-        tex_Units[1, 0].MH[4] := tex_loadFromFile( 'Data\Chars\female\shortbow.png' );
-        tex_Units[1, 0].MH[5] := tex_loadFromFile( 'Data\Chars\female\shortsword.png' );
-        tex_Units[1, 0].OH[1] := tex_loadFromFile( 'Data\Chars\female\buckler.png' );
-        tex_Units[1, 0].OH[2] := tex_loadFromFile( 'Data\Chars\female\shield.png' );
 
         tex_setFrameSize( tex_Units[1, 0].head[1], 128, 128);
         tex_setFrameSize( tex_Units[1, 0].body[1], 128, 128);

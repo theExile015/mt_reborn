@@ -85,11 +85,8 @@ begin
   if sender = NonameButton6 then
      begin
      //  gs := gsLoad;
-       Nonameform1.Hide;
-       a_p := 0;
-       gs := gsPreGame;
-       LoadLoc(1);
-      // DoLogin();
+
+       DoLogin();
      end;
 {
 // кнопка регистрация
@@ -220,7 +217,7 @@ begin
   if sender = bInv then
      if igs <> igsInv then
         begin
-          // SendData(inline_PkgCompile(28, activechar.Name + '`'));
+          DoOpenInv();
           igs := igsInv
         end else igs := igsNone;
 

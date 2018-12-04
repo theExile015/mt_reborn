@@ -417,8 +417,8 @@ begin
        Scissor_Begin(round(mWins[i].rect.X), round(mWins[i].rect.Y),
                      round(mWins[i].rect.W), round(mWins[i].rect.H));
          if mWins[i].fType = 1 then frame := 255 else frame := 210;
-         pr2d_Rect(mWins[i].rect.X, mWins[i].rect.Y, mWins[i].rect.W, mWins[i].rect.H,
-                   frmPak[mWins[i].fType].bgr_color , frame, PR2D_FILL );
+       {  pr2d_Rect(mWins[i].rect.X, mWins[i].rect.Y, mWins[i].rect.W, mWins[i].rect.H,
+                   frmPak[mWins[i].fType].bgr_color , frame, PR2D_FILL );   }
          // горизонтальные границы формы
          for j := 0 to trunc(mWins[i].rect.W / frmPak[mWins[i].fType].w) do
            begin
@@ -689,10 +689,7 @@ begin
                      if mWins[i].dnds[j].data.contain > 0 then fx2d_SetColor($CC0000);
                      FLAG := FX_BLEND or FX_COLOR;
                      if mWins[i].dnds[j].omo then
-                        begin
-                          fx2d_SetColor($CCCC00);
-
-                        end;
+                        fx2d_SetColor($CCCC00);
                    end else FLAG := FX_BLEND;
 
                 if mWins[i].dnds[j].data.contain > 0 then frame := 6 else frame := mWins[i].dnds[j].data.ddSubType;
@@ -702,7 +699,7 @@ begin
                                 frame, 255, FLAG );
 
                 if mWins[i].dnds[j].ddType = 1 then fx2d_SetColor($CC0000);
-                if items[mWins[i].dnds[j].data.contain].props[3] > activechar.header.level then
+                if items[mWins[i].dnds[j].data.contain].data.props[3] > activechar.header.level then
                    FLAG := FX_BLEND or FX_COLOR
                 else
                    FLAG := FX_BLEND;
@@ -716,9 +713,9 @@ begin
                 if (mWins[i].dnds[j].ddType = 1) or (mWins[i].dnds[j].ddType = 3) or (mWins[i].dnds[j].ddType = 4) or (mWins[i].dnds[j].ddType = 5) then
                 begin
                    if mWins[i].dnds[j].data.contain > 0 then
-                      if Items[mWins[i].dnds[j].data.contain].ID > 0 then
+                      if Items[mWins[i].dnds[j].data.contain].data.ID > 0 then
                                  // tex_Items[items[mWins[i].dnds[j].contains].iType, items[mWins[i].dnds[j].contains].iID]
-                         SSprite2d_Draw( GetTex('i' + IntToStr(items[mWins[i].dnds[j].data.contain].iType) + ',' + IntToStr(items[mWins[i].dnds[j].data.contain].iID)),
+                         SSprite2d_Draw( GetTex('i' + IntToStr(items[mWins[i].dnds[j].data.contain].data.iType) + ',' + IntToStr(items[mWins[i].dnds[j].data.contain].data.iID)),
                                          mWins[i].rect.X + frmPak[mWins[i].fType].w + mWins[i].dnds[j].x,
                                          mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y, 32, 32, 0, 255, FLAG)
                       else
@@ -745,7 +742,7 @@ begin
                                          mWins[i].rect.X + frmPak[mWins[i].fType].w + mWins[i].dnds[j].x,
                                          mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y, 32, 32, 0, 255, FX_BLEND) ;
 
-                if Items[mWins[i].dnds[j].data.contain].iType > 21 then
+                if Items[mWins[i].dnds[j].data.contain].data.iType > 21 then
                    if mWins[i].dnds[j].data.dur > 0 then
                       begin
                          text_Draw( fntMain, mWins[i].rect.X + frmPak[mWins[i].fType].w + mWins[i].dnds[j].x + 32 - Text_GetWidth(fntMain, u_IntToStr(mWins[i].dnds[j].data.dur)),
@@ -759,7 +756,7 @@ begin
   if on_DD then
      begin
        ASprite2d_Draw( tex_Item_Slots, Mouse_X, Mouse_Y, 32, 32, 0, 6);
-       SSprite2d_Draw( GetTex('i'+ u_IntToStr(Items[ddItem.data.contain].iType) + ',' + u_IntToStr(Items[ddItem.data.contain].iID)), Mouse_X, Mouse_Y, 32, 32, 0);
+       SSprite2d_Draw( GetTex('i'+ u_IntToStr(Items[ddItem.data.contain].data.iType) + ',' + u_IntToStr(Items[ddItem.data.contain].data.iID)), Mouse_X, Mouse_Y, 32, 32, 0);
 
       // Text_Draw(fntMain, Mouse_X + 40, Mouse_Y, u_IntToStr(ddItem.contains));
      //  Text_Draw(fntMain, Mouse_X + 40, Mouse_Y + 10, u_IntToStr(dditem.ddSubType));
@@ -970,7 +967,7 @@ begin
                   ddIndex := j;
                   ddWin   := i;
                   ddItem := mWins[i].dnds[j];
-                  ddItem.data.ddSubType:= Items[ddItem.data.contain].sub;
+                  ddItem.data.ddSubType:= Items[ddItem.data.contain].data.sub;
                   break;
                end;
           end;
@@ -1068,7 +1065,7 @@ begin
      begin
        for i := 1 to high(items) do
          if items[i].exist then
-            if items[i].name = '' then items[i].exist:= false;
+            if items[i].data.name = '' then items[i].exist:= false;
 
        mWins[5].texts[1].Text:= activechar.header.Name;
        mWins[5].texts[2].Text:= GetRaceName(activechar.header.raceID);
@@ -1099,7 +1096,7 @@ begin
 
        n := mWins[5].dnds[4].data.contain;
 
-       if (Items[n].iType >= 1) and (Items[n].iType < 7) then
+       if (Items[n].data.iType >= 1) and (Items[n].data.iType < 7) then
           if mWins[5].dnds[6].data.contain > 0 then
              begin
              { i := inv_FindFreeSpot();
@@ -1396,7 +1393,7 @@ begin
   }
   if mouse_click(M_BRIGHT) then
      begin
-       //if  and (itt.eTime > 3) then itt.exist := false;
+      // if  and (itt.eTime > 3) then itt.exist := false;
        if puMenu.exist and (puMenu.eTime > 3) then pum_close;
      end;
 
@@ -1761,17 +1758,18 @@ procedure itt_Open( iID, ittType : longword);
 var fH, fW, tH: single;
     i, k: integer;
 begin
+ // Writeln('Debug 1');
   if (iID < 1) or (iID > 1000) then Exit;
-  if items[iID].proc then Exit;
-  if items[iID].req then Exit;
-  if (items[iID].ID = 0) then
+  // if items[iID].proc then Exit;
+  // if items[iID].req then Exit;
+{  if (items[iID].data.ID = 0) then
      begin
        items[iID].req:=true;
        // SendData(inline_pkgCompile(6, u_IntToStr(iID) + '`') );
        Exit;
-     end;
+     end;  }
   if mWins[4].visible then
-     if items[iID].name =  mWins[4].texts[1].Text then Exit;
+     if items[iID].data.name =  mWins[4].texts[1].Text then Exit;
 
   if ittType = 2 then mWins[4].Name:='2' else mWins[4].Name:=u_IntToStr(GetTickCount());;
 
@@ -1780,8 +1778,8 @@ begin
       mWins[4].texts[i].visible:=false;
       mWins[4].texts[i].color:=$dddddd;
     end;
-  mWins[4].texts[1].Text:=Items[iID].name;
-  fW := text_GetWidth(fntMain, items[iID].name) + 50;
+  mWins[4].texts[1].Text:=Items[iID].data.name;
+  fW := text_GetWidth(fntMain, items[iID].data.name) + 50;
   if fW < 175 then fW := 175;
   fH := text_GetHeight( fntMain, 20, 'H');
   tH := fH;
@@ -1791,7 +1789,7 @@ begin
   mWins[4].texts[1].rect.X := 0;
   mWins[4].texts[1].rect.Y := 0;
 
-  case items[iID].rare of
+  case items[iID].data.rare of
     1 : mWins[4].texts[1].color := $AAAAAA; // Серенький
     2 : mWins[4].texts[1].color := $FFFFFF; // беленький
     3 : mWins[4].texts[1].color := $00FF00; // зелёненький
@@ -1806,33 +1804,33 @@ begin
   mWins[4].texts[2].rect.H := fH;
   mWins[4].texts[2].rect.X := 0;
   mWins[4].texts[2].rect.Y := tH;
-  mWins[4].texts[2].Text:= itt_GetType(items[iID].iType);
+  mWins[4].texts[2].Text:= itt_GetType(items[iID].data.iType);
   mWins[4].texts[2].visible:=true;
   tH := tH + fH;
 
   // строка с дамагом для оружия и ап
-  if items[iID].sub = 11 then
+  if items[iID].data.sub = 11 then
      begin
        mWins[4].texts[3].rect.W := fW;
        mWins[4].texts[3].rect.H := fH;
        mWins[4].texts[3].rect.X := 0;
        mWins[4].texts[3].rect.Y := tH;
-       mWins[4].texts[3].Text:= u_IntToStr(round(1 + items[iID].props[2] / 10 * items[iID].props[4])) +
-                                ' - ' + u_IntToStr(2 + round(items[iID].props[2] / 10 * items[iID].props[4] * 1.1)) +
+       mWins[4].texts[3].Text:= u_IntToStr(round(1 + items[iID].data.props[2] / 10 * items[iID].data.props[4])) +
+                                ' - ' + u_IntToStr(2 + round(items[iID].data.props[2] / 10 * items[iID].data.props[4] * 1.1)) +
                                 ' Damage';
        mWins[4].texts[3].visible:=true;
 
-       mWins[4].texts[4].rect.W := text_GetWidth(fntMain, IntToStr(Items[iID].props[4])) + 10;
+       mWins[4].texts[4].rect.W := text_GetWidth(fntMain, IntToStr(Items[iID].data.props[4])) + 10;
        mWins[4].texts[4].rect.H := fH;
-       mWins[4].texts[4].rect.X := fW - 10 - text_GetWidth(fntMain, IntToStr(Items[iID].props[4]));
+       mWins[4].texts[4].rect.X := fW - 10 - text_GetWidth(fntMain, IntToStr(Items[iID].data.props[4]));
        mWins[4].texts[4].rect.Y := tH;
-       mWins[4].texts[4].Text:= IntToStr(Items[iID].props[4]);
+       mWins[4].texts[4].Text:= IntToStr(Items[iID].data.props[4]);
        mWins[4].texts[4].visible:=true;
        tH := tH + fH
      end;
 
   // описание предмета
-  if (items[iID].iType = 35) then
+  if (items[iID].data.iType = 35) then
      begin
        mWins[4].texts[4].rect.W := fW;
        mWins[4].texts[4].rect.H := text_getheight(fntMain2, fW, QI[iID]);
@@ -1845,84 +1843,84 @@ begin
      end;
 
   // строка с броней
-  if not (items[iID].sub in [6, 11, 2, 7]) then
+  if not (items[iID].data.sub in [6, 11, 2, 7]) then
      begin
        mWins[4].texts[4].rect.W := fW;
        mWins[4].texts[4].rect.H := fH;
        mWins[4].texts[4].rect.X := 0 ;
        mWins[4].texts[4].rect.Y := tH;
-       mWins[4].texts[4].Text:= IntToStr(Items[iID].props[5]);
+       mWins[4].texts[4].Text:= IntToStr(Items[iID].data.props[5]);
        mWins[4].texts[4].visible:=true;
        tH := tH + fH
      end;
 
-  if items[iID].iType = 14 then
+  if items[iID].data.iType = 14 then
      begin
        mWins[4].texts[36].rect.W := fW;
        mWins[4].texts[36].rect.H := fH;
        mWins[4].texts[36].rect.X := 0 ;
        mWins[4].texts[36].rect.Y := tH;
-       mWins[4].texts[36].Text:= 'Block ' + u_IntToStr(round(Items[iID].props[5] * 0.35));
+       mWins[4].texts[36].Text:= 'Block ' + u_IntToStr(round(Items[iID].data.props[5] * 0.35));
        mWins[4].texts[36].visible:=true;
        tH := tH + fH
      end;
 
 
   // дурабилити
-  if not (items[iID].sub in [2, 6, 7]) then
+  if not (items[iID].data.sub in [2, 6, 7]) then
      begin
        mWins[4].texts[5].rect.W := fW;
        mWins[4].texts[5].rect.H := fH;
        mWins[4].texts[5].rect.X := 0;
        mWins[4].texts[5].rect.Y := tH;
-       mWins[4].texts[5].Text:= IntToStr(Items[iID].props[1]);
+       mWins[4].texts[5].Text:= IntToStr(Items[iID].data.props[1]);
        mWins[4].texts[5].visible:=true;
        tH := tH + fH
      end;
 
   // требования по лвл
-  if (items[iID].props[3] > 0) then
+  if (items[iID].data.props[3] > 0) then
      begin
        mWins[4].texts[35].rect.W := fW;
        mWins[4].texts[35].rect.H := fH;
        mWins[4].texts[35].rect.X := 0;
        mWins[4].texts[35].rect.Y := tH;
-       mWins[4].texts[35].Text:= IntToStr(Items[iID].props[3]);
-       if items[iID].props[3] > activechar.header.level then
+       mWins[4].texts[35].Text:= IntToStr(Items[iID].data.props[3]);
+       if items[iID].data.props[3] > activechar.header.level then
           mWins[4].texts[35].color:=$CC0000;
        mWins[4].texts[35].visible:=true;
        tH := tH + fH
      end;
 
   for i := 0 to 5 do
-    if (items[iID].iType <> 35) then
-    if (items[iID].props[6 + i] > 0) then
+    if (items[iID].data.iType <> 35) then
+    if (items[iID].data.props[6 + i] > 0) then
        begin
          mWins[4].texts[6 + i].rect.W := fW;
          mWins[4].texts[6 + i].rect.H := fH;
          mWins[4].texts[6 + i].rect.X := 0;
          mWins[4].texts[6 + i].rect.Y := tH;
-         mWins[4].texts[6 + i].Text:= IntToStr(Items[iID].props[6 + i]);
+         mWins[4].texts[6 + i].Text:= IntToStr(Items[iID].data.props[6 + i]);
          mWins[4].texts[6 + i].visible:=true;
          tH := tH + fH
        end;
 
   for i := 0 to 13 do
-    if (items[iID].iType <> 35) then
-    if (items[iID].props[12 + i] > 0 ) then
+    if (items[iID].data.iType <> 35) then
+    if (items[iID].data.props[12 + i] > 0 ) then
        begin
          mWins[4].texts[12 + i].rect.W := fW;
-         if text_GetHeight(fntMain, fW, IntToStr(Items[iID].props[12 + i])) > fH then
+         if text_GetHeight(fntMain, fW, IntToStr(Items[iID].data.props[12 + i])) > fH then
             mWins[4].texts[12 + i].rect.H := fH * 2
          else
             mWins[4].texts[12 + i].rect.H := fH;
          mWins[4].texts[12 + i].rect.X := 0;
          mWins[4].texts[12 + i].rect.Y := tH;
-         mWins[4].texts[12 + i].Text:= IntToStr(Items[iID].props[12 + i]);
+         mWins[4].texts[12 + i].Text:= IntToStr(Items[iID].data.props[12 + i]);
          mWins[4].texts[12 + i].visible:=true;
          mWins[4].texts[12 + i].rect.W := fW;
          mWins[4].texts[12 + i].color:= $00DD00;
-         if text_GetHeight(fntMain, fW, IntToStr(Items[iID].props[12 + i])) > fH then
+         if text_GetHeight(fntMain, fW, IntToStr(Items[iID].data.props[12 + i])) > fH then
             tH := tH + fH * 2
          else
             tH := tH + fH;
@@ -1932,7 +1930,7 @@ begin
    mWins[4].texts[26].rect.H := fH;
    mWins[4].texts[26].rect.X := 0;
    mWins[4].texts[26].rect.Y := tH;
-   mWins[4].texts[26].Text:= 'Sell for: ' + u_IntToStr(round(Items[iID].price * 0.3));
+   mWins[4].texts[26].Text:= 'Sell for: ' + u_IntToStr(round(Items[iID].data.price * 0.3));
    mWins[4].texts[26].visible:=true;
    tH := tH + fH;
 
@@ -1948,7 +1946,7 @@ begin
   else
      mWins[4].rect.Y:=Mouse_Y + 16;
 
-  mWins[4].visible:=true;
+  mWins[4].visible := true;
  // Chat_AddMessage(0, 'S', u_BoolToStr(mWins[4].visible) + ' ' + u_FloatToStr(mWins[4].rect.X) + ' ' + u_FloatToStr(mWins[4].rect.Y) + ' ' +u_FloatToStr(mWins[4].rect.w) + ' ' + u_FloatToStr(mWins[4].rect.H));
 end;
 
@@ -2084,7 +2082,7 @@ begin
          Spells[sID].discr := AnsiToUTF8(format(Spells[sID].bdiscr, [d1]));
        end;
     9: begin
-         d1 := trunc(Items[mWins[5].dnds[6].data.contain].props[5] * 0.35);
+         d1 := trunc(Items[mWins[5].dnds[6].data.contain].data.props[5] * 0.35);
          Spells[sID].discr := AnsiToUTF8(format(Spells[sID].bdiscr, [d1]));
        end;
     12: begin
@@ -2219,23 +2217,23 @@ begin
        rs1 := 0; rs2 := 0; s := '';
        puMenu.elements[n].exist := true;
        puMenu.elements[n].enable := false;
-       if Items[mWins[wID].dnds[sID].data.contain].iType = 35 then
-          if Items[mWins[wID].dnds[sID].data.contain].props[6] = 1 then
+       if Items[mWins[wID].dnds[sID].data.contain].data.iType = 35 then
+          if Items[mWins[wID].dnds[sID].data.contain].data.props[6] = 1 then
              begin        // чекаем локу
-               if Items[mWins[wID].dnds[sID].data.contain].props[7] > 0 then
+               if Items[mWins[wID].dnds[sID].data.contain].data.props[7] > 0 then
                   begin
                     inc(rs1);
-                    if Items[mWins[wID].dnds[sID].data.contain].props[7] = activechar.header.loc then
+                    if Items[mWins[wID].dnds[sID].data.contain].data.props[7] = activechar.header.loc then
                        inc(rs2);
-                    //Chat_AddMessage(0, 's', 'loc ' + IntToStr(rs2));
+                    Chat_AddMessage(0, 's', 'loc ' + IntToStr(rs2));
                   end;
-               if Items[mWins[wID].dnds[sID].data.contain].props[8] > 0 then
+               if Items[mWins[wID].dnds[sID].data.contain].data.props[8] > 0 then
                   begin       // чекаем инвентарь
                     inc(rs1);
                     for i := 1 to high(mWins[5].dnds) do
                     begin
                       if mWins[5].dnds[i].data.contain <> 0 then
-                         if mWins[5].dnds[i].data.contain = Items[mWins[wID].dnds[sID].data.contain].props[8] then
+                         if mWins[5].dnds[i].data.contain = Items[mWins[wID].dnds[sID].data.contain].data.props[8] then
                             begin
                               inc(rs2);
                               break;
@@ -2416,16 +2414,16 @@ begin
   ini_free();
 
   items[1000].exist:=true;
-  items[1000].iID:=9;
-  items[1000].name:='Exp';
-  items[1000].iType:=32;
-  items[1000].ID:=1000;
+  items[1000].data.iID:=9;
+  items[1000].data.name:='Exp';
+  items[1000].data.iType:=32;
+  items[1000].data.ID:=1000;
 
   items[999].exist:=true;
-  items[999].name:='Gold';
-  items[999].iType:=32;
-  items[999].iID:=10;
-  items[999].ID:=999;
+  items[999].data.name:='Gold';
+  items[999].data.iType:=32;
+  items[999].data.iID:=10;
+  items[999].data.ID:=999;
 
   Spells[1].exist:=true;
   Spells[1].CD:=10;

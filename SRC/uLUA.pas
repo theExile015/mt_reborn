@@ -251,6 +251,14 @@ begin
   your_unit := 1;
 end;
 
+function lua_offline(): byte;
+begin
+  Nonameform1.Hide;
+  a_p := 0;
+  gs := gsPreGame;
+  LoadLoc(1);
+end;
+
 procedure InitLUA;
 begin
   Lua_1 := lua_open;
@@ -277,6 +285,7 @@ begin
   lua_register(lua_1, 'loader_GetListItem', @lua_loader_GetTListItem);
 
   lua_register(lua_1, 'core_combat', @lua_combat_start);
+  lua_register(lua_1, 'core_offline', @lua_offline);
 
   luaL_openlibs(Lua_1);
 end;

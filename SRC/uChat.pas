@@ -634,7 +634,7 @@ begin
 
                 if ch_tabs[ch_tab_curr].msgs[i].lexems[j].lType = 1 then
                    begin
-                    case items[ch_tabs[ch_tab_curr].msgs[i].lexems[j].par1].rare of
+                    case items[ch_tabs[ch_tab_curr].msgs[i].lexems[j].par1].data.rare of
                       1 : color := $AAAAAA; // Серенький
                       2 : color := $FFFFFF; // беленький
                       3 : color := $00FF00; // зелёненький

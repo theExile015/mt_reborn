@@ -60,7 +60,12 @@ type
   end;
 
   TPkg013 = record
+    data      : TInventory;
+    fail_code : byte;
+  end;
 
+  TPkg014 = record
+    data      : TItemData;
     fail_code : byte;
   end;
 
@@ -77,6 +82,8 @@ procedure pkg005(pkg: TPkg005);   // Вход в мир
 procedure pkg010(pkg: TPkg010);   // HP-MP-AP
 procedure pkg011(pkg: TPkg011);   // Numbers
 procedure pkg012(pkg: TPkg012);   // Stats
+procedure pkg013(pkg: TPkg013);   // Inv
+procedure pkg014(pkg: TPkg014);   // Item data
 
 
 procedure pkgProcess(var msg: string);
@@ -98,6 +105,7 @@ var
     _pkg004: TPkg004;   _pkg005: TPkg005;
 
     _pkg010: TPkg010;   _pkg011: TPkg011;   _pkg012: TPkg012;
+    _pkg013: TPkg013;   _pkg014: TPkg014;
 begin
   try
        begin
@@ -156,6 +164,16 @@ begin
            begin
              mStr.Read(_pkg012, SizeOf(_pkg012));
              pkg012(_pkg012);
+           end;
+           13:
+           begin
+             mStr.Read(_pkg013, SizeOf(_pkg013));
+             pkg013(_pkg013);
+           end;
+           14:
+           begin
+             mStr.Read(_pkg014, SizeOf(_pkg014));
+             pkg014(_pkg014);
            end
          else
            // ID пакета кривой
@@ -302,6 +320,33 @@ end;
 procedure pkg012(pkg: TPkg012);
 begin
   activechar.Stats := pkg.data;
+end;
+
+procedure pkg013(pkg: TPkg013);
+var i: integer;
+begin
+  activechar.Inv := pkg.data;
+
+  for i := 1 to 130 do
+    begin
+    //  Writeln( activechar.Inv[i].iID, ', ', activechar.Inv[i].sub, ', ', activechar.Inv[i].cDur );
+      mWins[5].dnds[i].data.contain := activechar.Inv[i].iID;
+      mWins[5].dnds[i].data.dur:= activechar.Inv[i].cDur;
+    end;
+end;
+
+procedure pkg014(pkg: TPkg014);
+begin
+  if pkg.fail_code <> high(byte) then
+     begin
+        items[pkg.data.ID].data := pkg.data;
+        items[pkg.data.ID].exist:= true;
+
+       { Writeln(pkg.data.ID);
+        Writeln(pkg.data.name);  }
+     end else
+       Writeln('PKG 014: Fail code 255');
+  In_Request := false;
 end;
 
 end.
