@@ -6,21 +6,51 @@ interface
 
 uses
   Classes,
-  SysUtils,
   vVar,
-  vNetCore,
   uDB;
 
 function hpmp_counter(base, par : dword) : dword;
 function GetPerkXYZ(sc, lid, lvl : byte) : TXYZ;
 function GetPerkID(sc, lid : byte) : word;
 
+procedure Char_InitInventory();
+procedure Char_RegEvent();
+procedure Char_Update();
+procedure Char_AddNumbers(charLID, Gold, Exp, lvl, SP, TP : DWORD);
+
 function Char_EnterTheWorld(sID, charID: DWORD): word;
-function Char_CalculateStats(charID: dword): word;
+function Char_CalculateStats(charLID: dword): word;
+
 
 implementation
 
 uses uPkgProcessor;
+
+procedure Char_InitInventory();
+var i, j : integer;
+begin
+  for i := 0 to length(chars) - 1 do
+  for j := 1 to 130 do
+    begin
+      if j in [13..20] then
+         chars[i].Inventory[j].sub := 6;
+      if j in [21..100] then
+         chars[i].Inventory[j].sub := 6;
+
+      if j = 1 then chars[i].Inventory[j].sub := 3;
+      if j = 2 then chars[i].Inventory[j].sub := 10;
+      if j = 3 then chars[i].Inventory[j].sub := 2;
+      if j = 4 then chars[i].Inventory[j].sub := 11;
+      if j = 5 then chars[i].Inventory[j].sub := 1;
+      if j = 6 then chars[i].Inventory[j].sub := 9;
+      if j = 7 then chars[i].Inventory[j].sub := 7;
+      if j = 8 then chars[i].Inventory[j].sub := 12;
+      if j = 9 then chars[i].Inventory[j].sub := 7;
+      if j = 10 then chars[i].Inventory[j].sub := 5;
+      if j = 11 then chars[i].Inventory[j].sub := 4;
+      if j = 12 then chars[i].Inventory[j].sub := 8;
+    end;
+end;
 
 function GetPerkID(sc, lid : byte) : word;
 var I: integer;
@@ -62,6 +92,22 @@ begin
      result := result + (par - 10) * 10;
 end;
 
+procedure Char_RegEvent();
+var i: integer;  _pkg : TPkg010;
+begin
+  for i := 0 to length(chars) - 1 do
+    if chars[i].exist then
+      if not chars[i].in_combat then
+        begin
+          chars[i].hpmp.cHP := chars[i].hpmp.cHP + chars[i].Stats.HPReg;
+          chars[i].hpmp.cMP := chars[i].hpmp.cMP + chars[i].Stats.MPReg;
+          if chars[i].hpmp.cHP > chars[i].hpmp.mHP then chars[i].hpmp.cHP:=chars[i].hpmp.mHP;
+          if chars[i].hpmp.cMP > chars[i].hpmp.mMP then chars[i].hpmp.cMP:=chars[i].hpmp.mMP;
+          DB_SetHPMP( i );
+          pkg010( _pkg, chars[i].sID );
+        end;
+end;
+
 function Char_EnterTheWorld(sID, charID: DWORD): word;
 var i: integer;
     _head  : TPackHeader;
@@ -81,7 +127,7 @@ begin
         chars[i].in_global_chat := true;
         Sessions[sID].charLID   := i; // чтобы было проще искать
         DB_GetCharData( i );
-        Char_CalculateStats(charID);
+        Char_CalculateStats( i );
         break;
       end;
   if not sessions[i].exist then Exit; // если сессии такой нет, то выходим
@@ -91,16 +137,55 @@ begin
   pkg012(_pkg12, sID); // отправляем-с
 end;
 
-function Char_CalculateStats(charID: dword): word;
+procedure Char_AddNumbers(charLID, Gold, Exp, lvl, SP, TP : DWORD);
+var pkg : TPkg011; pkg2 : TPkg015;
+begin
+      chars[charLID].Numbers.gold:= chars[charLID].Numbers.gold + gold;
+      chars[charLID].Numbers.Exp:= chars[charLID].Numbers.Exp + exp;
+      chars[charLID].Header.level:= chars[charLID].Header.level + lvl;
+      chars[charLID].Numbers.SP:= chars[charLID].Numbers.SP + SP;
+      chars[charLID].Numbers.TP:= chars[charLID].Numbers.TP + TP;
+
+      DB_SetCharData( charLID, chars[charLID].header.name );
+      DB_GetCharData( charLID );
+
+      pkg011( pkg, chars[charLID].sID );
+      pkg015( pkg2, chars[charLID].sID );
+end;
+
+procedure Char_Update();
+var i: integer;
+    hh, mm, ss, ms : word;
+    s : string;
+begin
+  for i := 0 to high(chars) - 1 do
+    if chars[i].exist then
+      begin
+        // повышение уровня
+        if chars[i].Numbers.Exp >= exp_cap[chars[i].header.level + 1] then
+           begin
+             chars[i].Numbers.Exp := chars[i].Numbers.Exp - exp_cap[chars[i].header.level + 1];
+             Char_AddNumbers( i, 0, 0, 1, 3, 2);
+           end;
+     {   // перемещение на локацию
+        if chars[i].in_trvl then
+           begin
+             GetTime(hh, mm, ss, ms);
+             if abs(mm * 60 + ss - chars[i].trvMin * 60 - chars[i].trvSec) >= chars[i].trvTime then
+                begin
+                  WriteSafeText(' Char ' + (chars[i].name) + ' to LOC > ' + locDB[chars[i].trvDest].name, 2);
+                  Char_MoveToLoc(i, chars[i].trvDest);
+                end;
+           end;  }
+      end;
+end;
+
+function Char_CalculateStats(charLID: dword): word;
 var i, j    : integer;
-    charLID : DWORD;
 begin
   result:=0;
-  for i:=0 to length(chars) - 1 do
-    if chars[i].exist then
-      if chars[i].header.ID = charID then
+  i := CharLID;
       begin
-          CharLID := i;
           DB_GetCharData( i );
         //  DB_GetCharInv(i);
           result := i;
@@ -111,8 +196,8 @@ begin
           chars[i].iHst:= 0;
           chars[i].iInt:= 0;
           chars[i].iSpi:= 0;
-          chars[i].iDmg:= 0;
-          chars[i].iAPH:= 0;
+          chars[i].Stats.DMG:= 0;
+          chars[i].Stats.APH:= 0;
           chars[i].iIni:= 0;
           chars[i].Stats.Armor := 0;
           chars[i].iCrit:=0;
@@ -150,9 +235,9 @@ begin
               //WriteSafeText(inttostr(i) + ' Item stats recalculation froms slot ' + intToStr(j) );
               //  дамаг, армор, апх
               if ItemDB[chars[i].Inventory[j].iID].data.props[2] <> 0 then
-                 chars[i].iDmg:=chars[i].iDmg + ItemDB[chars[i].Inventory[j].iID].data.props[2];
+                 chars[i].Stats.Dmg:=chars[i].Stats.Dmg + ItemDB[chars[i].Inventory[j].iID].data.props[2];
               if ItemDB[chars[i].Inventory[j].iID].data.props[4] <> 0 then
-                 chars[i].iAPH:=chars[i].iAPH + ItemDB[chars[i].Inventory[j].iID].data.props[4];
+                 chars[i].Stats.APH:=chars[i].Stats.APH + ItemDB[chars[i].Inventory[j].iID].data.props[4];
               if ItemDB[chars[i].Inventory[j].iID].data.props[5] <> 0 then
                  chars[i].Stats.Armor:=chars[i].Stats.Armor + ItemDB[chars[i].Inventory[j].iID].data.props[5];
               // базовые статы
@@ -208,20 +293,20 @@ begin
              chars[i].iIni:= chars[i].iIni + 3;
 
           // проверяем на рукопашку
-          if chars[i].iAPH = 0 then chars[i].iAPH:= 10;
+          if chars[i].Stats.APH = 0 then chars[i].Stats.APH:= 10;
 
         //  WriteSafeText(' >> I TYPE >> ' + IntToStr(ItemDB[chars[i].Inventory[4].iID].iType) );
 
           if ItemDB[chars[i].Inventory[4].iID].data.iType <> 5 then
             if ItemDB[chars[i].Inventory[4].iID].data.iType <> 6 then
               if ItemDB[chars[i].Inventory[4].iID].data.iType <> 10 then
-                 chars[i].iDmg:=round((chars[i].iDmg + 10 * chars[i].Stats.Str/(50)));
+                 chars[i].Stats.Dmg:=round((chars[i].Stats.Dmg + 10 * chars[i].Stats.Str/(50)));
 
           if ItemDB[chars[i].Inventory[4].iID].data.iType = 5 then
-             chars[i].iDmg:=round((chars[i].iDmg + 10 * chars[i].Stats.Agi/(50)));
+             chars[i].Stats.Dmg:=round((chars[i].Stats.Dmg + 10 * chars[i].Stats.Agi/(50)));
 
           if ItemDB[chars[i].Inventory[4].iID].data.iType = 10 then
-             chars[i].iDmg:=round((chars[i].iDmg + 10 * (chars[i].Stats.Agi + chars[i].Stats.Str)/(100)));
+             chars[i].Stats.Dmg:=round((chars[i].Stats.Dmg + 10 * (chars[i].Stats.Agi + chars[i].Stats.Str)/(100)));
 
           {     // Перк 1р-мастери
           if (ItemDB[chars[i].Inventory[4].iID].iType = 10) or
@@ -233,11 +318,15 @@ begin
           chars[i].hpmp.mHP:=hpmp_counter(chars[i].bHP, chars[i].Stats.Con) + base_hp[chars[i].header.level] - 40;
           chars[i].hpmp.mMP:=hpmp_counter(chars[i].bMP, chars[i].Stats.Int) + base_mp[chars[i].header.level] - 20;
           chars[i].hpmp.mAP:=chars[i].bAP + trunc(chars[i].Stats.Hst * 1.75/(chars[i].header.level + 10)) + chars[i].iAP;
-          chars[i].Stats.Ini:=80 + trunc(chars[i].Stats.Hst * 2.5/(chars[i].header.level/3 + 5)) + chars[i].iIni;
-          chars[i].Stats.HPReg:=chars[i].header.level + chars[i].iHP5 + trunc(chars[i].Stats.Con/chars[i].header.level);
-          chars[i].Stats.MPReg:=chars[i].header.level + chars[i].iMP5 + trunc(chars[i].Stats.Spi/chars[i].header.level);
-          chars[i].Stats.SPD:=chars[i].iSPD;
-        break;
+
+          if chars[i].hpmp.cHP > chars[i].hpmp.mHP then chars[i].hpmp.cHP:=chars[i].hpmp.mHP;
+          if chars[i].hpmp.cMP > chars[i].hpmp.mMP then chars[i].hpmp.cMP:=chars[i].hpmp.mMP;
+          if chars[i].hpmp.cAP > chars[i].hpmp.mAP then chars[i].hpmp.cAP:=chars[i].hpmp.mAP;
+
+          chars[i].Stats.Ini   :=80 + trunc(chars[i].Stats.Hst * 2.5/(chars[i].header.level/3 + 5)) + chars[i].iIni;
+          chars[i].Stats.HPReg :=chars[i].header.level + chars[i].iHP5 + trunc(chars[i].Stats.Con/chars[i].header.level);
+          chars[i].Stats.MPReg :=chars[i].header.level + chars[i].iMP5 + trunc(chars[i].Stats.Spi/chars[i].header.level);
+          chars[i].Stats.SPD   :=chars[i].iSPD;
       end;
 end;
 

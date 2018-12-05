@@ -64,6 +64,16 @@ type
     fail_code : byte;
   end;
 
+  TPkg015 = record
+    data      : TCharHeader;
+    fail_code : byte;
+  end;
+
+  TPkg020 = record
+    _from, _to : byte;
+    fail_code  : byte;
+  end;
+
 procedure pkg001(pkg : TPkg001; sID : word);
    // 2
 procedure pkg003(pkg : TPkg003; sID : word);   // 3
@@ -78,6 +88,12 @@ procedure pkg011(pkg : TPkg011; sID : word);
 procedure pkg012(pkg : TPkg012; sID : word);
 procedure pkg013(pkg : TPkg013; sID : word);
 procedure pkg014(pkg : TPkg014; sID : word);
+procedure pkg015(pkg : TPkg015; sID : word);
+  // 16
+  // 17
+  // 18
+  // 19
+procedure pkg020(pkg : TPkg020; sID : word);
 
 
 procedure pkgProcess(msg: string);
@@ -444,6 +460,82 @@ try
 finally
   mStr.Free;
 end;
+end;
+
+procedure pkg015(pkg : TPkg015; sID : word);
+var _pkg  : TPkg015;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+try
+  mStr := TMemoryStream.Create;
+  _head._flag := $F;
+  _head._id   := 15;
+
+  _pkg.data := chars[sessions[sID].charLID].header;
+  _pkg.fail_code:=0;
+
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+  // Отправляем пакет
+  TCP.FCon.IterReset;
+  while TCP.FCon.IterNext do
+    if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
+    if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
+       begin
+         TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+         Break;
+       end;
+finally
+  mStr.Free;
+end;
+end;
+
+procedure pkg020(pkg : TPkg020; sID : word);
+var charLID : word;
+    i1, i2  : byte;
+    _pkg    : TPkg013;   _pkg2 : TPkg012; _pkg3 : TPkg010;
+begin
+  charLID := sessions[sID].charLID;
+
+  i1 := pkg._from;
+  i2 := pkg._to;
+
+       if (chars[charLID].Inventory[i2].sub = 6) or  // проверяем совместимость предмета и солота
+          (chars[charLID].Inventory[i2].sub = ItemDB[chars[charLID].Inventory[i1].iID].data.sub) then
+          if chars[charLID].Inventory[i2].gID = 0 then // если целевой слот пустой
+          if chars[charLID].Inventory[i2].sub <> 6 then
+          begin
+            if ItemDB[chars[charLID].Inventory[i1].iID].data.props[3] <= chars[charLID].header.level then // проверяем требования по лвл
+               begin                                     // тогда ставим туда и записываем изменения
+                 chars[charLID].Inventory[i2].cDur:=chars[charLID].Inventory[i1].cDur;
+                 chars[charLID].Inventory[i2].gID:=chars[charLID].Inventory[i1].gID;
+                 chars[charLID].Inventory[i2].iID:=chars[charLID].Inventory[i1].iID;
+
+                 chars[charLID].Inventory[i1].gID:=0;
+                 chars[charLID].Inventory[i1].iID:=0;
+                 chars[charLID].Inventory[i1].cDur:=0;
+                 DB_SetCharInv(charLID);
+               end;
+          end else
+          begin
+            chars[charLID].Inventory[i2].cDur:=chars[charLID].Inventory[i1].cDur;
+            chars[charLID].Inventory[i2].gID:=chars[charLID].Inventory[i1].gID;
+            chars[charLID].Inventory[i2].iID:=chars[charLID].Inventory[i1].iID;
+
+            chars[charLID].Inventory[i1].gID:=0;
+            chars[charLID].Inventory[i1].iID:=0;
+            chars[charLID].Inventory[i1].cDur:=0;
+            DB_SetCharInv(charLID);
+          end;
+
+  // готово. шлём обновлённый инвентарь
+
+  pkg013(_pkg, sID);
+  Char_CalculateStats( charLID );
+  pkg012(_pkg2, sID);
+  pkg010(_pkg3, sID);
 end;
 
 procedure pkgProcess(msg: string);

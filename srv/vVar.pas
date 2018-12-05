@@ -44,6 +44,7 @@ type
     Hit, Crit, Block                   : DWORD;
     MPReg, HPReg, BlValue, Resist      : DWORD;
     Armor, Ini, SPD                    : DWORD;
+    APH, DMG                           : DWORD;
   end;
 
   TCharPoints = record
@@ -79,7 +80,7 @@ type
     iStr, iAgi, iCon, iHst, iInt, iSpi      : DWORD;
     iHit, iCrit, iBlock, iAP                : DWORD;
     iMPReg, iHPReg, iBlValue, iResist       : DWORD;
-    iDmg, iAPH, iArmor, iIni, iSPD          : DWORD;
+    iArmor, iIni, iSPD          : DWORD;
     Inventory                               : TInventory;
   { trvMin, trvSec, trvTime, trvDest : word;
     auras : array [1..16] of TAura;

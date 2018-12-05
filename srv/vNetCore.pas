@@ -6,7 +6,7 @@ interface
 
 uses
   cthreads, cmem, Classes, Crt, SysUtils,
-  lnet, vVar, dos, vServerLog ;
+  lnet, vVar, dos, vServerLog, uCharManager ;
 
 { TLTCPTest }
 
@@ -87,6 +87,8 @@ var
 
   _pkg010 : TPkg010;   _pkg011 : TPkg011;   _pkg012: TPkg012;
   _pkg013 : TPkg013;   _pkg014 : TPkg014;
+
+                       _pkg020 : TPkg020;
 begin
 try
   mStr := TMemoryStream.Create;
@@ -168,7 +170,13 @@ try
            mStr.Position:=SizeOf(_head);
            mStr.Read(_pkg014, SizeOf(_pkg014));
            pkg014(_pkg014, sID);
-         end
+         end;
+         20:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg020, SizeOf(_pkg020));
+           pkg020(_pkg020, sID);
+         end;
        else
          Writeln('Wrong flag');
          Exit;
@@ -222,13 +230,21 @@ begin
   Quit:= false;
   if FCon.Listen(11112) then begin // if listen went ok
       WriteSafeText('Server running!', 2);
-      Writeln('Press ''escape'' to quit, ''r'' to restart');
+      Writeln('Press ''escape'' to quit.');
       repeat
         FCon.CallAction; // eventize the lNet
         if Keypressed then // if user provided input
           case readkey of
            #27: quit := true; // if he pressed "escape" then quit
           end;
+        Char_Update(); // проверяем персонажа на лвл ап, ауры итд
+        GetTime(hour, min, sec, hsec);
+        if abs(min * 60 + sec - (lpMin * 60 + lpSec)) >= 5 then          // пробрасываем пинг
+           begin
+                Char_RegEvent();
+                lpMin := min;
+                lpSec := sec;
+           end;
       until Quit; // until user quit
     end; // listen
 end;

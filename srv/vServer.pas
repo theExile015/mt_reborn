@@ -18,7 +18,10 @@ begin
 try
   Randomize;
   CS := TCriticalSection.Create;
+
+  Char_InitInventory();
   DB_Init;
+
   TCP := TLTCPTest.Create;
   TCP.Run;
 finally

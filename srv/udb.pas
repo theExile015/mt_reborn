@@ -23,7 +23,7 @@ function DB_CreateNewChar(aID: DWORD; name: string; raceID, sex : byte): byte;
 function DB_DeleteChar(_ID : string): byte;
 function DB_GetCharData(charLID: DWORD) : byte;
 function DB_SetCharData(charLID: DWORD; name :string) : byte;
-function DB_SetHPMP(charLID: DWORD; name :string) : byte;
+function DB_SetHPMP(charLID: DWORD) : byte;
 function DB_GetCharInv(charLID: DWORD): byte;
 function DB_SetCharInv(charLID: DWORD): byte;
 function DB_DelItem(charLID, sID: DWORD): byte;
@@ -702,31 +702,31 @@ function DB_SetCharData(charLID: DWORD; name :string) : byte;
 begin
 try
   result := 0;
- { if not Chars[charLID].exist then Exit;
+  if not Chars[charLID].exist then Exit;
   Query.SQL.Text:= 'UPDATE Chars SET ' +
-                   'level = "' + IntToStr(Chars[charLID].lvl) + '",' +
-                   'loc = "' + IntToStr(Chars[charLID].loc) + '",' +
-                   'class = "' + IntToStr(Chars[charLID].klass) + '" ' +
+                   'level = "' + IntToStr(Chars[charLID].header.level) + '",' +
+                   'loc = "' + IntToStr(Chars[charLID].header.loc) + '",' +
+                   'class = "' + IntToStr(Chars[charLID].header.classID) + '" ' +
                    'WHERE name = "' + name + '"';
   Query.ExecSQL;   // обновляем данные в корневой таблице персонажа
 
   Query.SQL.Text:= 'UPDATE char_stats SET ' +
-                   'Str = "' + IntToStr(chars[charLID].pStr) + '",' +
-                   'Agi = "' + IntToStr(chars[charLID].pAgi) + '",' +
-                   'Con = "' + IntToStr(chars[charLID].pCon) + '",' +
-                   'Hst = "' + IntToStr(chars[charLID].pHst) + '",' +
-                   'Intel = "' + IntToStr(chars[charLID].pInt) + '",' +
-                   'Spi = "' + IntToStr(chars[charLID].pSpi) + '",' +
-                   'Expa = "' + IntToStr(chars[charLID].Exp) + '",' +
-                   'Gold = "' + IntToStr(chars[charLID].Gold) + '",' +
-                   'SP = "' + IntToStr(chars[charLID].SP) + '",' +
-                   'TP = "' + IntToStr(chars[charLID].TP) + '", ' +
-                   'curHP = "' + IntToStr(chars[charLID].cHP) + '",' +
-                   'curMP = "' + IntToStr(chars[charLID].cMP) + '" ' +
-                   'WHERE chID = "' + IntToStr(Chars[charLID].charID) + '"';
+                   'Str = "' + IntToStr(chars[charLID].Points.pStr) + '",' +
+                   'Agi = "' + IntToStr(chars[charLID].Points.pAgi) + '",' +
+                   'Con = "' + IntToStr(chars[charLID].Points.pCon) + '",' +
+                   'Hst = "' + IntToStr(chars[charLID].Points.pHst) + '",' +
+                   'Intel = "' + IntToStr(chars[charLID].Points.pInt) + '",' +
+                   'Spi = "' + IntToStr(chars[charLID].Points.pSpi) + '",' +
+                   'Expa = "' + IntToStr(chars[charLID].Numbers.Exp) + '",' +
+                   'Gold = "' + IntToStr(chars[charLID].Numbers.Gold) + '",' +
+                   'SP = "' + IntToStr(chars[charLID].Numbers.SP) + '",' +
+                   'TP = "' + IntToStr(chars[charLID].Numbers.TP) + '", ' +
+                   'curHP = "' + IntToStr(chars[charLID].hpmp.cHP) + '",' +
+                   'curMP = "' + IntToStr(chars[charLID].hpmp.cMP) + '" ' +
+                   'WHERE chID = "' + IntToStr(Chars[charLID].Header.ID) + '"';
   //WriteSafeText(Query.SQL.Text);
    Query.ExecSQL;   // обновляем данные в таблице статов пероснажа
-
+ {
    Query.Close;
    Query.SQL.Text := 'SELECT * FROM perks WHERE cID = "' + IntToStr(chars[charLID].charID) + '"';
    //WriteSafeText( Query.SQL.Text, 2);
@@ -756,19 +756,19 @@ except
 end;
 end;
 
-function DB_SetHPMP(charLID: DWORD; name :string) : byte;
+function DB_SetHPMP(charLID: DWORD) : byte;
 begin
 try
   result := 0;
-  //if not Chars[charLID].exist then Exit;
+  if not Chars[charLID].exist then Exit;
   // обновляем данные в корневой таблице персонажа
 
- { Query.SQL.Text:= 'UPDATE char_stats SET ' +
-                   'curHP = "' + IntToStr(chars[charLID].cHP) + '",' +
-                   'curMP = "' + IntToStr(chars[charLID].cMP) + '" ' +
-                   'WHERE chID = "' + IntToStr(Chars[charLID].charID) + '"';
+  Query.SQL.Text:= 'UPDATE char_stats SET ' +
+                   'curHP = "' + IntToStr(chars[charLID].hpmp.cHP) + '",' +
+                   'curMP = "' + IntToStr(chars[charLID].hpmp.cMP) + '" ' +
+                   'WHERE chID = "' + IntToStr(Chars[charLID].header.ID) + '"';
   //WriteSafeText(Query.SQL.Text);
-  Query.ExecSQL;   // обновляем данные в таблице статов пероснажа     }
+  Query.ExecSQL;   // обновляем данные в таблице статов пероснажа
 except
   on E : Exception do
      WriteSafeText(e.message, 3);
@@ -785,7 +785,6 @@ try
         chars[charLID].Inventory[chID].gID:=0; // зачищаем текущий инвентарь
         chars[charLID].Inventory[chID].cDur:=0;
         chars[charLID].Inventory[chID].iID:=0;
-        chars[charLID].Inventory[chID].sub:=0;
       end;
 
   chID := chars[charLID].header.ID;
