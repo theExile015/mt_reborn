@@ -259,6 +259,19 @@ begin
   LoadLoc(1);
 end;
 
+function lua_save_cache(): byte;
+var i: integer ;
+    ItemCache : zglTFile;
+begin
+  file_open(ItemCache, 'Cache\items.idb', FOM_OPENRW);
+
+  for i := 1 to high(items) do
+    if items[i].exist then
+       file_write(ItemCache, items[i].data, sizeof(items[i].data));
+
+  file_close(ItemCache);
+end;
+
 procedure InitLUA;
 begin
   Lua_1 := lua_open;
@@ -286,6 +299,7 @@ begin
 
   lua_register(lua_1, 'core_combat', @lua_combat_start);
   lua_register(lua_1, 'core_offline', @lua_offline);
+  lua_register(lua_1, 'core_savecache', @lua_save_cache);
 
   luaL_openlibs(Lua_1);
 end;

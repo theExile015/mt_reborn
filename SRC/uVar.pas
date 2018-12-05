@@ -141,7 +141,7 @@ type
     TMyGuiText = record
       exist, visible : boolean;
       color : longword;
-      Text : utf8string;
+      Text : string;
       OMO: boolean;
       center : byte;
       rect : zglTRect;
@@ -232,6 +232,7 @@ type
     Hit, Crit, Block              : DWORD;
     MPReg, HPReg, BlValue, Resist : DWORD;
     Armor, Ini, SPD               : DWORD;
+    APH, DMG                      : DWORD;
   end;
 
   TGameChar = record
@@ -240,7 +241,6 @@ type
     hpmp            : TCharHPMP;
     Stats           : TCharStats;
     Numbers         : TCharNumbers;
-    APH, iDMG       : word;
     Inv             : TInventory;
   end;
 

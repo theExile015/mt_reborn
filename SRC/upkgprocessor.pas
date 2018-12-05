@@ -69,6 +69,22 @@ type
     fail_code : byte;
   end;
 
+  TPkg015 = record
+    data      : TCharHeader;
+    fail_code : byte;
+  end;
+
+  TPkg020 = record
+    _from, _to : byte;
+    fail_code  : byte;
+  end;
+
+  TPkg025 = record
+    channel, _to : word;
+    msg          : string[100];
+    fail_code    : byte;
+  end;
+
 procedure pkg000;
 procedure pkg001(pkg: TPkg001);   // Логин
 procedure pkg002(pkg: TPkg002);   // Список персонажей
@@ -84,6 +100,7 @@ procedure pkg011(pkg: TPkg011);   // Numbers
 procedure pkg012(pkg: TPkg012);   // Stats
 procedure pkg013(pkg: TPkg013);   // Inv
 procedure pkg014(pkg: TPkg014);   // Item data
+procedure pkg015(pkg: TPkg015);   // Header
 
 
 procedure pkgProcess(var msg: string);
@@ -105,7 +122,7 @@ var
     _pkg004: TPkg004;   _pkg005: TPkg005;
 
     _pkg010: TPkg010;   _pkg011: TPkg011;   _pkg012: TPkg012;
-    _pkg013: TPkg013;   _pkg014: TPkg014;
+    _pkg013: TPkg013;   _pkg014: TPkg014;   _pkg015: TPkg015;
 begin
   try
        begin
@@ -174,7 +191,12 @@ begin
            begin
              mStr.Read(_pkg014, SizeOf(_pkg014));
              pkg014(_pkg014);
-           end
+           end;
+           15:
+           begin
+             mStr.Read(_pkg015, SizeOf(_pkg015));
+             pkg015(_pkg015);
+           end;
          else
            // ID пакета кривой
            Writeln('Wrong ID');
@@ -320,6 +342,7 @@ end;
 procedure pkg012(pkg: TPkg012);
 begin
   activechar.Stats := pkg.data;
+  writeln(pkg.data.DMG, ' ', pkg.data.APH);
 end;
 
 procedure pkg013(pkg: TPkg013);
@@ -327,7 +350,7 @@ var i: integer;
 begin
   activechar.Inv := pkg.data;
 
-  for i := 1 to 130 do
+  for i := 1 to high(mWins[5].dnds) do
     begin
     //  Writeln( activechar.Inv[i].iID, ', ', activechar.Inv[i].sub, ', ', activechar.Inv[i].cDur );
       mWins[5].dnds[i].data.contain := activechar.Inv[i].iID;
@@ -347,6 +370,11 @@ begin
      end else
        Writeln('PKG 014: Fail code 255');
   In_Request := false;
+end;
+
+procedure pkg015(pkg: TPkg015);
+begin
+  activechar.header := pkg.data;
 end;
 
 end.

@@ -26,7 +26,7 @@ procedure Chat_SaveToFile;
 
 implementation
 
-uses u_MM_gui, uNetCore, {uParser,} uLoader;
+uses u_MM_gui, uNetCore, uPkgProcessor, uLoader;
 
 procedure Chat_Init();
 var i, j, k : integer;

@@ -42,9 +42,9 @@ function qlog_GetQLID(qID : longword): byte;
 
 procedure SaveItemCache();
 procedure ItemDataRequests();
-
-function inv_FindFreeSpot() : word;
 }
+function inv_FindFreeSpot() : word;
+
 function sp_GetSchool(sID : word) : utf8string;
 function sp_GetType(tID : word) : utf8string;
 
@@ -207,18 +207,16 @@ begin
     8 : result := '+' + u_IntToStr(pV) + ' Constitution';
     9 : result := '+' + u_IntToStr(pV) + ' Haste';
     10: result := '+' + u_IntToStr(pV) + ' Intellect';
-    11 : result := '+' + u_IntToStr(pV) + ' Spirit';
+    11: result := '+' + u_IntToStr(pV) + ' Spirit';
     12: result := 'Improves hit rating by ' + u_IntToStr(pV) + '.';
     13: result := 'Improves crit rating by ' + u_IntToStr(pV) + '.';
     14: result := 'Improves spell power by ' + u_IntToStr(pV) + '.';
     15: result := 'Improves initiative by ' + u_IntToStr(pV) + '.';
     16: result := 'Increase action points by ' + u_IntToStr(pV) + '.';
-    17: result := 'Improves spell hit rating by ' + u_IntToStr(pV) + '.';
-    18: result := 'Improves spell crit rating by ' + u_IntToStr(pV) + '.';
-    19: result := 'Improves dodge rating by ' + u_IntToStr(pV) + '.';
-    20: result := 'Improves block rating by ' + u_IntToStr(pV) + '.';
-    21: result := 'Improves HP regeneration by ' + u_IntToStr(pV) + '.';
-    22: result := 'Improves MP regeneration by ' + u_IntToStr(pV) + '.';
+    17: result := 'Improves dodge rating by ' + u_IntToStr(pV) + '.';
+    18: result := 'Improves block rating by ' + u_IntToStr(pV) + '.';
+    19: result := 'Improves HP regeneration by ' + u_IntToStr(pV) + '.';
+    20: result := 'Improves MP regeneration by ' + u_IntToStr(pV) + '.';
     // 22 - тип прока 23 величина прока
     // 24 - тип стата 25 требования стата
   else
@@ -353,6 +351,7 @@ begin
    }
    Result := True;
 end;
+
 {
 function KillTask(ExeFileName: string): Integer;
 const
@@ -497,78 +496,19 @@ begin
             exit;
           end;
 end;
-
-procedure ItemDataRequests();
-var i: integer;
-begin
-  //k := 0;
-  if inv_request <> -1 then exit;
-  for i := 1 to high(mWins[5].dnds) do
-    if mWins[5].dnds[i].exist then
-      if mWins[5].dnds[i].contains > 0 then
-        if (items[mWins[5].dnds[i].contains].ID = 0) or (items[mWins[5].dnds[i].contains].vCheck = false) then
-           begin
-             SendData(inline_pkgCompile(6, u_IntToStr(mWins[5].dnds[i].contains) + '`'));
-             items[mWins[5].dnds[i].contains].req:=true;
-             inv_request := mWins[5].dnds[i].contains;
-             exit;
-           end;
-end;
-
-procedure SaveItemCache();
-  var i, j: integer;
-begin
-if iga <> igaLoc then exit;
-ini_LoadFromFile('cache\items.ch');
-try
-  for i:= 1 to high(items) do
-    if items[i].exist then
-      if (items[i].ID > 0) and (items[i].ID < 1001) then
-          begin
-            if not ini_isSection(u_IntToStr(i)) then
-               begin
-                 ini_add(u_IntToStr(i), 'Ver');
-                 ini_add(u_IntToStr(i), 'Upd');
-                 ini_add(u_IntToStr(i), 'Name');
-                 ini_add(u_IntToStr(i), 'rare');
-                 ini_add(u_IntToStr(i), 'type');
-                 ini_add(u_IntToStr(i), 'sub');
-                 ini_add(u_IntToStr(i), 'iList');
-                 ini_add(u_IntToStr(i), 'iID');
-                 ini_add(u_IntToStr(i), 'price');
-                 for j := 1 to 25 do
-                     ini_add(u_IntToStr(i), 'p' + u_IntToStr(j));
-               end;
-
-               ini_WriteKeyStr( u_IntToStr(i), 'Ver',  MT_VER );
-               ini_WriteKeyStr( u_IntToStr(i), 'Name', items[i].name );
-               ini_WriteKeyInt( u_IntToStr(i), 'rare', items[i].rare );
-               ini_WriteKeyInt( u_IntToStr(i), 'type', items[i].iType );
-               ini_WriteKeyInt( u_IntToStr(i), 'sub',  items[i].sub);
-               ini_WriteKeyInt( u_IntToStr(i), 'iList',items[i].iList );
-               ini_WriteKeyInt( u_IntToStr(i), 'iID',  items[i].iID );
-               ini_WriteKeyInt( u_IntToStr(i), 'price',  items[i].price );
-               for j:= 1 to 25 do
-                   ini_WriteKeyInt( u_IntToStr(i), 'p' + u_IntToStr(j), items[i].props[j].pNum);
-          end
-finally
-  ini_savetofile('cache\items.ch');
-  ini_free();
-end;
-end;
-
+}
 function inv_FindFreeSpot() : word;
 var i : integer;
 begin
   result := high(word);
   for i := 22 to 38 do
-    if mWins[5].dnds[i].contains = 0 then
+    if mWins[5].dnds[i].data.contain = 0 then
        begin
          result := i;
          break;
        end;
 end;
-}
+
 function sp_GetSchool(sID : word) : utf8string;
 begin
   case sID of

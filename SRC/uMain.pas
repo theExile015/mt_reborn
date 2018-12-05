@@ -260,10 +260,14 @@ begin
   if gs = gsGame then
      Chat_Update();
 
+{$R+}
+try
+  // запрос данных по предметам, при открытии инвентаря
   if igs = igsInv then
      begin
        if not in_request then
-       for i := 1 to 130 do
+       for i := 1 to high(mWins[5].dnds) do
+           if mWins[5].dnds[i].data.contain > 0 then
            if not items[mWins[5].dnds[i].data.contain].exist then
            if not items[mWins[5].dnds[i].data.contain].req then
               begin
@@ -272,7 +276,11 @@ begin
                 sleep(20);
               end;
      end;
-
+except
+  on e: ERangeError do Writeln('ERangeError :: uMain :: in_request ::', mWins[5].dnds[i].data.contain,
+        '::', i);
+end;
+{$R-}
   location_Update();
   myGUI_Update;
   SF_Update();

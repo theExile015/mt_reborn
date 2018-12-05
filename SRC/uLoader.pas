@@ -102,7 +102,7 @@ begin
   lScreen := tex_LoadFromFile( dirRes + 'Back03.jpg' );
 //------------------------------------------------
   tex_item_slots   := tex_LoadFromFile( dirUI + 'item_slots.png');
-  tex_SetFrameSize(tex_item_slots, 400 div 6, 67);
+  tex_SetFrameSize(tex_item_slots, tex_item_slots.Width div 6, tex_item_slots.Width div 6);
   tex_Skills       := tex_LoadFromFile( dirUI + 'skillflower.png' );
 //------------------------------------------------
   for i := 2 to 13 do

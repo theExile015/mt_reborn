@@ -19,6 +19,7 @@ procedure DoEnterTheWorld();
 procedure SendEnterTheWorld();
 procedure DoOpenInv();
 procedure DoItemRequest(ID: integer);
+procedure DoSwap(_from, _to: byte);
 
 implementation
 
@@ -203,6 +204,31 @@ finally
 end;
 end;
 
+procedure DoSwap(_from, _to: byte);
+var _pkg  : TPkg020;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+       _head._FLAG := $f;
+       _head._ID   := 20;
+
+       _pkg._from := _from;
+       _pkg._to   := _to;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
 
 end.
 

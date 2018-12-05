@@ -2,6 +2,7 @@ unit uMyGui;
 
 {$mode delphi}
 {$codepage utf8}
+
 interface
 
 uses
@@ -414,12 +415,12 @@ begin
  for i := high(mWins) downto 1 do
    if mWins[i].exist and mWins[i].visible then
      begin
-       Scissor_Begin(round(mWins[i].rect.X), round(mWins[i].rect.Y),
-                     round(mWins[i].rect.W), round(mWins[i].rect.H));
          if mWins[i].fType = 1 then frame := 255 else frame := 210;
-       {  pr2d_Rect(mWins[i].rect.X, mWins[i].rect.Y, mWins[i].rect.W, mWins[i].rect.H,
-                   frmPak[mWins[i].fType].bgr_color , frame, PR2D_FILL );   }
+         pr2d_Rect(mWins[i].rect.X + 3, mWins[i].rect.Y + 3, mWins[i].rect.W - 6, mWins[i].rect.H - 6,
+                   frmPak[mWins[i].fType].bgr_color , frame, PR2D_FILL );
          // горизонтальные границы формы
+     Scissor_Begin(round(mWins[i].rect.X + frmPak[mWins[i].fType].c), round(mWins[i].rect.Y),
+                   round(mWins[i].rect.W - 2 * frmPak[mWins[i].fType].c), round(mWins[i].rect.H));
          for j := 0 to trunc(mWins[i].rect.W / frmPak[mWins[i].fType].w) do
            begin
              SSprite2d_Draw( frmPak[mWins[i].fType].brd, mWins[i].rect.X + frmPak[mWins[i].fType].c + j * frmPak[mWins[i].fType].h,
@@ -429,7 +430,10 @@ begin
                              mWins[i].rect.Y - frmPak[mWins[i].fType].dy - frmPak[mWins[i].fType].dy2 + mWins[i].rect.H,
                              frmPak[mWins[i].fType].w, frmPak[mWins[i].fType].h, 90, 255, FX2D_FLIPX );
            end;
+     Scissor_End();
          // вертикальные границы формы
+     Scissor_Begin(round(mWins[i].rect.X), round(mWins[i].rect.Y + frmPak[mWins[i].fType].c),
+                   round(mWins[i].rect.W), round(mWins[i].rect.H - 2 * frmPak[mWins[i].fType].c));
          for j := 0 to trunc(mWins[i].rect.H / frmPak[mWins[i].fType].h) do
            begin
              SSprite2d_Draw( frmPak[mWins[i].fType].brd, mWins[i].rect.X,
@@ -439,6 +443,8 @@ begin
                              mWins[i].rect.Y + frmPak[mWins[i].fType].c + j * frmPak[mWins[i].fType].h ,
                              frmPak[mWins[i].fType].w, frmPak[mWins[i].fType].h, 180, 255);
            end;
+     Scissor_End();
+
          // углы
          SSprite2d_Draw( frmPak[mWins[i].fType].crn, mWins[i].rect.X,
                          mWins[i].rect.Y,
@@ -452,8 +458,6 @@ begin
          SSprite2d_Draw( frmPak[mWins[i].fType].crn, mWins[i].rect.X  + mWins[i].rect.W - frmPak[mWins[i].fType].c,
                          mWins[i].rect.Y  + mWins[i].rect.H - frmPak[mWins[i].fType].c,
                          frmPak[mWins[i].fType].c, frmPak[mWins[i].fType].c, 180);
-         Scissor_End();
-
           // отрисовка карты
          if mWins[i].Name = 'Map' then
             begin
@@ -1087,8 +1091,8 @@ begin
        mWins[5].texts[32].Text:=u_IntToStr(activechar.Stats.Int);  // инт
        mWins[5].texts[33].Text:=u_IntToStr(activechar.Stats.Spi);  // спи
 
-       mWins[5].texts[34].Text:=u_IntToStr(round(activechar.iDMG/10 * activechar.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.iDMG/10 * activechar.APH * 1.1));  // дмг
-       mWins[5].texts[35].Text:=u_IntToStr(activechar.APH);  // апх
+       mWins[5].texts[34].Text:=u_IntToStr(round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
+       mWins[5].texts[35].Text:=u_IntToStr(activechar.Stats.APH);  // апх
        mWins[5].texts[36].Text:=u_FloatToStr(15/9) + '%';  // хит
        mWins[5].texts[37].Text:=u_FloatToStr(16/10) + '%';  // крит
        for i := 6 to 21 do
@@ -1099,10 +1103,10 @@ begin
        if (Items[n].data.iType >= 1) and (Items[n].data.iType < 7) then
           if mWins[5].dnds[6].data.contain > 0 then
              begin
-             { i := inv_FindFreeSpot();
-               SendData(inline_PkgCompile(29, u_IntToStr(6) + '`' + u_IntToStr(i) + '`'));
+               i := inv_FindFreeSpot();
+               DoSwap(6, i);
                Chat_AddMessage(ch_tab_curr, 'S', 'You can''t use that item with two-handed weapon.');
-               mWins[5].dnds[6].contains := 0;  }
+               mWins[5].dnds[6].data.contain := 0;
              end;
      end;
 
@@ -1112,7 +1116,7 @@ begin
        mWins[6].texts[2].Text:= GetRaceName(activechar.header.raceID);
        mWins[6].texts[3].Text:= u_IntToStr(activechar.header.level) + ' level ';
        mWins[6].texts[5].Text:= GetClassNameS(activechar.header.classID);
-     //  mWins[6].texts[4].Text:= 'Exp.:' + u_FloatToStr(activechar.exp/exp_cap[activechar.level + 1]*100) + '%';
+       mWins[6].texts[4].Text:= 'Exp.:' + u_FloatToStr(activechar.numbers.exp/exp_cap[activechar.header.level + 1]*100) + '%';
 
        mWins[6].texts[22].Text:=u_IntToStr(activechar.hpmp.mHP);  // хп
        mWins[6].texts[23].Text:=u_IntToStr(activechar.hpmp.mMP);  // мп
@@ -1137,8 +1141,8 @@ begin
             mWins[6].texts[20].Text := 'Hit';
             mWins[6].texts[21].Text := 'Crit';
 
-            mWins[6].texts[34].Text:=u_IntToStr(round(activechar.iDMG/10 * activechar.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.iDMG/10 * activechar.APH * 1.1));  // дмг
-            mWins[6].texts[35].Text:=u_IntToStr(activechar.APH);  // апх
+            mWins[6].texts[34].Text:=u_IntToStr(round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
+            mWins[6].texts[35].Text:=u_IntToStr(activechar.Stats.APH);  // апх
             mWins[6].texts[36].Text:=u_FloatToStr(15/9) + '%';    // крит
             mWins[6].texts[37].Text:=u_FloatToStr(16/13) + '%';   // хит
 
@@ -1153,8 +1157,8 @@ begin
             mWins[5].texts[20].Text := 'HIT';
             mWins[5].texts[21].Text := 'CRIT';
 
-            mWins[5].texts[34].Text:=u_IntToStr(round(activechar.iDMG/10 * activechar.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.iDMG/10 * activechar.APH * 1.1));  // дмг
-            mWins[5].texts[35].Text:=u_IntToStr(activechar.APH);  // апх
+            mWins[5].texts[34].Text:=u_IntToStr(round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
+            mWins[5].texts[35].Text:=u_IntToStr(activechar.Stats.APH);  // апх
             mWins[5].texts[36].Text:=u_FloatToStr(15/9) + '%';    // крит
             mWins[5].texts[37].Text:=u_FloatToStr(16/13) + '%';   // хит
 
@@ -1267,7 +1271,7 @@ begin
                  begin
                    if ((mWins[5].dnds[i].data.ddSubType = ddItem.data.ddSubType) or (mWins[5].dnds[i].data.ddSubType = 6))then
                       begin
-                        // SendData(inline_PkgCompile(29, u_IntToStr(ddIndex) + '`' + u_IntToStr(i) + '`'));
+                        DoSwap(ddIndex, i);
                         ddIndex := 0;
                         ddWin := 0;
                         on_DD := false;
@@ -1282,16 +1286,18 @@ begin
                  begin
                    if ((mWins[5].dnds[i].data.ddSubType = ddItem.data.ddSubType) or (mWins[5].dnds[i].data.ddSubType = 6))then
                       begin
-                     //   n := inv_FindFreeSpot;
-                     {   if n <> high(word) then
+                        Writeln('Swap 1');
+                        n := inv_FindFreeSpot;
+                        Writeln(n);
+                        if n <> high(word) then
                         begin
-                          SendData(inline_PkgCompile(29, u_IntToStr(i) + '`' + u_IntToStr(n) + '`'));
+                          DoSwap(i, n);
                           sleep(50);
-                          SendData(inline_PkgCompile(29, u_IntToStr(ddIndex) + '`' + u_IntToStr(i) + '`'));
+                          DoSwap(ddIndex, i);
                           sleep(50);
-                          SendData(inline_PkgCompile(29, u_IntToStr(n) + '`' + u_IntToStr(ddIndex) + '`'));
+                          DoSwap(n, ddIndex);
                         end;
-                     }   ddIndex := 0;
+                        ddIndex := 0;
                         ddWin := 0;
                         on_DD := false;
                       end else
@@ -1544,16 +1550,16 @@ begin
 
     36:
     begin
-      d1 := trunc(activechar.Stats.Str/50 * activechar.APH);
-      d2 := trunc(activechar.Stats.Str/ 2 / 50 * activechar.APH);
-      d3 := trunc(m_Sin(activechar.APH) * activechar.Stats.Str / 2 );
+      d1 := trunc(activechar.Stats.Str/50 * activechar.Stats.APH);
+      d2 := trunc(activechar.Stats.Str/ 2 / 50 * activechar.Stats.APH);
+      d3 := trunc(m_Sin(activechar.Stats.APH) * activechar.Stats.Str / 2 );
       mWins[2].texts[1].Text := AnsiToUTF8(format(STT[11], [activechar.Stats.Str]));
       mWins[2].texts[2].Text := AnsiToUTF8(format(STD[11], [d1, d2, d3]));
     end;
     37:
     begin
-      d1 := trunc(activechar.Stats.agi/50 * activechar.APH);
-      d2 := trunc(activechar.Stats.agi/ 2 / 50 * activechar.APH);
+      d1 := trunc(activechar.Stats.agi/50 * activechar.Stats.APH);
+      d2 := trunc(activechar.Stats.agi/ 2 / 50 * activechar.Stats.APH);
       d3 := trunc(activechar.Stats.agi / 1.5 );
       mWins[2].texts[1].Text := AnsiToUTF8(format(STT[12], [activechar.Stats.Agi]));
       mWins[2].texts[2].Text := AnsiToUTF8(format(STD[12], [d1, d2, d3]));
@@ -1603,8 +1609,8 @@ begin
     begin
       if stat_tab = 0 then
          begin
-           d1 := round(activechar.iDMG/10 * activechar.APH + 1);
-           d2 := 2 + round(activechar.iDMG/10 * activechar.APH * 1.1);
+           d1 := round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1);
+           d2 := 2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1);
            mWins[2].texts[1].Text := AnsiToUTF8(format(STT[17], [d1, d2]));
            mWins[2].texts[2].Text := STD[17];
          end;
@@ -1624,7 +1630,7 @@ begin
     begin
       if stat_tab = 0 then
          begin
-           mWins[2].texts[1].Text := AnsiToUTF8(format(STT[18], [activechar.APH]));
+           mWins[2].texts[1].Text := AnsiToUTF8(format(STT[18], [activechar.Stats.APH]));
            mWins[2].texts[2].Text := STD[18];
          end;
       if stat_tab = 1 then
@@ -1760,8 +1766,7 @@ var fH, fW, tH: single;
 begin
  // Writeln('Debug 1');
   if (iID < 1) or (iID > 1000) then Exit;
-  // if items[iID].proc then Exit;
-  // if items[iID].req then Exit;
+  if items[iID].req then Exit;
 {  if (items[iID].data.ID = 0) then
      begin
        items[iID].req:=true;
@@ -1816,7 +1821,8 @@ begin
        mWins[4].texts[3].rect.X := 0;
        mWins[4].texts[3].rect.Y := tH;
        mWins[4].texts[3].Text:= u_IntToStr(round(1 + items[iID].data.props[2] / 10 * items[iID].data.props[4])) +
-                                ' - ' + u_IntToStr(2 + round(items[iID].data.props[2] / 10 * items[iID].data.props[4] * 1.1)) +
+                                ' - ' +
+                                u_IntToStr(2 + round(items[iID].data.props[2] / 10 * items[iID].data.props[4] * 1.1)) +
                                 ' Damage';
        mWins[4].texts[3].visible:=true;
 
@@ -1824,7 +1830,7 @@ begin
        mWins[4].texts[4].rect.H := fH;
        mWins[4].texts[4].rect.X := fW - 10 - text_GetWidth(fntMain, IntToStr(Items[iID].data.props[4]));
        mWins[4].texts[4].rect.Y := tH;
-       mWins[4].texts[4].Text:= IntToStr(Items[iID].data.props[4]);
+       mWins[4].texts[4].Text:= itt_GetProperty(4, Items[iID].data.props[4]);
        mWins[4].texts[4].visible:=true;
        tH := tH + fH
      end;
@@ -1849,7 +1855,7 @@ begin
        mWins[4].texts[4].rect.H := fH;
        mWins[4].texts[4].rect.X := 0 ;
        mWins[4].texts[4].rect.Y := tH;
-       mWins[4].texts[4].Text:= IntToStr(Items[iID].data.props[5]);
+       mWins[4].texts[4].Text:= itt_GetProperty(5, Items[iID].data.props[5]);
        mWins[4].texts[4].visible:=true;
        tH := tH + fH
      end;
@@ -1873,7 +1879,7 @@ begin
        mWins[4].texts[5].rect.H := fH;
        mWins[4].texts[5].rect.X := 0;
        mWins[4].texts[5].rect.Y := tH;
-       mWins[4].texts[5].Text:= IntToStr(Items[iID].data.props[1]);
+       mWins[4].texts[5].Text:= itt_GetProperty(1, Items[iID].data.props[1]);
        mWins[4].texts[5].visible:=true;
        tH := tH + fH
      end;
@@ -1885,7 +1891,7 @@ begin
        mWins[4].texts[35].rect.H := fH;
        mWins[4].texts[35].rect.X := 0;
        mWins[4].texts[35].rect.Y := tH;
-       mWins[4].texts[35].Text:= IntToStr(Items[iID].data.props[3]);
+       mWins[4].texts[35].Text:= itt_GetProperty(3, Items[iID].data.props[3]);
        if items[iID].data.props[3] > activechar.header.level then
           mWins[4].texts[35].color:=$CC0000;
        mWins[4].texts[35].visible:=true;
@@ -1900,7 +1906,7 @@ begin
          mWins[4].texts[6 + i].rect.H := fH;
          mWins[4].texts[6 + i].rect.X := 0;
          mWins[4].texts[6 + i].rect.Y := tH;
-         mWins[4].texts[6 + i].Text:= IntToStr(Items[iID].data.props[6 + i]);
+         mWins[4].texts[6 + i].Text:= itt_GetProperty(6 + i, Items[iID].data.props[6 + i]);
          mWins[4].texts[6 + i].visible:=true;
          tH := tH + fH
        end;
@@ -1916,7 +1922,7 @@ begin
             mWins[4].texts[12 + i].rect.H := fH;
          mWins[4].texts[12 + i].rect.X := 0;
          mWins[4].texts[12 + i].rect.Y := tH;
-         mWins[4].texts[12 + i].Text:= IntToStr(Items[iID].data.props[12 + i]);
+         mWins[4].texts[12 + i].Text:= itt_GetProperty(12 + i, Items[iID].data.props[12 + i]);
          mWins[4].texts[12 + i].visible:=true;
          mWins[4].texts[12 + i].rect.W := fW;
          mWins[4].texts[12 + i].color:= $00DD00;
@@ -1956,7 +1962,7 @@ var fH, fW, tH: single;
     s : utf8string;
 begin
   if not (sID in [1..100]) then Exit;
-  // if items[sID].req then Exit;
+  if items[sID].req then Exit;
   { if (items[sID].ID = 0) or (items[iID].vCheck = false) then
      begin
        items[sID].req:=true;
@@ -2032,15 +2038,15 @@ begin
        s := '';
        case sID of
          1 : s := u_IntToStr(spells[sID].AP_cost);
-         2 : s := u_IntToStr(spells[sID].AP_Cost + activechar.APH);
-         3 : s := u_IntToStr(activechar.APH);
-         4 : s := u_IntToStr(activechar.APH + spells[sID].AP_Cost);
+         2 : s := u_IntToStr(spells[sID].AP_Cost + activechar.Stats.APH);
+         3 : s := u_IntToStr(activechar.Stats.APH);
+         4 : s := u_IntToStr(activechar.Stats.APH + spells[sID].AP_Cost);
          5 : s := u_IntToStr(spells[sID].AP_cost);
          6 : s := u_IntToStr(spells[sID].AP_cost);
          7 : s := u_IntToStr(spells[sID].AP_cost);
          8 : s := u_IntToStr(spells[sID].AP_cost);
          9 : s := u_IntToStr(spells[sID].AP_Cost);
-         10: s := u_IntToStr(trunc(activechar.APH * 0.75));
+         10: s := u_IntToStr(trunc(activechar.Stats.APH * 0.75));
          11: s := u_IntToStr(spells[sID].AP_Cost);
          12: s := u_IntToStr(spells[sID].AP_Cost);
          93: s := u_IntToStr(spells[sID].AP_Cost);
@@ -2388,30 +2394,32 @@ end;
 
 procedure mGui_Init;
 var i, j: integer ;
+    ItemCache : zglTFile;
+    data      : TItemData;
 begin
-  ini_LoadFromFile('cache\items.ch');
-       { НОВЫЙ КЭШ
-  for i := 1 to 1000 do
-    if ini_issection(u_IntToStr(i)) then
-       begin
-         items[i].exist := true;
-         items[i].ID := i;
-         items[i].name := ini_ReadKeyStr( u_IntToStr(i), 'Name' );
-         items[i].rare := ini_ReadKeyInt( u_IntToStr(i), 'rare' );
-         items[i].iType := ini_ReadKeyInt( u_IntToStr(i), 'type' );
-         items[i].sub := ini_ReadKeyInt( u_IntToStr(i), 'sub' );
-         items[i].iID := ini_ReadKeyInt( u_IntToStr(i), 'iID' );
-         items[i].price := ini_ReadKeyInt( u_IntToStr(i), 'price' );
-         if items[i].props[i].pType < 25 then
-            for j := 1 to length(items[i].props) do
-              begin
-                items[i].props[j].pType := j;
-                items[i].props[j].pNum := ini_ReadKeyInt( u_IntToStr(i), 'p' + u_IntToStr(j));
-                items[i].props[j].pStr := itt_GetProperty( items[i].props[j].pType, items[i].props[j].pNum );
-              end;
-       end;  }
+{$R+}
+try
+  if File_Exists('Cache\items.idb') then
+     begin
+       File_Open(ItemCache, 'Cache\items.idb', FOM_OPENR);
 
-  ini_free();
+       if file_GetSize(ItemCache) >= sizeof(data) then
+       while file_getpos(ItemCache) < file_getsize(ItemCache) do
+       begin
+        // Writeln(file_getpos(itemcache), '/', file_getsize(itemcache));
+         file_Read(ItemCache, data, sizeof(data));
+         if data.ID <> 0 then
+            begin
+              Items[data.ID].exist:= true;
+              Items[data.ID].data := data;
+            end;
+       end;
+     end else file_open(itemCache, 'Cache\items.idb', FOM_CREATE);
+except
+  On e: ERangeError do writeln('ERangeError :: uMyGui :: CacheLoad' );
+end;
+  File_Close(ItemCache);
+{$R-}
 
   items[1000].exist:=true;
   items[1000].data.iID:=9;
