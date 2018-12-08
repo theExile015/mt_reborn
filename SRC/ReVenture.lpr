@@ -32,6 +32,8 @@ end;
 procedure Draw;
 begin
   Game_Render;
+  Text_Draw( fntMain, scr_w - 50, scr_h - 20, u_IntToStr(zgl_Get(RENDER_FPS)) );
+  Text_Draw( fntMain, scr_w - 50, scr_h - 40, u_IntToStr(zgl_Get(RENDER_BATCHES_2D)) );
 end;
 
 procedure Loader;
@@ -50,6 +52,8 @@ begin
 
   video_Update( video, 25, TRUE );
   Gui.Update(12);
+
+  if Key_Press(K_F11) then RunLUAScript('gui.lua');
 
   key_ClearState();
   mouse_ClearState();
@@ -76,7 +80,7 @@ try
   zgl_Reg( SYS_DRAW,   @Draw );
   zgl_Reg( SYS_EXIT,   @Exit );
 
-  wnd_SetCaption( 'Re:Venture ');
+  wnd_SetCaption( 'Re:Venture' );
   wnd_ShowCursor(false);
 
   scr_SetOptions( scr_w, scr_h, REFRESH_MAXIMUM, f_scr, FALSE );

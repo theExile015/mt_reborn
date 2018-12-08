@@ -57,7 +57,7 @@ var
   // Stat title and description
   STT, STD : array [1..30] of UTF8String;
   // Perk title and description
-  PT, PD : array [1..80] of UTF8String;
+  PT, PD : array [1..200] of UTF8String;
   // Spell title and description
   ST, SD : array [1..99] of UTF8String;
 
@@ -132,7 +132,7 @@ begin
         STD[i] := ini_ReadKeyStr('STATS', 'STD' + u_IntToStr(i));
       end else Log_Add('NO SECTION');
 
-  for i := 1 to 80 do
+  for i := 1 to 200 do
     if ini_IsSection('PERKS') then
       begin
         PT[i] := ini_ReadKeyStr('PERKS', 'PT' + u_IntToStr(i));

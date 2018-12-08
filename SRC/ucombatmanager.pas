@@ -41,8 +41,6 @@ begin
   for i := 1 to high(cText) do
       cText[i].exist:=false;
 
-
-
   for i := 1 to length(units) - 1 do
       begin
         units[i].exist:= false;
@@ -74,7 +72,7 @@ begin
 
   step_ap  := 5;
   m_omo := false;
-
+  batch2d_Begin();
   for i := 1 to 19 do
       for j := 1 to 19 do
           begin
@@ -121,8 +119,7 @@ begin
                            end ;
                end;
           end;
-
-  Unit_Draw(1);
+  Batch2d_End();
 end;
 
 procedure Combat_GUI_Draw;

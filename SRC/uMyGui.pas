@@ -16,6 +16,7 @@ uses
 
 
 function mgui_AddWindow( fType: integer; name : utf8string; rect : zglTRect) : byte;
+function mgui_AddLine( Parent: byte; x1, y1, x2, y2: single; color: DWORD; alpha: byte) : byte;
 function mgui_AddButton( Parent, TexID: byte; Caption : utf8string; rect: zglTRect) : byte;
 function mgui_AddText( Parent, Orient: byte; Text: utf8string; rect: zglTRect; color: longword) : byte;
 function mgui_AddImg( parent, iType: byte; rect : zglTRect; texID : utf8string) : byte;
@@ -57,6 +58,31 @@ begin
        if not (mWins[i].fType in [1..3]) then mWins[i].fType := 1;
        mWins[i].rect := rect;
        mWins[i].Name:=name;
+       result := i;
+       break;
+     end;
+end;
+
+function mgui_AddLine( Parent: byte; x1, y1, x2, y2: single; color: DWORD; alpha: byte) : byte;
+var i: integer;
+begin
+ result := 0;
+ if not mWins[Parent].exist then
+     begin
+       Log_Add( '::: GUI ERROR ::: >>> Parent form #' + u_IntToStr(Parent) + ' doesn''t exist. AddLine');
+       exit;
+     end;
+
+ for i := 1 to high(mWins[Parent].lines) do
+   if not mWins[parent].lines[i].exist then
+     begin
+       mWins[parent].lines[i].exist:=true;
+       mWins[parent].lines[i].x1:= x1;
+       mWins[parent].lines[i].x2:= x2;
+       mWins[parent].lines[i].y1:= y1;
+       mWins[parent].lines[i].y2:= y2;
+       mWins[parent].lines[i].color:=color;
+       mWins[parent].lines[i].alpha:=alpha;
        result := i;
        break;
      end;
@@ -272,7 +298,7 @@ begin
      if activechar.Numbers.SP > 0 then
        // SendData(inline_PkgCompile(50, activechar.Name + '`' + u_IntToStr(sender - 5) + '`'))
      else
-        Chat_AddMessage(3, 'S', 'Not enough SP to increase.');
+        Chat_AddMessage(3, high(word), 'Not enough SP to increase.');
 
   if (parent = 6) and (sender = 11) then stat_tab := 0;
   if (parent = 6) and (sender = 12) then stat_tab := 1;
@@ -415,6 +441,7 @@ begin
  for i := high(mWins) downto 1 do
    if mWins[i].exist and mWins[i].visible then
      begin
+       Batch2d_Begin();
          if mWins[i].fType = 1 then frame := 255 else frame := 210;
          pr2d_Rect(mWins[i].rect.X + 3, mWins[i].rect.Y + 3, mWins[i].rect.W - 6, mWins[i].rect.H - 6,
                    frmPak[mWins[i].fType].bgr_color , frame, PR2D_FILL );
@@ -458,6 +485,7 @@ begin
          SSprite2d_Draw( frmPak[mWins[i].fType].crn, mWins[i].rect.X  + mWins[i].rect.W - frmPak[mWins[i].fType].c,
                          mWins[i].rect.Y  + mWins[i].rect.H - frmPak[mWins[i].fType].c,
                          frmPak[mWins[i].fType].c, frmPak[mWins[i].fType].c, 180);
+     Batch2d_End();
           // отрисовка карты
          if mWins[i].Name = 'Map' then
             begin
@@ -496,7 +524,14 @@ begin
                   end;
                 Scissor_End();
             end;
-
+         // отрисовка линий
+         for j := 1 to high(mWins[i].lines) do
+           if mWins[i].lines[j].exist then
+              pr2d_Line( mWins[i].rect.X + mWins[i].lines[j].x1 + frmPak[mWins[i].fType].w,
+                         mWins[i].rect.Y + mWins[i].lines[j].y1 + frmPak[mWins[i].fType].w,
+                         mWins[i].rect.X + mWins[i].lines[j].x2 + frmPak[mWins[i].fType].w,
+                         mWins[i].rect.Y + mWins[i].lines[j].y2 + frmPak[mWins[i].fType].w,
+                         mWins[i].lines[j].color, mWins[i].lines[j].alpha );
 
          // отрисовка кнопок
          for j := 1 to high(mWins[i].btns) do
@@ -592,7 +627,7 @@ begin
                FLAG := TEXT_HALIGN_JUSTIFY or TEXT_VALIGN_TOP;
                if mWins[i].texts[j].center = 1 then FLAG := TEXT_HALIGN_CENTER or TEXT_VALIGN_CENTER;
                if mWins[i].texts[j].center = 2 then FLAG := TEXT_HALIGN_RIGHT or TEXT_VALIGN_TOP;
-
+                       // замена на троеточия.....
                if (Text_GetWidth(fntMain, mWins[i].texts[j].Text) > mWins[i].texts[j].rect.W - 5) and
                   (Text_GetHeight(fntMain, mWins[i].texts[j].rect.W, mWins[i].texts[j].Text) > mWins[i].texts[j].rect.H) then
                   begin
@@ -614,7 +649,7 @@ begin
                                   FLAG );
                Scissor_End();
                // Отрисовка ограничивающей рамки (debug)
-            {  pr2d_rect(  mWins[i].rect.X + mWins[i].texts[j].rect.X + frmPak[mWins[i].fType].w,
+              {pr2d_rect(  mWins[i].rect.X + mWins[i].texts[j].rect.X + frmPak[mWins[i].fType].w,
                                   mWins[i].rect.Y + mWins[i].texts[j].rect.Y + frmPak[mWins[i].fType].w,
                                   mWins[i].texts[j].rect.W, mWins[i].texts[j].rect.H , $00FF00);  }
              end;
@@ -1105,7 +1140,7 @@ begin
              begin
                i := inv_FindFreeSpot();
                DoSwap(6, i);
-               Chat_AddMessage(ch_tab_curr, 'S', 'You can''t use that item with two-handed weapon.');
+               Chat_AddMessage(ch_tab_curr, high(word), 'You can''t use that item with two-handed weapon.');
                mWins[5].dnds[6].data.contain := 0;
              end;
      end;
@@ -1137,9 +1172,9 @@ begin
             mWins[6].texts[41].Text := 'Combat Stats';
 
             mWins[6].texts[18].Text := 'Damage';
-            mWins[6].texts[19].Text := 'AP/Hit';
-            mWins[6].texts[20].Text := 'Hit';
-            mWins[6].texts[21].Text := 'Crit';
+            mWins[6].texts[19].Text := 'AP per hit';
+            mWins[6].texts[20].Text := 'Hit rate';
+            mWins[6].texts[21].Text := 'Crit rate';
 
             mWins[6].texts[34].Text:=u_IntToStr(round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
             mWins[6].texts[35].Text:=u_IntToStr(activechar.Stats.APH);  // апх
@@ -1152,10 +1187,10 @@ begin
 
             mWins[5].texts[38].Text := 'Combat Stats';
 
-            mWins[5].texts[18].Text := 'DMG';
-            mWins[5].texts[19].Text := 'APH';
-            mWins[5].texts[20].Text := 'HIT';
-            mWins[5].texts[21].Text := 'CRIT';
+            mWins[5].texts[18].Text := 'Damage';
+            mWins[5].texts[19].Text := 'AP per hit';
+            mWins[5].texts[20].Text := 'Hit rate';
+            mWins[5].texts[21].Text := 'Crit rate';
 
             mWins[5].texts[34].Text:=u_IntToStr(round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
             mWins[5].texts[35].Text:=u_IntToStr(activechar.Stats.APH);  // апх
@@ -1318,7 +1353,7 @@ begin
          if puMenu.elements[i].exist then
             puMenu.elements[i].omo := col2d_PointInRect( Mouse_X, Mouse_Y, puMenu.elements[i].rect );
      end;
- {
+
    if mouse_click(M_BLEFT) then
      begin
       if puMenu.exist and (puMenu.eTime > 3) then
@@ -1334,9 +1369,9 @@ begin
                    end;
                 if puMenu.elements[i].omo and (puMenu.elements[i].action = 2)  then
                    begin      // запрос на дуэль
-                     if puMenu.sender = activechar.Name then exit;
-                     SendData(inline_pkgCompile(45, puMenu.sender + '`'));
-                     Chat_AddMessage(ch_tab_curr, 'S', 'You requested duel with ' + puMenu.sender);
+                     if puMenu.sender = activechar.header.Name then exit;
+                 //    SendData(inline_pkgCompile(45, puMenu.sender + '`'));
+                 //    Chat_AddMessage(ch_tab_curr, 'S', 'You requested duel with ' + puMenu.sender);
                    end;
               end;
 
@@ -1349,11 +1384,12 @@ begin
                 if puMenu.elements[i].omo and (puMenu.elements[i].action = 1) then
                    begin      // линк в чат
                      if puMenu.wID <> 11 then
-                        s := '{!:' + u_IntToStr(mWins[puMenu.wID].dnds[puMenu.sID].contains) + ':0:0:' + items[mWins[puMenu.wID].dnds[puMenu.sID].contains].name + '}{'
+                        s := '{!:' + u_IntToStr(mWins[puMenu.wID].dnds[puMenu.sID].data.contain) + ':0:0:' + items[mWins[puMenu.wID].dnds[puMenu.sID].data.contain].data.name + '}{'
                      else
-                        s := '{$:' + u_IntToStr(mWins[puMenu.wID].dnds[puMenu.sID].contains) + ':0:0:' + Spells[mWins[puMenu.wID].dnds[puMenu.sID].contains].name + '}{';
+                        s := ' {$:' + u_IntToStr(mWins[puMenu.wID].dnds[puMenu.sID].data.contain) + ':0:0:' + Spells[mWins[puMenu.wID].dnds[puMenu.sID].data.contain].name + '}{';
 
-                     if ch_message_inp then
+                   DoSendMsg(s);
+                  {  if ch_message_inp then
                         begin
                           if utf8_Length(eChatFrame.Caption + ' ' + s) < 90 then
                              eChatFrame.Caption := eChatFrame.Caption + ' ' + s ;
@@ -1363,16 +1399,13 @@ begin
                         end else
                         begin
                           ch_message_inp := true;
-                          Nonameframe38.Show;
-                          eChatFrame.Show;
-                          bChatSend.Show;
-                          eChatFrame.Caption := ' ' + s;
+                          eChatFrame.Caption := eChatFrame.Caption + ' ' + s;
                           eChatFrame.Focus;
                           echatFrame.SelectAll;
                           eChatFrame.DeleteSelection;
-                        end;
+                        end;  }
                    end;
-                if puMenu.elements[i].omo and (puMenu.elements[i].action = 2) then
+                {if puMenu.elements[i].omo and (puMenu.elements[i].action = 2) then
                    begin
                      SendData(inline_pkgCompile(47, u_IntToStr(mWins[puMenu.wID].dnds[puMenu.sID].contains) + '`' + puMenu.sender + '`1`'));
                      sleep(50);
@@ -1391,15 +1424,15 @@ begin
                      SendData(inline_pkgCompile(54, u_IntToStr(activechar.ID) + '`' + u_IntToStr(mWins[5].dnds[puMenu.sID].contains) + '`'));
                      sleep(50);
                      SendData(inline_PkgCompile(28, activechar.Name + '`'));
-                   end;
+                   end; }
               end;
            pum_close;
          end;
      end;
-  }
+
   if mouse_click(M_BRIGHT) then
      begin
-      // if  and (itt.eTime > 3) then itt.exist := false;
+       //if itt.  and (itt.eTime > 3) then itt.exist := false;
        if puMenu.exist and (puMenu.eTime > 3) then pum_close;
      end;
 
@@ -1407,9 +1440,9 @@ begin
     mWins[11].dnds[i].data.contain:= 0;
 
   n := 2;
-  for i := 1 to 7 do
+  for i := 0 to 6 do
     begin
-      if skills[i * 10].rank > 0 then
+      if skills[i * 25 + 1].rank > 0 then
          begin
            case i of
              1:
@@ -1675,7 +1708,7 @@ begin
   //  mWins[2].texts[2].Text:= LOREM;
   end;
                  {PERK DESCRIPTION}
-  if (sender > 100) and (sender < 200) then
+  if (sender > 100) and (sender < 300) then
      begin
        mWins[2].texts[4].visible:=false;
        mWins[2].texts[5].visible:=false;
@@ -1788,7 +1821,7 @@ begin
   if fW < 175 then fW := 175;
   fH := text_GetHeight( fntMain, 20, 'H');
   tH := fH;
-  mWins[4].rect.W:= fW + 10;
+  mWins[4].rect.W:= fW + 6;
   mWins[4].texts[1].rect.W := fW;
   mWins[4].texts[1].rect.H := fH;
   mWins[4].texts[1].rect.X := 0;
@@ -1826,9 +1859,9 @@ begin
                                 ' Damage';
        mWins[4].texts[3].visible:=true;
 
-       mWins[4].texts[4].rect.W := text_GetWidth(fntMain, IntToStr(Items[iID].data.props[4])) + 10;
+       mWins[4].texts[4].rect.W := text_GetWidth(fntMain, itt_GetProperty(4, Items[iID].data.props[4])) + 10;
        mWins[4].texts[4].rect.H := fH;
-       mWins[4].texts[4].rect.X := fW - 10 - text_GetWidth(fntMain, IntToStr(Items[iID].data.props[4]));
+       mWins[4].texts[4].rect.X := fW - 10 - text_GetWidth(fntMain, itt_GetProperty(4, Items[iID].data.props[4]));
        mWins[4].texts[4].rect.Y := tH;
        mWins[4].texts[4].Text:= itt_GetProperty(4, Items[iID].data.props[4]);
        mWins[4].texts[4].visible:=true;
@@ -1916,7 +1949,7 @@ begin
     if (items[iID].data.props[12 + i] > 0 ) then
        begin
          mWins[4].texts[12 + i].rect.W := fW;
-         if text_GetHeight(fntMain, fW, IntToStr(Items[iID].data.props[12 + i])) > fH then
+         if text_GetHeight(fntMain, fW, itt_GetProperty(12 + i, Items[iID].data.props[12 + i])) > fH then
             mWins[4].texts[12 + i].rect.H := fH * 2
          else
             mWins[4].texts[12 + i].rect.H := fH;
@@ -1926,7 +1959,7 @@ begin
          mWins[4].texts[12 + i].visible:=true;
          mWins[4].texts[12 + i].rect.W := fW;
          mWins[4].texts[12 + i].color:= $00DD00;
-         if text_GetHeight(fntMain, fW, IntToStr(Items[iID].data.props[12 + i])) > fH then
+         if text_GetHeight(fntMain, fW, itt_GetProperty(12 + i, Items[iID].data.props[12 + i])) > fH then
             tH := tH + fH * 2
          else
             tH := tH + fH;
@@ -2231,7 +2264,7 @@ begin
                     inc(rs1);
                     if Items[mWins[wID].dnds[sID].data.contain].data.props[7] = activechar.header.loc then
                        inc(rs2);
-                    Chat_AddMessage(0, 's', 'loc ' + IntToStr(rs2));
+                    Chat_AddMessage(0, high(word), 'loc ' + IntToStr(rs2));
                   end;
                if Items[mWins[wID].dnds[sID].data.contain].data.props[8] > 0 then
                   begin       // чекаем инвентарь

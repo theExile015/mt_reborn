@@ -1,6 +1,7 @@
 unit uXClick;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 
@@ -19,11 +20,14 @@ procedure DoEnterTheWorld();
 procedure SendEnterTheWorld();
 procedure DoOpenInv();
 procedure DoItemRequest(ID: integer);
+procedure DoPerkRequest();
 procedure DoSwap(_from, _to: byte);
+procedure DoSendMsg(msg: string);
+function DoWho(id : word): string;
 
 implementation
 
-uses u_MM_gui, uMyGui, uNetCore, uPkgProcessor;
+uses u_MM_gui, uMyGui, uNetCore, uPkgProcessor, uChat;
 
 procedure DoLogin();
 begin
@@ -180,6 +184,29 @@ finally
 end;
 end;
 
+procedure DoPerkRequest();
+var _pkg  : TPkg016;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+       _head._FLAG := $f;
+       _head._ID   := 16;
+       _pkg.fail_code:= 0;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+finally
+       mStr.Free;
+end;
+end;
+
 procedure DoItemRequest(ID: integer);
 var _pkg  : TPkg014;
     _head : TPackHeader;
@@ -214,6 +241,87 @@ begin
 
        _pkg._from := _from;
        _pkg._to   := _to;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure DoSendMsg(msg: string);
+var _pkg  : TPkg025;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+    s     : String;
+    i     : integer;
+begin
+  s := Chat_CatchPrivte( msg ) ;
+ // if Chat_CheckMessage( msg ) then //проверим сообщение
+  if s = '' then
+  begin
+     _pkg.channel := ch_tab_curr;
+     _pkg._from   := activechar.header.ID;
+     _pkg._to := high(word);;
+     _pkg.msg := msg;
+  end else
+  begin
+    _pkg._to     := 0;
+    _pkg.channel := 2;
+    _pkg._from   := activechar.header.ID;
+    for i := 1 to high(ch_tabs[ch_tab_curr].Members) do
+        if ch_tabs[ch_tab_curr].Members[i].Nick = s then
+           _pkg._to:= ch_tabs[ch_tab_curr].Members[i].charID;
+  end;
+  if _pkg._to = 0 then Exit; // кривой приват какой-то
+
+  _head._FLAG := $f;
+  _head._ID   := 25;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+function DoWho(id : word): string;
+var _pkg  : TPkg027;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+    i     : integer;
+begin
+  result := '';
+
+  for i := 1 to high(wholist) do
+      if wholist[i].id = id then
+         begin
+            result := wholist[i].name;
+            break;
+         end;
+
+  if result <> '' then Exit;
+
+  _head._FLAG := $f;
+  _head._ID   := 27;
+
+  _pkg._who := id;
 
 try
        mStr := TMemoryStream.Create;

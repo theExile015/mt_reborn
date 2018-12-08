@@ -44,10 +44,18 @@ begin
   texZero := tex_LoadFromFile( dirSys + 'zeroTex.png');
 
   // шрифты
-  fntMain := font_LoadFromFile( dirRes + 'font_1.zfi' );
-  fntMain2:= font_LoadFromFile( dirRes + 'font_2.zfi' );
-  fntCombat := font_LoadFromFile( dirRes + 'combat.zfi');
-  fntChat := font_LoadFromFile( dirRes + 'chat2.zfi' );
+  if file_OpenArchive('Data\fonts.zep') then
+     begin
+       fntMain := font_LoadFromFile( 'font_1.zfi' );
+       fntMain2:= font_LoadFromFile( 'font_2.zfi' );
+       fntCombat := font_LoadFromFile( 'combat.zfi');
+       fntChat := font_LoadFromFile( 'chat2.zfi' );
+     end else
+     begin
+       Writeln('Can''t open archive Chars.zep');
+       MessageBoxA( 0, 'Re: client seem to be broken.', 'Error', $00000010 );
+     end;
+  file_CloseArchive();
   // GUI
   gSkin := zglTGuiSkin.Create('Data\main.skin');
   Gui := zglTGui.Create(gSkin, 0, 0, scr_w, scr_h,
@@ -198,35 +206,37 @@ begin
         if file_OpenArchive('Data\Chars.zep') then
            begin
 
+             tex_Units[0, 0].head[1] := tex_loadFromFile( 'male_head1.png' );
+             tex_Units[0, 0].body[1] := tex_loadFromFile( 'male_clothes.png');
+             tex_Units[0, 0].body[2] := tex_loadFromFile( 'male_leather_armor.png');
+             tex_Units[0, 0].body[3] := tex_loadFromFile( 'male_steel_armor.png');
+             tex_Units[0, 0].MH[1] := tex_loadFromFile( 'male_dagger.png' );
+             tex_Units[0, 0].MH[2] := tex_loadFromFile( 'male_greatstaff.png' );
+             tex_Units[0, 0].MH[3] := tex_loadFromFile( 'male_greatsword.png' );
+             tex_Units[0, 0].MH[4] := tex_loadFromFile( 'male_shortbow.png' );
+             tex_Units[0, 0].MH[5] := tex_loadFromFile( 'male_shortsword.png' );
+             tex_Units[0, 0].OH[1] := tex_loadFromFile( 'male_buckler.png' );
+             tex_Units[0, 0].OH[2] := tex_loadFromFile( 'male_shield.png' );
 
-        tex_Units[0, 0].head[1] := tex_loadFromFile( 'male_head1.png' );
-        tex_Units[0, 0].body[1] := tex_loadFromFile( 'clothes.png');
-        tex_Units[0, 0].body[2] := tex_loadFromFile( 'leather_armor.png');
-        tex_Units[0, 0].body[3] := tex_loadFromFile( 'steel_armor.png');
-        tex_Units[0, 0].MH[1] := tex_loadFromFile( 'dagger.png' );
-        tex_Units[0, 0].MH[2] := tex_loadFromFile( 'greatstaff.png' );
-        tex_Units[0, 0].MH[3] := tex_loadFromFile( 'greatsword.png' );
-        tex_Units[0, 0].MH[4] := tex_loadFromFile( 'shortbow.png' );
-        tex_Units[0, 0].MH[5] := tex_loadFromFile( 'shortsword.png' );
-        tex_Units[0, 0].OH[1] := tex_loadFromFile( 'buckler.png' );
-        tex_Units[0, 0].OH[2] := tex_loadFromFile( 'shield.png' );
+             tex_Units[1, 0].head[1] := tex_loadFromFile( 'male_head_long.png' );
+             tex_Units[1, 0].body[1] := tex_loadFromFile( 'male_clothes.png');
+             tex_Units[1, 0].body[2] := tex_loadFromFile( 'male_leather_armor.png');
+             tex_Units[1, 0].body[3] := tex_loadFromFile( 'male_steel_armor.png');
+             tex_Units[1, 0].MH[1] := tex_loadFromFile( 'male_dagger.png' );
+             tex_Units[1, 0].MH[2] := tex_loadFromFile( 'male_greatstaff.png' );
+             tex_Units[1, 0].MH[3] := tex_loadFromFile( 'male_greatsword.png' );
+             tex_Units[1, 0].MH[4] := tex_loadFromFile( 'male_shortbow.png' );
+             tex_Units[1, 0].MH[5] := tex_loadFromFile( 'male_shortsword.png' );
+             tex_Units[1, 0].OH[1] := tex_loadFromFile( 'male_buckler.png' );
+             tex_Units[1, 0].OH[2] := tex_loadFromFile( 'male_shield.png' );
 
-        tex_Units[1, 0].head[1] := tex_loadFromFile( 'Chars\female\head_long.png' );
-        tex_Units[1, 0].body[1] := tex_loadFromFile( 'Chars\female\clothes.png');
-        tex_Units[1, 0].body[2] := tex_loadFromFile( 'Chars\female\leather_armor.png');
-        tex_Units[1, 0].body[3] := tex_loadFromFile( 'Chars\female\steel_armor.png');
-        tex_Units[1, 0].MH[1] := tex_loadFromFile( 'Chars\female\dagger.png' );
-        tex_Units[1, 0].MH[2] := tex_loadFromFile( 'Chars\female\greatstaff.png' );
-        tex_Units[1, 0].MH[3] := tex_loadFromFile( 'Chars\female\greatsword.png' );
-        tex_Units[1, 0].MH[4] := tex_loadFromFile( 'Chars\female\shortbow.png' );
-        tex_Units[1, 0].MH[5] := tex_loadFromFile( 'Chars\female\shortsword.png' );
-        tex_Units[1, 0].OH[1] := tex_loadFromFile( 'Chars\female\buckler.png' );
-        tex_Units[1, 0].OH[2] := tex_loadFromFile( 'Chars\female\shield.png' );
-
-        file_CloseArchive();
+             file_CloseArchive();
 
            end else
-               Writeln('Can''t open archive Chars.zep');
+               begin
+                 Writeln('Can''t open archive Chars.zep');
+                 MessageBoxA( 0, 'Re: client seem to be broken.', 'Error', $00000010 );
+               end;
 
 
         tex_setFrameSize( tex_Units[0, 0].head[1], 128, 128);

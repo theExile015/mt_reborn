@@ -43,6 +43,7 @@ begin
          for j := 1 to high(mWins[i].dnds) do mWins[i].dnds[j].exist:=false;
          for j := 1 to high(mWins[i].imgs) do mWins[i].imgs[j].exist:=false;
          for j := 1 to high(mWins[i].pbs) do mWins[i].pbs[j].exist:=false;
+         for j := 1 to high(mWins[i].lines) do mWins[i].lines[j].exist:=false;
        end;
 end;
 
@@ -73,6 +74,21 @@ begin
   w := Lua_ToNumber(lua_1, 6);
   h := Lua_ToNumber(lua_1, 7);
   result := mgui_AddButton(p, t, s, rect(x,y,w,h));
+end;
+
+function lua_mgui_AddLine() : byte;
+var x, y, x2, y2 : single;
+    p, a, c : integer;
+    s : utf8string;
+begin
+  p := round(Lua_ToNumber(lua_1, 1));
+  x := Lua_ToNumber(lua_1, 2);
+  y := Lua_ToNumber(lua_1, 3);
+  x2 := Lua_ToNumber(lua_1, 4);
+  y2 := Lua_ToNumber(lua_1, 5);
+  c  := round(lua_ToNumber(lua_1, 6));
+  a  := round(lua_ToNumber(lua_1, 7));
+  result := mgui_AddLine(p, x, y, x2, y2, c, a);
 end;
 
 function lua_mgui_AddText() : byte;
@@ -230,7 +246,7 @@ function lua_combat_start(): byte;
 begin
   Combat_Init;
   sleep(50);
-  Chat_AddMessage(3, 'S', 'You joined battle #' + IntToStr($ABC) );
+  Chat_AddMessage(3, high(word), 'You joined battle #' + IntToStr($ABC) );
   combat_id := $ABC;
   NonameFrame41.Move(scr_w - 120, scr_h - 190);
   NonameFrame41.Show;
@@ -283,6 +299,7 @@ begin
 
   lua_register(lua_1, 'gui_Clear', @lua_mgui_Clear);
   lua_register(lua_1, 'gui_AddWindow', @lua_mgui_AddWindow);
+  lua_register(lua_1, 'gui_AddLine', @lua_mgui_AddLine);
   lua_register(lua_1, 'gui_AddButton', @lua_mgui_AddButton);
   lua_register(lua_1, 'gui_AddText', @lua_mgui_AddText);
   lua_register(lua_1, 'gui_AddImg', @lua_mgui_AddImg);

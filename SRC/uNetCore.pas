@@ -43,12 +43,28 @@ var
 
 implementation
 
+uses u_MM_gui;
+
 procedure TLTCPTest.OnDs(aSocket: TLSocket);
+var i : integer;
 begin
   gs  := gsMMenu;
   igs := igsNone;
   cns := csOnDisc;
   iga := igaLoc;
+
+  for i := 1 to 16 do
+      mWins[i].visible:=false;
+
+  NonameForm1.Visible:=true;
+  fCharMan.Visible:=false;
+  fCharMake.Visible:=false;
+  fDelChar.Visible:=false;
+  NonameFrame38.Visible:=false;
+  NonameFrame41.Visible:=false;
+  fInGame.Visible:=false;
+  pbLoading.Visible:=false;
+
   TCP.FConnect := false;
   mWins[17].visible := true;
   // mWins[17].texts[1].Text := 'Disconnected.';

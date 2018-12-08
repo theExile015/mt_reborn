@@ -147,6 +147,13 @@ type
       rect : zglTRect;
     end;
 
+    TMyGuiLine = record
+      exist         : boolean;
+      x1, x2, y1, y2: single;
+      color         : DWORD;
+      alpha         : byte;
+    end;
+
     // форма
     TMyGuiWindow = record
       exist, visible : boolean;
@@ -155,6 +162,7 @@ type
       rect : zglTRect;
       fType: integer;
       btns : array [1..16] of TMyGuiButton;
+      lines: array [1..20] of TMyGuiLine;
       texts: array [1..45] of TMyGuiText;
       imgs : array [1..10] of TMyImage;
       dnds : array [1..100] of TDragAndDropObj;
@@ -163,6 +171,7 @@ type
     end;
 
   TProps = array [1..25] of Integer;
+  TPerks = array [0..6] of TProps;
 
   TPUMElement = record
     exist : boolean;
@@ -256,12 +265,14 @@ type
 
   TChatMember = record
     exist    : boolean;
-    Nick     : string;
+    Nick     : string[50];
     charID   : word;
-    level    : word;
-    klass    : word;
-    Clan     : DWORD;
+    level    : byte;
+    klass    : byte;
+    Clan     : WORD;
   end;
+
+  TChatMembersList = array [1..30] of TChatMember;
 
   TLexeme = record                  // Формат {ТИП ССЫЛКИ:ПАРАМ1:ПАРАМ2:ПАРАМ3:ТЕКСТ}
     raw       : UTF8String;         // изначальный текст
@@ -277,6 +288,7 @@ type
     raw   : UTF8String;             // лучше системно их ограничить. скажем. 4мя.
     lexems: array [0..3] of TLexeme;
     sender: UTF8String;
+    sendID: word;
     sRect : zglTRect;
     vis   : boolean;
     omo   : boolean;
@@ -287,7 +299,7 @@ type
     Name       : string;
     chID       : word;
     nMem, nMsg : word;
-    Members    : array [0..100] of TChatMember;
+    Members    : TChatMembersList;
     msgs       : array [0..63] of TChatMessage;
     newmsg     : boolean;
   end;
@@ -387,6 +399,11 @@ type
     updated     : boolean;
   end;
 
+  TWhoItem  = record
+    id   : word;
+    name : string[50];
+  end;
+
 
 var
   // CORE VARS
@@ -419,6 +436,8 @@ var
   gSI, dSI              : byte;                   // индекс персонажа для удаления
   lProgress, lVProgress : integer;                // состояние загрузки ресурсов
   In_Request            : boolean;                // В процессе запроса
+
+  wholist : array [1..1000] of TWhoItem;
 
 
   // ZEN VARS
@@ -468,7 +487,7 @@ var
 
   // GAME DATA VARS
   items              : array [1..1000] of TItem;
-  skills             : array [1..100] of TSkill;
+  skills             : array [1..7*25] of TSkill;
   spells             : array [1..100] of TSpell;
   locs               : array [1..50] of TLoc;
   objStore           : array [1..64] of TLocObject;       // хранилище объектов локации

@@ -183,30 +183,18 @@ begin
        fCharMake.Visible:=false;
        mWins[3].visible:=false;
      end;
-  {
+
 // кнопка отправки чата
   if sender = bChatSend then
      begin
        ch_message_inp := false;
        //Chat_AddMessage(ch_tab_curr, ActiveChar.Name, eChatFrame.Caption);
-       s := Chat_CatchPrivte( eChatFrame.Caption ) ;
-       if Chat_CheckMessage( eChatFrame.Caption ) then //проверим сообщение
-       if s = '' then
-          SendData( inline_pkgCompile(19, u_IntToStr(ch_tab_curr) + '`' +
-                                          ActiveChar.Name + '`' +
-                                          (eChatFrame.Caption) + '`'))
-       else
-       begin
-          SendData( inline_pkgCompile(19, u_IntToStr(2) + '`' +
-                                          ActiveChar.Name + '`' +
-                                          eChatFrame.Caption + '`') +
-                                          s + '`');
-          Chat_AddMessage( ch_tab_curr, activechar.Name, eChatFrame.Caption);
-       end;
+       DoSendMsg(eChatFrame.Caption);
+       Sleep(10);
        eChatFrame.Caption := '';
        key_EndReadText;
        eChatFrame.Gui.Handler.HandleEvent(eChatFrame, heNone);
-     end; }
+     end;
 // поле ввода
   if sender = eChatFrame then
      begin
@@ -224,6 +212,7 @@ begin
   if sender = bCharView then
      if igs <> igsChar then
          begin
+          DoPerkRequest();
           //SendData(inline_PkgCompile(27, activechar.Name + '`'));
           //SendData(inline_PkgCompile(26, activechar.Name + '`'));
           igs := igsChar;
@@ -289,30 +278,18 @@ begin
    begin
      DoLogin();
    end;
- {
+
    if Sender = eChatFrame then
      begin
        ch_message_inp := false;
        //Chat_AddMessage(ch_tab_curr, ActiveChar.Name, eChatFrame.Caption);
-       s := Chat_CatchPrivte( eChatFrame.Caption ) ;
-       if Chat_CheckMessage( eChatFrame.Caption ) then //проверим сообщение
-       if s = '' then
-          SendData( inline_pkgCompile(19, u_IntToStr(ch_tab_curr) + '`' +
-                                          ActiveChar.Name + '`' +
-                                          (eChatFrame.Caption) + '`'))
-       else
-       begin
-          SendData( inline_pkgCompile(19, u_IntToStr(2) + '`' +
-                                          ActiveChar.Name + '`' +
-                                          eChatFrame.Caption + '`') +
-                                          s + '`');
-          Chat_AddMessage( ch_tab_curr, activechar.Name, eChatFrame.Caption);
-       end;
+       DoSendMsg(eChatFrame.Caption);
+       Sleep(10);
        eChatFrame.Caption := '';
        key_EndReadText;
        eChatFrame.Gui.Handler.HandleEvent(eChatFrame, heNone);
        eChatFrame.Caption := '';
-     end;   }
+     end;
 end;
 {END}
 

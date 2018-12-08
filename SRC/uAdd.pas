@@ -1,6 +1,7 @@
 unit uAdd;
 
 interface
+{$codepage utf8}
 
 uses uVar,
      Windows,

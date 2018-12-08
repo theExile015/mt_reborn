@@ -32,6 +32,8 @@ procedure Game_Update;
 
 implementation
 
+uses zglGui;
+
 procedure Game_PreInit;
 begin
     // грузим ини файл
@@ -94,6 +96,9 @@ begin
   NonameFrame41.Hide;
   fInGame.Hide;
   fLoading.Hide;
+
+  wholist[1].id := high(word);
+  wholist[1].name := 'Re:';
 
   // Загружаем скрипты
   RunLUAScript('list.lua');
@@ -258,7 +263,38 @@ begin
   end;
 
   if gs = gsGame then
-     Chat_Update();
+     begin
+       if eChatFrame.Gui.Handler.HHandle = heNone then
+          ch_message_inp := false;
+
+       if key_press(K_ENTER) then
+          if not ch_message_inp then
+             begin
+               ch_message_inp := true;
+               eChatFrame.Focus;
+               eChatFrame.SelectAll;
+               eChatFrame.DeleteSelection;
+             end;
+
+       if not ch_message_inp then
+          if key_press(K_I) or key_press(K_B) then
+             if igs <> igsInv then
+                begin
+                  DoOpenInv();
+                  igs := igsInv
+                end else igs := igsNone;
+
+       if not ch_message_inp then
+          if key_press(K_C) then
+             if igs <> igsChar then
+                begin
+                  DoPerkRequest();
+
+                  igs := igsChar;
+                end else igs := igsNone;
+
+       Chat_Update();
+     end;
 
 {$R+}
 try

@@ -106,10 +106,10 @@ begin
       debug('');
     end;
   end;
-  Chat_AddMessage(3, 'S', 'Map loading...');
+  Chat_AddMessage(3, high(word), 'Map loading...');
   CloseFile(mapfile);
   l_ms := false;
-  if not l_ms then Chat_AddMessage(3, 'S', 'Done.');
+  if not l_ms then Chat_AddMessage(3, high(word), 'Done.');
  // safe_map := false;
 end;
 
@@ -128,6 +128,7 @@ begin
   if length(layer) < 1 then exit;
   c := 0;
   c2 := 0;
+  batch2d_Begin;
 //  if flag then Exit;
     for i3 := 0 to Length(layer)-1 do
       begin
@@ -172,7 +173,7 @@ begin
             end;
       end;
 end;
-
+  batch2d_end();
 //text_draw( fntCombat, 1000, 1000, u_IntToStr(dm_x) + ' ' + u_IntToStr(dm_y));
 
 end;

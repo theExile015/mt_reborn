@@ -1,6 +1,6 @@
 unit uChat;
 
-{/$codepage utf8}
+{$codepage utf8}
 {$mode delphi}
 
 interface
@@ -15,18 +15,18 @@ function Chat_AddMember(chID: byte; Nick : string; charID, clanID, klassID, lvl:
 
 function Chat_AddTab(): byte;
 function Chat_ClearTabMembers(tab : byte): byte;
-function Chat_AddMessage(chID: byte; sender, msg: string): byte;
+function Chat_AddMessage(chID: byte; sendID : word; msg: string): byte;
 function Chat_ParseMessage(cID, mID : byte) : byte;
 function Chat_MsgNum(chID: byte): byte;
 
 function Chat_AddPrivate(Sender : UTF8String): byte;
 function Chat_CatchPrivte( msg: UTF8String ): UTF8String;
-function Chat_CheckMessage( msg: String): boolean;
+//function Chat_CheckMessage( msg: String): boolean;
 procedure Chat_SaveToFile;
 
 implementation
 
-uses u_MM_gui, uNetCore, uPkgProcessor, uLoader;
+uses u_MM_gui, uNetCore, uPkgProcessor, uLoader, uXClick;
 
 procedure Chat_Init();
 var i, j, k : integer;
@@ -38,7 +38,7 @@ begin
       ch_tabs[i].exist := false;
       ch_tabs[i].Name := 'Tab #' + u_IntToStr(i);
       ch_tabs[i].chID := 0;
-      for j := 0 to length(ch_tabs[i].Members) - 1 do
+      for j := 1 to high(ch_tabs[i].Members) do
         begin
           ch_tabs[i].Members[j].exist := false;
           ch_tabs[i].Members[j].Nick := 'No name';
@@ -251,7 +251,7 @@ begin
                   Chat_AddPrivate(ch_tabs[ch_tab_curr].msgs[i].sender);
                 end;
              // добавляем ссылку из чата
-             for j := 0 to 3 do
+            { for j := 0 to 3 do
                if ch_tabs[ch_tab_curr].msgs[i].lexems[j].omo then
                   begin  // Добавляем ссылку в чатик
                     if ch_message_inp then
@@ -272,7 +272,7 @@ begin
                         echatFrame.SelectAll;
                         eChatFrame.DeleteSelection;
                       end;
-                  end;
+                  end;   }
            end;
 
        for I := 0 to length(ch_tabs[ch_tab_curr].msgs) - 1 do
@@ -339,6 +339,7 @@ var i, j, b, k, n, m: integer;
     r: zglTRect;
     fH, sW, mW, nH, dH : single;
 begin
+  batch2d_Begin;
   // рисуем интерфейс управления боем
   if iga = igaCombat then
      begin
@@ -511,16 +512,16 @@ begin
 
   // Мемберы пишутся в следующем формате уровень(число) раса(АБР) класс(ИКО) клан(ИКО) ник(СЛОВО)
   k := 0;
-  if ch_tabs[ch_tab_curr].nMem < 9 then n := 0 else
+  if ch_tabs[ch_tab_curr].nMem < 9 then n := 1 else
      begin
        if ch_mem_scroll_pos < 0 then ch_mem_scroll_pos := 0;
        if ch_mem_scroll_pos > 1 then ch_mem_scroll_pos := 1;
        n := round((ch_tabs[ch_tab_curr].nMem - 8) * ch_mem_scroll_pos);
      end;
   m := n + 8;
-  if m > ch_tabs[ch_tab_curr].nMem - 1 then m := ch_tabs[ch_tab_curr].nMem - 1;
+  if m > ch_tabs[ch_tab_curr].nMem then m := ch_tabs[ch_tab_curr].nMem;
 
-  for i := n to ch_tabs[ch_tab_curr].nMem - 1 do
+  for i := n to ch_tabs[ch_tab_curr].nMem do
     if ch_tabs[ch_tab_curr].Members[i].exist then   //  ну доп проверки ещё никому не вредили )
        begin
           text_DrawInRectEx( fntMain2, Rect( scr_w - 175, scr_h - 130 + k*15 + 3 ,
@@ -659,6 +660,7 @@ begin
 
          end;
  scissor_end;
+ batch2d_End();
 end;
 
 function Chat_AddMember(chID: byte; Nick : string; charID, clanID, klassID, lvl: Cardinal): byte;
@@ -672,7 +674,7 @@ begin
          if ch_tabs[i].chID = chID then        // смотрим, включен ли у нас такой чат в принципе
             begin
               result := 100;
-              for j := 0 to length(ch_tabs[i].Members) - 1 do
+              for j := 1 to high(ch_tabs[i].Members) do
                 if ch_tabs[i].Members[j].exist then   // теперь проверяем, может у нас уже есть такой мембер
                    if ch_tabs[i].Members[j].Nick = Nick then
                    begin
@@ -681,7 +683,7 @@ begin
                      result := 3;
                      exit;
                    end;
-              for j := 0 to length(ch_tabs[i].Members) - 1 do
+              for j := 1 to high(ch_tabs[i].Members) do
                 if not ch_tabs[i].Members[j].exist then   //подбираем место для нового мембера
                    begin
                      ch_tabs[i].Members[j].exist := true;
@@ -729,7 +731,7 @@ function Chat_ClearTabMembers(tab : byte): byte;
 var j: integer;
 begin
   if ch_tabs[tab].exist then
-  for j := 0 to length(ch_tabs[tab].Members) - 1 do
+  for j := 1 to high(ch_tabs[tab].Members) do
       begin
         ch_tabs[tab].Members[j].exist := false;
         ch_tabs[tab].Members[j].Nick := 'No name';
@@ -740,14 +742,15 @@ begin
       end;
 end;
 
-function Chat_AddMessage(chID: byte; sender, msg: string): byte;
+function Chat_AddMessage(chID: byte; sendID: word; msg: string): byte;
 var i, mID, flag: integer;
 begin
   if not ch_tabs[chID].exist then exit;
   for i := 62 downto 0 do
       ch_tabs[chID].msgs[i + 1] := ch_tabs[chID].msgs[i];
   ch_tabs[chID].msgs[0].exist := true;
-  ch_tabs[chID].msgs[0].sender := sender;
+  ch_tabs[chID].msgs[0].sendID := sendID;
+  ch_tabs[chID].msgs[0].sender:= DoWho(sendID);
   ch_tabs[chID].msgs[0].raw := msg;
   ch_tabs[chID].nMsg := Chat_MsgNum(chID);
   Chat_ParseMessage(chID, 0);
@@ -898,7 +901,7 @@ begin
     end;
  end;
 
-function Chat_CheckMessage( msg: String): boolean;
+{function Chat_CheckMessage(var msg: String): boolean;
 var i: integer; s: String;
 begin
   result := false; s:= msg;
@@ -909,8 +912,8 @@ begin
               if copy( msg, i, 1) = '`' then Delete( s, i, 1);
               result := true;
             end;
-  eChatFrame.Caption := s;
-end;
+  msg := s;
+end;    }
 
 procedure Chat_SaveToFile;
 var

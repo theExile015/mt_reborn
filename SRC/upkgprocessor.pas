@@ -1,6 +1,7 @@
 unit uPkgProcessor;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 
@@ -74,15 +75,32 @@ type
     fail_code : byte;
   end;
 
+  TPkg016 = record
+    data      : TPerks;
+    fail_code : byte;
+  end;
+
   TPkg020 = record
     _from, _to : byte;
     fail_code  : byte;
   end;
 
   TPkg025 = record
-    channel, _to : word;
-    msg          : string[100];
+    channel, _to, _from : word;
+    msg          : string[200];
     fail_code    : byte;
+  end;
+
+  TPkg026 = record
+    channel   : word;
+    members   : TChatMembersList;
+    fail_code : byte;
+  end;
+
+  TPkg027 = record
+    _who : word;
+    name : string[50];
+    fail_code : byte;
   end;
 
 procedure pkg000;
@@ -101,7 +119,13 @@ procedure pkg012(pkg: TPkg012);   // Stats
 procedure pkg013(pkg: TPkg013);   // Inv
 procedure pkg014(pkg: TPkg014);   // Item data
 procedure pkg015(pkg: TPkg015);   // Header
+procedure pkg016(pkg: TPkg016);   // Perks
 
+
+
+procedure pkg025(pkg: TPkg025);   // Chat msg
+procedure pkg026(pkg: TPkg026);   // Member list
+procedure pkg027(pkg: TPkg027);   // Who request
 
 procedure pkgProcess(var msg: string);
 
@@ -111,7 +135,7 @@ procedure pkgExecute(pack : TPackage); }
 implementation
 
 uses
-  uNetCore, u_MM_gui, uLoader;
+  uNetCore, u_MM_gui, uLoader, uChat, uXClick;
 
 procedure pkgProcess(var msg: string);
 var
@@ -123,6 +147,9 @@ var
 
     _pkg010: TPkg010;   _pkg011: TPkg011;   _pkg012: TPkg012;
     _pkg013: TPkg013;   _pkg014: TPkg014;   _pkg015: TPkg015;
+    _pkg016: TPkg016;
+
+    _pkg025: TPkg025;   _pkg026: TPkg026;   _pkg027: TPkg027;
 begin
   try
        begin
@@ -196,6 +223,26 @@ begin
            begin
              mStr.Read(_pkg015, SizeOf(_pkg015));
              pkg015(_pkg015);
+           end;
+           16:
+           begin
+             mStr.Read(_pkg016, SizeOf(_pkg016));
+             pkg016(_pkg016);
+           end;
+           25:
+           begin
+             mStr.Read(_pkg025, SizeOf(_pkg025));
+             pkg025(_pkg025);
+           end;
+           26:
+           begin
+             mStr.Read(_pkg026, SizeOf(_pkg026));
+             pkg026(_pkg026);
+           end;
+           27:
+           begin
+             mStr.Read(_pkg027, SizeOf(_pkg027));
+             pkg027(_pkg027);
            end;
          else
            // ID пакета кривой
@@ -375,6 +422,71 @@ end;
 procedure pkg015(pkg: TPkg015);
 begin
   activechar.header := pkg.data;
+end;
+
+procedure pkg016(pkg: TPkg016);
+var i, j : integer;
+begin
+  for i := 0 to 6 do
+    for j := 1 to 25 do
+      begin
+        write(pkg.data[i][j]);
+        skills[i * 25 + j].rank := pkg.data[i][j];
+      end;
+end;
+
+procedure pkg025(pkg: TPkg025);
+begin
+  writeln('FROM ::: ' ,pkg._from);
+  Chat_AddMessage( pkg.channel, pkg._from, pkg.msg );
+end;
+
+procedure pkg026(pkg: TPkg026);   // Member list
+var i, n : integer;
+begin
+  if pkg.channel = 0 then ch_tabs[0].Members := pkg.members;
+
+  {for i := 2 to high(ch_tabs[0].members) do
+    begin
+      ch_tabs[0].Members[i].exist:=true;
+      ch_tabs[0].Members[i].Nick:='Noob'+u_IntToStr(random(123));
+      ch_tabs[0].Members[i].level:=i;
+    end;        }
+
+  n := 0;
+  for i := 0 to high(ch_tabs[0].Members) do
+      if ch_tabs[0].Members[i].exist then
+         inc(n);
+  ch_tabs[0].nMem := n;
+
+  if pkg.channel = 1 then ch_tabs[1].Members := pkg.members;
+  n := 0;
+  for i := 0 to high(ch_tabs[1].Members) do
+      if ch_tabs[1].Members[i].exist then
+         inc(n);
+  ch_tabs[1].nMem := n;
+end;
+
+procedure pkg027(pkg: TPkg027);
+var i, j : integer;
+begin
+  Writeln(pkg.fail_code);
+  Writeln(pkg._who);
+  writeln(pkg.name);
+
+  if pkg.fail_code = 1 then Exit;
+  for i := 1 to high(wholist) do
+      if wholist[i].id = 0 then
+      begin
+         wholist[i].id:= pkg._who;
+         wholist[i].name:= pkg.name;
+      end;
+
+  for i := 0 to high(ch_tabs) do
+    for j := 0 to high(ch_tabs[i].msgs) do
+      if ch_tabs[i].msgs[j].exist then
+        if ch_tabs[i].msgs[j].sender = '' then
+           ch_tabs[i].msgs[j].sender:= DoWho(ch_tabs[i].msgs[j].sendID);
 end;
 
 end.
