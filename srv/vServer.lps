@@ -4,30 +4,31 @@
     <PathDelim Value="\"/>
     <Version Value="10"/>
     <BuildModes Active="Default"/>
-    <Units Count="14">
+    <Units Count="15">
       <Unit0>
         <Filename Value="vServer.pas"/>
         <IsPartOfProject Value="True"/>
-        <TopLine Value="10"/>
+        <TopLine Value="11"/>
         <CursorPos X="17" Y="22"/>
-        <UsageCount Value="58"/>
+        <UsageCount Value="66"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="vVar.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="3"/>
-        <TopLine Value="114"/>
-        <CursorPos X="98" Y="128"/>
-        <UsageCount Value="58"/>
+        <TopLine Value="56"/>
+        <CursorPos X="29" Y="62"/>
+        <UsageCount Value="66"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="vNetCore.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="2"/>
-        <CursorPos X="44" Y="9"/>
-        <UsageCount Value="58"/>
+        <TopLine Value="170"/>
+        <CursorPos X="19" Y="182"/>
+        <UsageCount Value="66"/>
         <Loaded Value="True"/>
       </Unit2>
       <Unit3>
@@ -36,27 +37,27 @@
         <UnitName Value="vServerLog"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="11" Y="10"/>
-        <UsageCount Value="50"/>
+        <UsageCount Value="58"/>
       </Unit3>
       <Unit4>
         <Filename Value="upkgprocessor.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="uPkgProcessor"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="4"/>
-        <TopLine Value="198"/>
-        <CursorPos X="9" Y="538"/>
-        <UsageCount Value="46"/>
+        <TopLine Value="64"/>
+        <CursorPos X="6" Y="74"/>
+        <UsageCount Value="54"/>
         <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="ucharmanager.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="uCharManager"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="313"/>
-        <CursorPos X="32" Y="326"/>
-        <UsageCount Value="33"/>
+        <TopLine Value="198"/>
+        <CursorPos X="34" Y="234"/>
+        <UsageCount Value="41"/>
         <Loaded Value="True"/>
       </Unit5>
       <Unit6>
@@ -65,14 +66,14 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="1432"/>
         <CursorPos X="5" Y="1511"/>
-        <UsageCount Value="12"/>
+        <UsageCount Value="11"/>
       </Unit6>
       <Unit7>
         <Filename Value="C:\lazarus\fpc\3.0.2\source\packages\rtl-extra\src\inc\socketsh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="168"/>
         <CursorPos X="10" Y="182"/>
-        <UsageCount Value="8"/>
+        <UsageCount Value="7"/>
       </Unit7>
       <Unit8>
         <Filename Value="lnet\lcommon.pp"/>
@@ -80,7 +81,7 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="51"/>
         <CursorPos X="5" Y="59"/>
-        <UsageCount Value="8"/>
+        <UsageCount Value="7"/>
       </Unit8>
       <Unit9>
         <Filename Value="lnet\levents.pp"/>
@@ -88,15 +89,15 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="598"/>
         <CursorPos X="36" Y="533"/>
-        <UsageCount Value="8"/>
+        <UsageCount Value="7"/>
       </Unit9>
       <Unit10>
         <Filename Value="udb.pas"/>
         <UnitName Value="uDB"/>
-        <EditorIndex Value="5"/>
-        <TopLine Value="699"/>
-        <CursorPos X="43" Y="710"/>
-        <UsageCount Value="23"/>
+        <EditorIndex Value="6"/>
+        <TopLine Value="578"/>
+        <CursorPos X="92" Y="668"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit10>
       <Unit11>
@@ -104,143 +105,151 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="195"/>
         <CursorPos X="21" Y="203"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="8"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\..\..\usr\share\fpcsrc\3.0.4\rtl\inc\objpas.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="274"/>
         <CursorPos X="12" Y="286"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="8"/>
       </Unit12>
       <Unit13>
         <Filename Value="..\..\..\..\usr\share\fpcsrc\3.0.4\packages\rtl-extra\src\linux\unxsockh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="295"/>
         <CursorPos X="25" Y="295"/>
-        <UsageCount Value="8"/>
+        <UsageCount Value="7"/>
       </Unit13>
+      <Unit14>
+        <Filename Value="uchatmanager.pas"/>
+        <UnitName Value="uChatManager"/>
+        <EditorIndex Value="5"/>
+        <CursorPos Y="4"/>
+        <UsageCount Value="15"/>
+        <Loaded Value="True"/>
+      </Unit14>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="21" Column="19" TopLine="7"/>
+        <Filename Value="uchatmanager.pas"/>
+        <Caret Line="81" Column="16" TopLine="73"/>
       </Position1>
       <Position2>
-        <Filename Value="upkgprocessor.pas"/>
-        <Caret Line="501" Column="36" TopLine="488"/>
+        <Filename Value="uchatmanager.pas"/>
+        <Caret Line="79" Column="18" TopLine="65"/>
       </Position2>
       <Position3>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="105" Column="45" TopLine="90"/>
+        <Filename Value="uchatmanager.pas"/>
+        <Caret Line="125" Column="24" TopLine="112"/>
       </Position3>
       <Position4>
-        <Filename Value="udb.pas"/>
-        <Caret Line="26" Column="17" TopLine="15"/>
+        <Filename Value="uchatmanager.pas"/>
+        <Caret Line="81" Column="26" TopLine="63"/>
       </Position4>
       <Position5>
-        <Filename Value="udb.pas"/>
-        <Caret Line="769" Column="72" TopLine="759"/>
+        <Filename Value="uchatmanager.pas"/>
+        <Caret Line="161" Column="36" TopLine="154"/>
       </Position5>
       <Position6>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="105" Column="34" TopLine="94"/>
+        <Filename Value="uchatmanager.pas"/>
+        <Caret Line="105" Column="46" TopLine="79"/>
       </Position6>
       <Position7>
-        <Filename Value="udb.pas"/>
-        <Caret Line="26" Column="18" TopLine="15"/>
+        <Filename Value="uchatmanager.pas"/>
+        <Caret Line="200" Column="38" TopLine="191"/>
       </Position7>
       <Position8>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="105" Column="23" TopLine="94"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="565" Column="65" TopLine="554"/>
       </Position8>
       <Position9>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="163" Column="19" TopLine="149"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="122" Column="31" TopLine="111"/>
       </Position9>
       <Position10>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="151" Column="89" TopLine="138"/>
+        <Filename Value="vNetCore.pas"/>
+        <Caret Line="197" Column="45" TopLine="181"/>
       </Position10>
       <Position11>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="21" Column="70" TopLine="13"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="122" Column="15" TopLine="111"/>
       </Position11>
       <Position12>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="147" Column="57" TopLine="139"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="604" Column="38" TopLine="591"/>
       </Position12>
       <Position13>
         <Filename Value="ucharmanager.pas"/>
-        <Caret Line="145" Column="63" TopLine="134"/>
+        <Caret Line="326" Column="32" TopLine="115"/>
       </Position13>
       <Position14>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="152" Column="55" TopLine="140"/>
+        <Filename Value="udb.pas"/>
+        <Caret Line="24" Column="10" TopLine="13"/>
       </Position14>
       <Position15>
         <Filename Value="ucharmanager.pas"/>
-        <Caret Line="150" Column="37" TopLine="139"/>
+        <Caret Line="143" Column="20" TopLine="106"/>
       </Position15>
       <Position16>
-        <Filename Value="udb.pas"/>
-        <Caret Line="25" Column="21" TopLine="13"/>
+        <Filename Value="uchatmanager.pas"/>
+        <Caret Line="31" Column="33" TopLine="19"/>
       </Position16>
       <Position17>
-        <Filename Value="udb.pas"/>
-        <Caret Line="729" Column="3" TopLine="720"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="84" Column="3" TopLine="73"/>
       </Position17>
       <Position18>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="150" Column="33" TopLine="135"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="150" Column="34" TopLine="137"/>
       </Position18>
       <Position19>
-        <Filename Value="udb.pas"/>
-        <Caret Line="709" Column="64" TopLine="696"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="161" Column="38" TopLine="574"/>
       </Position19>
       <Position20>
-        <Filename Value="udb.pas"/>
-        <Caret Line="708" Column="66" TopLine="696"/>
+        <Filename Value="uchatmanager.pas"/>
+        <Caret Line="13" Column="34"/>
       </Position20>
       <Position21>
-        <Filename Value="udb.pas"/>
-        <Caret Line="714" Column="55" TopLine="705"/>
+        <Filename Value="vVar.pas"/>
+        <Caret Line="133" Column="7" TopLine="111"/>
       </Position21>
       <Position22>
-        <Filename Value="udb.pas"/>
-        <Caret Line="710" Column="43" TopLine="699"/>
+        <Filename Value="vVar.pas"/>
+        <Caret Line="114" Column="7" TopLine="105"/>
       </Position22>
       <Position23>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="150" Column="33" TopLine="9"/>
+        <Filename Value="vVar.pas"/>
+        <Caret Line="87" Column="32" TopLine="45"/>
       </Position23>
       <Position24>
-        <Filename Value="vNetCore.pas"/>
-        <Caret Line="240" Column="9" TopLine="229"/>
+        <Filename Value="vVar.pas"/>
+        <Caret Line="59" Column="3" TopLine="79"/>
       </Position24>
       <Position25>
-        <Filename Value="vNetCore.pas"/>
-        <Caret Line="9" Column="44"/>
+        <Filename Value="udb.pas"/>
+        <Caret Line="687" Column="12" TopLine="671"/>
       </Position25>
       <Position26>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="9" Column="46" TopLine="13"/>
+        <Filename Value="udb.pas"/>
+        <Caret Line="393" Column="35" TopLine="382"/>
       </Position26>
       <Position27>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="8" Column="11"/>
+        <Filename Value="udb.pas"/>
+        <Caret Line="400" Column="56" TopLine="387"/>
       </Position27>
       <Position28>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="141" Column="19" TopLine="136"/>
+        <Filename Value="udb.pas"/>
+        <Caret Line="406" Column="35" TopLine="395"/>
       </Position28>
       <Position29>
-        <Filename Value="upkgprocessor.pas"/>
-        <Caret Line="476" Column="20" TopLine="461"/>
+        <Filename Value="vVar.pas"/>
+        <Caret Line="90" Column="20" TopLine="76"/>
       </Position29>
       <Position30>
-        <Filename Value="upkgprocessor.pas"/>
-        <Caret Line="498" Column="59" TopLine="487"/>
+        <Filename Value="vNetCore.pas"/>
+        <Caret Line="182" Column="19" TopLine="170"/>
       </Position30>
     </JumpHistory>
   </ProjectSession>

@@ -1,6 +1,7 @@
 unit uPkgProcessor;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 
@@ -10,7 +11,8 @@ uses
   uDB,
   vServerLog,
   sysutils,
-  uCharManager;
+  uCharManager,
+  uChatManager;
 
 type
   TPackHeader = record
@@ -69,9 +71,32 @@ type
     fail_code : byte;
   end;
 
+  TPkg016 = record
+    data      : TPerks;
+    fail_code : byte;
+  end;
+
   TPkg020 = record
     _from, _to : byte;
     fail_code  : byte;
+  end;
+
+  TPkg025 = record
+    channel, _to, _from : word;
+    msg          : string[200];
+    fail_code    : byte;
+  end;
+
+  TPkg026 = record
+    channel   : word;
+    members   : TChatMembersList;
+    fail_code : byte;
+  end;
+
+  TPkg027 = record
+    _who  : word;
+    name  : string[50];
+    fail_code : byte;
   end;
 
 procedure pkg001(pkg : TPkg001; sID : word);
@@ -89,11 +114,18 @@ procedure pkg012(pkg : TPkg012; sID : word);
 procedure pkg013(pkg : TPkg013; sID : word);
 procedure pkg014(pkg : TPkg014; sID : word);
 procedure pkg015(pkg : TPkg015; sID : word);
-  // 16
+procedure pkg016(pkg : TPkg016; sID : word);
   // 17
   // 18
   // 19
 procedure pkg020(pkg : TPkg020; sID : word);
+  // 21
+  // 22
+  // 23
+  // 24
+procedure pkg025(pkg : TPkg025; sID : word);
+procedure pkg026(pkg : TPkg026; sID : word);
+procedure pkg027(pkg : TPkg027; sID : word);
 
 
 procedure pkgProcess(msg: string);
@@ -119,6 +151,22 @@ try
   // заполняем шапку
   _head._flag := $f;
   _head._id   :=  1;
+  // ищем, нет ли сессии с таким же аккаунтом
+  // если есть, то выбиваем его
+  for i := 0 to high(sessions) do
+      if sessions[i].exist then
+      if sessions[i].aID = aID then
+         begin
+           TCP.FCon.IterReset;
+           while TCP.FCon.IterNext do
+                 if TCP.FCon.Iterator.PeerAddress = sessions[i].ip then
+                 if TCP.FCon.Iterator.LocalPort = sessions[i].lport then
+                    begin
+                      TCP.FCon.Iterator.Disconnect(true);
+                      Break;
+                    end;
+         end;
+
   // если нашли - присваиваем к сессии
   if _pkg.fail_code = 1 then sessions[sID].aID := aID;
 
@@ -492,6 +540,35 @@ finally
 end;
 end;
 
+procedure pkg016(pkg : TPkg016; sID : word);
+var _pkg  : TPkg016;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+try
+  mStr := TMemoryStream.Create;
+  _head._flag := $F;
+  _head._id   := 16;
+
+  _pkg.data := chars[sessions[sID].charLID].perks;
+
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+  // Отправляем пакет
+  TCP.FCon.IterReset;
+  while TCP.FCon.IterNext do
+    if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
+    if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
+       begin
+         TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+         Break;
+       end;
+finally
+  mStr.Free;
+end;
+end;
+
 procedure pkg020(pkg : TPkg020; sID : word);
 var charLID : word;
     i1, i2  : byte;
@@ -536,6 +613,61 @@ begin
   Char_CalculateStats( charLID );
   pkg012(_pkg2, sID);
   pkg010(_pkg3, sID);
+end;
+
+procedure pkg025(pkg : TPkg025; sID : word);
+begin
+  case pkg.channel of
+    0: Chat_SendMessageToGlobal(pkg.msg, sID);
+    1: Chat_SendMessageToLocal(Chars[Sessions[sID].charLID].header.loc, pkg._from, pkg.msg);
+    2: Chat_SendMessageToPrivate( pkg._from, pkg._to, pkg.msg );
+  end;
+end;
+
+procedure pkg026(pkg : TPkg026; sID : word);
+begin
+  Chat_GetMembersList( pkg.channel, Chars[sessions[sID].charLID].header.loc, sID );
+end;
+
+procedure pkg027(pkg : TPkg027; sID : word);
+var _pkg  : TPkg027;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+    i     : integer;
+begin
+try
+  mStr := TMemoryStream.Create;
+  _head._flag := $F;
+  _head._id   := 27;
+
+  //_pkg.name:='';
+  _pkg._who:= pkg._who;
+
+  for i := 0 to high(chars) do
+  if chars[i].exist then
+      if chars[i].header.ID = pkg._who then
+      begin
+        _pkg.name := chars[i].header.Name;
+        break;
+      end;
+  Writeln(_pkg.name);
+  if _pkg.name = '' then _pkg.fail_code := 1;
+
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+  // Отправляем пакет
+  TCP.FCon.IterReset;
+  while TCP.FCon.IterNext do
+    if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
+    if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
+       begin
+         TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+         Break;
+       end;
+finally
+  mStr.Free;
+end;
 end;
 
 procedure pkgProcess(msg: string);

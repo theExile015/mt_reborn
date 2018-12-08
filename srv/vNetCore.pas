@@ -1,6 +1,7 @@
 unit vNetCore;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 
@@ -87,8 +88,10 @@ var
 
   _pkg010 : TPkg010;   _pkg011 : TPkg011;   _pkg012: TPkg012;
   _pkg013 : TPkg013;   _pkg014 : TPkg014;
-
+  _pkg016 : TPkg016;
                        _pkg020 : TPkg020;
+
+  _pkg025 : TPkg025;   _pkg026 : TPkg026;   _pkg027: Tpkg027;
 begin
 try
   mStr := TMemoryStream.Create;
@@ -171,14 +174,38 @@ try
            mStr.Read(_pkg014, SizeOf(_pkg014));
            pkg014(_pkg014, sID);
          end;
+         16:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg016, SizeOf(_pkg016));
+           pkg016(_pkg016, sID);
+         end;
          20:
          begin
            mStr.Position:=SizeOf(_head);
            mStr.Read(_pkg020, SizeOf(_pkg020));
            pkg020(_pkg020, sID);
          end;
+         25:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg025, SizeOf(_pkg025));
+           pkg025(_pkg025, sID);
+         end;
+         26:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg026, SizeOf(_pkg026));
+           pkg026(_pkg026, sID);
+         end;
+         27:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg027, SizeOf(_pkg027));
+           pkg027(_pkg027, sID);
+         end;
        else
-         Writeln('Wrong flag');
+         Writeln('Wrong ID');
          Exit;
        end;
      end;

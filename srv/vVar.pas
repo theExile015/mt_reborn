@@ -63,6 +63,9 @@ type
     sub : DWORD;
   end;
 
+  TProps = array [1..25] of Integer;
+  TPerks = array [0..6] of TProps;
+
   TInventory = array [1..130] of TInvItem;
 
   TCharacter = record
@@ -83,11 +86,9 @@ type
     iArmor, iIni, iSPD          : DWORD;
     Inventory                               : TInventory;
   { trvMin, trvSec, trvTime, trvDest : word;
-    auras : array [1..16] of TAura;
-    perks : array [0..6] of TProps; }
+    auras : array [1..16] of TAura; }
+    perks : TPerks;
   end;
-
-  TProps = array [1..25] of Integer;
 
   TItemData = record
     rare       : byte;
@@ -103,6 +104,25 @@ type
     exist              : boolean;
     data               : TItemData;
   end;
+
+  TChatMember = record
+    exist : boolean;
+    Nick  : string[50];
+    charID: word;
+    level : byte;
+    klass : byte;
+    clan  : word;
+  end;
+
+  TLocObj = record
+    exist : boolean;
+    oType, en, vis, pic : dword;
+    props, props2 : TProps;
+    name  : string;
+    discr : string;
+  end;
+
+  TChatMembersList = array [1..30] of TChatMember;
 
 Var
   CS : TCriticalSection;
@@ -129,6 +149,8 @@ Var
   chars    : array [0..127] of TCharacter;   // данные о чарах
   b_chars  : array [1..25] of TCharacter;    // базовые чары
   ItemDB   : array [1..1000] of TItem;       // База предметов
+  LocObjs  : array [1..1000] of TLocObj;
+  PerksDB  : array [1..100] of TPerkData;
 
 implementation
 

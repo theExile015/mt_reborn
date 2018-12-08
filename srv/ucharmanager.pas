@@ -112,6 +112,7 @@ function Char_EnterTheWorld(sID, charID: DWORD): word;
 var i: integer;
     _head  : TPackHeader;
     _pkg10 : TPkg010; _pkg11 : TPkg011; _pkg12 : TPkg012;
+    _pkg26 : TPkg026;
     mStr   : TMemoryStream;
 begin
   result:=high(word);
@@ -135,6 +136,15 @@ begin
   pkg010(_pkg10, sID); // отправляем-с
   pkg011(_pkg11, sID); // отправляем-с
   pkg012(_pkg12, sID); // отправляем-с
+
+  for i := 0 to high(chars) do
+      if chars[i].exist then
+         begin
+           _pkg26.channel := 0;
+           pkg026(_pkg26, chars[i].sID);
+           _pkg26.channel := 1;
+           pkg026(_pkg26, chars[i].sID);
+         end;
 end;
 
 procedure Char_AddNumbers(charLID, Gold, Exp, lvl, SP, TP : DWORD);

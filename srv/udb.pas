@@ -132,14 +132,6 @@ TRY
     b_chars[id].bAP:=Query.FieldByName('ap').AsInteger;
     b_chars[id].bHP:=Query.FieldByName('hp').AsInteger;
     b_chars[id].bMP:=Query.FieldByName('mp').AsInteger;
-    s := Query.FieldByName('rID').AsString + ' ' +
-         Query.FieldByName('Str').AsString + ' ' +
-         Query.FieldByName('Agi').AsString + ' ' +
-         Query.FieldByName('Con').AsString + ' ' +
-         Query.FieldByName('Hst').AsString + ' ' +
-         Query.FieldByName('Intel').AsString + ' ' +
-         Query.FieldByName('Spi').AsString ;
-    WriteSafeText(s, 2);
     Query.Next;
   end;
 
@@ -170,7 +162,7 @@ TRY
   while not Query.EOF do
   begin
     id := Query.FieldByName('ID').AsInteger;
-   { LocObjs[id].exist:=true;
+    LocObjs[id].exist:=true;
     LocObjs[id].oType:=Query.FieldByName('otype').AsInteger;
     LocObjs[id].name:=Query.FieldByName('name').AsString;
     LocObjs[id].discr:=Query.FieldByName('discr').AsString;
@@ -178,7 +170,7 @@ TRY
     LocObjs[id].props2:=GetItemProps(Query.FieldByName('props2').AsString);
     LocObjs[id].en:=Query.FieldByName('enabl').AsInteger;
     LocObjs[id].vis:=Query.FieldByName('vis').AsInteger;
-    LocObjs[id].pic:=Query.FieldByName('pic').AsInteger;   }
+    LocObjs[id].pic:=Query.FieldByName('pic').AsInteger;
     Query.Next;
   end;
 
@@ -384,7 +376,7 @@ TRY
     ceDB[id].c_trig := GetItemProps(query.FieldByName('c_trig').AsString);
 
     Query.Next;
-  end;
+  end;    }
 
   WriteSafeText('Getting PerksDB...', 2 );
   Query.Close;
@@ -397,27 +389,27 @@ TRY
     PerksDB[id].exist:= true;
     pr := GetItemProps(query.FieldByName('props').AsString);
 
-    PerksDB[id].sc:= pr[1].pNum;
-    PerksDB[id].lid:= pr[2].pNum;
-    PerksDB[id].maxrank:= pr[3].pNum;
+    PerksDB[id].sc:= pr[1];
+    PerksDB[id].lid:= pr[2];
+    PerksDB[id].maxrank:= pr[3];
 
     for i := 1 to perksDB[id].maxrank do
       begin
-        perksDB[id].xyz[i].x := pr[3 + (i - 1) * 3 + 1].pNum;
-        perksDB[id].xyz[i].y := pr[3 + (i - 1) * 3 + 2].pNum;
-        perksDB[id].xyz[i].z := pr[3 + (i - 1) * 3 + 3].pNum;
+        perksDB[id].xyz[i].x := pr[3 + (i - 1) * 3 + 1];
+        perksDB[id].xyz[i].y := pr[3 + (i - 1) * 3 + 2];
+        perksDB[id].xyz[i].z := pr[3 + (i - 1) * 3 + 3];
       end;
 
     pr := GetItemProps(query.FieldByName('cost').AsString);
 
     for i := 1 to perksDB[id].maxrank do
-      perksDB[id].cost[i] := pr[i].pNum;
+      perksDB[id].cost[i] := pr[i];
 
     Query.Next;
   end;
 
   WriteSafeText('DB_Init done.', 2);
- }
+
 
  // Query.Close;
 except
@@ -643,6 +635,7 @@ try
   Query.SQL.Text := 'SELECT * FROM Chars WHERE id = "' + IntToStr(Chars[CharLID].header.ID) + '"' ;
   Query.Open;
   Query.First;
+  chars[charLID].header.Name    := Query.FieldByName('Name').AsString;
   Chars[charLID].header.loc     := Query.FieldByName('loc').AsInteger;
   Chars[charLID].header.classID := Query.FieldByName('class').AsInteger;
   Chars[charLID].header.raceID  := Query.FieldByName('race').AsInteger;
@@ -670,16 +663,16 @@ try
   if chars[charLID].hpmp.cMP < 1 then chars[charLID].hpmp.cMP:= 1;
 
   DB_GetCharInv(Chars[CharLID].header.ID);
-   {
+
   Query.Close;
-  Query.SQL.Text := 'SELECT * FROM perks WHERE cID = "' + IntToStr(Chars[charLID].charID) + '"' ;
+  Query.SQL.Text := 'SELECT * FROM perks WHERE cID = "' + IntToStr(Chars[charLID].header.ID) + '"' ;
   //WriteSafeText( Query.SQL.Text, 2);
   Query.Open;
   if Query.RecordCount = 0 then
       begin
         for i := 0 to 6 do
           for j := 1 to 25 do
-            chars[charLID].perks[i][j].pNum := 0;
+            chars[charLID].perks[i][j] := 0;
       end else
       begin
   Query.First;
@@ -691,7 +684,7 @@ try
   chars[charLID].perks[5] := GetItemProps(Query.FieldByName('sur').AsString);
   chars[charLID].perks[6] := GetItemProps(Query.FieldByName('sub').AsString);
 
-      end; }
+      end;
 except
   on E : Exception do
      WriteSafeText(e.message, 3);
