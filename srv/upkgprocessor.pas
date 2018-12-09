@@ -99,6 +99,16 @@ type
     fail_code : byte;
   end;
 
+  TPkg030 = record
+    stat  : byte;
+    fail_code : byte;
+  end;
+
+  TPkg031 = record
+    school, perk : byte;
+    fail_code    : byte;
+  end;
+
 procedure pkg001(pkg : TPkg001; sID : word);
    // 2
 procedure pkg003(pkg : TPkg003; sID : word);   // 3
@@ -127,6 +137,8 @@ procedure pkg025(pkg : TPkg025; sID : word);
 procedure pkg026(pkg : TPkg026; sID : word);
 procedure pkg027(pkg : TPkg027; sID : word);
 
+procedure pkg030(pkg : TPkg030; sID : word);
+procedure pkg031(pkg : TPkg031; sID : word);
 
 procedure pkgProcess(msg: string);
 
@@ -422,6 +434,7 @@ try
   _head._flag := $F;
   _head._id   := 12;
 
+  Char_CalculateStats(sessions[sID].charLID);
   _pkg.data := Chars[sessions[sID].charLID].Stats;
   _pkg.fail_code := 0;
 
@@ -668,6 +681,110 @@ try
 finally
   mStr.Free;
 end;
+end;
+
+procedure pkg030(pkg : TPkg030; sID : word);
+var stat    : byte;   pkg1 : TPkg010; pkg2 : TPkg011; pkg3: TPkg012;
+    cap     : word;
+    charLID : dword;
+begin
+  charLID := Sessions[sID].charLID;
+  if chars[charLID].Numbers.SP < 1 then exit;
+
+  stat := pkg.stat;
+  cap := chars[charLID].header.level * 2 + 15;
+  if chars[charLID].header.raceID = 2 then
+     if stat = 3 then
+        cap := cap + trunc(chars[charLID].header.level * 0.5);
+
+  case stat of
+    0 : if chars[charLID].bStr + chars[charLID].Points.pStr < cap then
+           begin
+             inc(chars[charLID].Points.pStr);
+             dec(chars[charLID].Numbers.SP);
+           end;
+    1 : if chars[charLID].bAgi + chars[charLID].Points.pAgi < cap then
+           begin
+             inc(chars[charLID].Points.pAgi);
+             dec(chars[charLID].Numbers.SP);
+           end;
+    2 : if chars[charLID].bCon + chars[charLID].Points.pCon < cap then
+           begin
+             inc(chars[charLID].Points.pCon);
+             dec(chars[charLID].Numbers.SP);
+           end;
+    3 : if chars[charLID].bHst + chars[charLID].Points.pHst < cap then
+           begin
+             inc(chars[charLID].Points.pHst);
+             dec(chars[charLID].Numbers.SP);
+           end;
+    4 : if chars[charLID].bInt + chars[charLID].Points.pInt < cap then
+           begin
+             inc(chars[charLID].Points.pInt);
+             dec(chars[charLID].Numbers.SP);
+           end;
+    5 : if chars[charLID].bSpi + chars[charLID].Points.pSpi < cap then
+           begin
+             inc(chars[charLID].Points.pSpi);
+             dec(chars[charLID].Numbers.SP);
+           end;
+  end;
+
+  DB_SetCharData(charLID, chars[charLID].header.Name);
+  Char_CalculateStats(charLID);
+
+  pkg010(pkg1, sID);
+  pkg011(pkg2, sID);
+  pkg012(pkg3, sID);
+end;
+
+procedure pkg031(pkg : TPkg031; sID : word);
+var i, pid: integer;   _pkg010 : TPkg010; _pkg011: TPkg011; _pkg012: TPkg012; _pkg016: TPkg016;
+    s: string; sk, pr : word;
+    r, charLID, cID: DWORD;
+begin
+  charLID := Sessions[sID].charLID;
+  sk := pkg.school;
+  pr := pkg.perk;
+  pid := GetPerkID(sk, pr);
+
+  if chars[charLID].perks[sk][pr] >= PerksDB[pid].maxrank then exit;
+
+  if Chars[charLID].numbers.TP < PerksDB[pid].cost[chars[charLID].perks[sk][pr] + 1] then
+     begin
+       exit;
+     end;
+
+  if (sk = 0) and (pr = 2) then
+     if chars[charLID].perks[0][1] < 2 then exit;
+  if (sk = 1) and (pr = 2) then
+     if chars[charLID].perks[1][1] < 2 then exit;
+  if (sk = 2) and (pr = 2) then
+     if chars[charLID].perks[2][1] < 2 then exit;
+  if (sk = 3) and (pr = 2) then
+     if chars[charLID].perks[3][1] < 2 then exit;
+  if (sk = 4) and (pr = 2) then
+     if chars[charLID].perks[4][1] < 2 then exit;
+  if (sk = 5) and (pr = 2) then
+     if chars[charLID].perks[5][1] < 2 then exit;
+  if (sk = 6) and (pr = 2) then
+     if chars[charLID].perks[6][1] < 2 then exit;
+
+  WriteSafeText('Before incr = ' + IntToStr( chars[charLID].perks[sk][pr] ), 2);
+  inc(chars[charLID].perks[sk][pr], 1);
+  WriteSafeText('After incr = ' + IntToStr( chars[charLID].perks[sk][pr]), 2);
+
+  WriteSafeText('pID = ' + IntToStr(pID), 2);
+  WriteSafeText('Cost = ' + IntToStr(PerksDB[pid].cost[chars[charLID].perks[sk][pr]]), 2);
+  dec(chars[charLID].Numbers.TP, PerksDB[pid].cost[chars[charLID].perks[sk][pr]]);
+
+  DB_SetCharData( charLID, Chars[charLID].header.Name);
+  Char_CalculateStats(charLID);
+
+  pkg010(_pkg010, sID);
+  pkg011(_pkg011, sID);
+  pkg012(_pkg012, sID);
+  pkg016(_pkg016, sID);
 end;
 
 procedure pkgProcess(msg: string);

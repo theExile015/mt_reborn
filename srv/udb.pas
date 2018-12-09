@@ -46,6 +46,14 @@ implementation
 uses uPkgProcessor;
 // uses uCharManager;
 
+function PropsToStr(props: TProps): string;
+var i: integer;
+begin
+  result := '';
+  for i := 1 to high(props) do
+    result := result + IntToStr(props[i]) + ':';
+end;
+
 function GetItemProps(str_props : string) : TProps;
 var i, k: integer;
     prop, c: string;
@@ -719,15 +727,15 @@ try
                    'WHERE chID = "' + IntToStr(Chars[charLID].Header.ID) + '"';
   //WriteSafeText(Query.SQL.Text);
    Query.ExecSQL;   // обновляем данные в таблице статов пероснажа
- {
+
    Query.Close;
-   Query.SQL.Text := 'SELECT * FROM perks WHERE cID = "' + IntToStr(chars[charLID].charID) + '"';
+   Query.SQL.Text := 'SELECT * FROM perks WHERE cID = "' + IntToStr(chars[charLID].header.ID) + '"';
    //WriteSafeText( Query.SQL.Text, 2);
    Query.Open;
    if Query.RecordCount = 0 then
       begin
          Query.Close;
-         Query.SQL.Text:= 'INSERT INTO perks (cID) VALUES (' + IntToStr(chars[charLID].charID) + ')' ;
+         Query.SQL.Text:= 'INSERT INTO perks (cID) VALUES (' + IntToStr(chars[charLID].header.ID) + ')' ;
          // WriteSafeText( Query.SQL.Text, 2);
          Query.ExecSQL;
       end;
@@ -740,9 +748,9 @@ try
                    'spi = "' + PropsToStr(chars[charLID].perks[4]) + '", ' +
                    'sur = "' + PropsToStr(chars[charLID].perks[5]) + '",' +
                    'sub = "' + PropsToStr(chars[charLID].perks[6]) + '" ' +
-                   'WHERE cID = "' + IntToStr(Chars[charLID].charID) + '"';;
+                   'WHERE cID = "' + IntToStr(Chars[charLID].header.ID) + '"';;
    //WriteSafeText( Query.SQL.Text, 2);
-   Query.ExecSQL;   }
+   Query.ExecSQL;
 except
   on E : Exception do
      WriteSafeText(e.message, 3);

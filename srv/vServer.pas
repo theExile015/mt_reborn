@@ -12,7 +12,9 @@ uses
   vVar,
   vNetCore,
   vServerLog,
-  udb, uPkgProcessor, uCharManager;
+  udb,
+  uPkgProcessor,
+  uCharManager;
 
 begin
 try

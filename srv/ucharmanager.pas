@@ -56,13 +56,13 @@ function GetPerkID(sc, lid : byte) : word;
 var I: integer;
 begin
   result := 0;
- { for i := 1 to high(PerksDB) do
+  for i := 1 to high(PerksDB) do
     if PerksDB[i].exist then
     if (PerksDB[i].sc = sc) and (PerksDB[i].lid = lid) then
        begin
          result := i;
          break;
-       end;    }
+       end;
 end;
 
 function GetPerkXYZ(sc, lid, lvl : byte) : TXYZ;
@@ -72,13 +72,13 @@ begin
   result.y:=0;
   result.z:=0;
   if lvl > 5 then exit; if lvl < 1 then exit;
- { for i := 1 to high(PerksDB) do
+  for i := 1 to high(PerksDB) do
     if PerksDB[i].exist then
        if (PerksDB[i].sc = sc) and (PerksDB[i].lid = lid) then
           begin
             result := PerksDB[i].xyz[lvl];
             break;
-          end;  }
+          end;
 end;
 
 function hpmp_counter(base, par : dword) : dword;
@@ -197,7 +197,7 @@ begin
   i := CharLID;
       begin
           DB_GetCharData( i );
-        //  DB_GetCharInv(i);
+          DB_GetCharInv( i );
           result := i;
 
           chars[i].iStr:= 0;
@@ -245,9 +245,9 @@ begin
               //WriteSafeText(inttostr(i) + ' Item stats recalculation froms slot ' + intToStr(j) );
               //  дамаг, армор, апх
               if ItemDB[chars[i].Inventory[j].iID].data.props[2] <> 0 then
-                 chars[i].Stats.Dmg:=chars[i].Stats.Dmg + ItemDB[chars[i].Inventory[j].iID].data.props[2];
+                 chars[i].Stats.Dmg:=ItemDB[chars[i].Inventory[j].iID].data.props[2];
               if ItemDB[chars[i].Inventory[j].iID].data.props[4] <> 0 then
-                 chars[i].Stats.APH:=chars[i].Stats.APH + ItemDB[chars[i].Inventory[j].iID].data.props[4];
+                 chars[i].Stats.APH:=ItemDB[chars[i].Inventory[j].iID].data.props[4];
               if ItemDB[chars[i].Inventory[j].iID].data.props[5] <> 0 then
                  chars[i].Stats.Armor:=chars[i].Stats.Armor + ItemDB[chars[i].Inventory[j].iID].data.props[5];
               // базовые статы
@@ -284,13 +284,15 @@ begin
 
             end;
 
-         { chars[i].iStr := chars[i].iStr + GetPerkXYZ(0, 1, chars[i].perks[0][1].pNum).x;
-          chars[i].iAgi := chars[i].iAgi + GetPerkXYZ(5, 1, chars[i].perks[5][1].pNum).x;
-          chars[i].iCon := chars[i].iCon + GetPerkXYZ(1, 1, chars[i].perks[1][1].pNum).x;
-          chars[i].iInt := chars[i].iInt + GetPerkXYZ(3, 1, chars[i].perks[3][1].pNum).x;
-          chars[i].iSpi := chars[i].iSpi + GetPerkXYZ(4, 1, chars[i].perks[4][1].pNum).x;
-          chars[i].iMP5 := chars[i].iMP5 + GetPerkXYZ(2, 1, chars[i].perks[2][1].pNum).x;
-          }
+          //writeln('DMG ##: ', chars[i].Stats.DMG);
+
+          chars[i].iStr := chars[i].iStr + GetPerkXYZ(0, 1, chars[i].perks[0][1]).x;
+          chars[i].iAgi := chars[i].iAgi + GetPerkXYZ(5, 1, chars[i].perks[5][1]).x;
+          chars[i].iCon := chars[i].iCon + GetPerkXYZ(1, 1, chars[i].perks[1][1]).x;
+          chars[i].iInt := chars[i].iInt + GetPerkXYZ(3, 1, chars[i].perks[3][1]).x;
+          chars[i].iSpi := chars[i].iSpi + GetPerkXYZ(4, 1, chars[i].perks[4][1]).x;
+          chars[i].iMP5 := chars[i].iMP5 + GetPerkXYZ(2, 1, chars[i].perks[2][1]).x;
+
           chars[i].Stats.Str:=chars[i].bStr + chars[i].Points.pStr + chars[i].iStr;
           chars[i].Stats.Agi:=chars[i].bAgi + chars[i].Points.pAgi + chars[i].iAgi;
           chars[i].Stats.Con:=chars[i].bCon + chars[i].Points.pCon + chars[i].iCon;
@@ -317,13 +319,13 @@ begin
 
           if ItemDB[chars[i].Inventory[4].iID].data.iType = 10 then
              chars[i].Stats.Dmg:=round((chars[i].Stats.Dmg + 10 * (chars[i].Stats.Agi + chars[i].Stats.Str)/(100)));
+          //writeln('DMG ##: ', chars[i].Stats.DMG);
+               // Перк 1р-мастери
+          if (ItemDB[chars[i].Inventory[4].iID].data.iType = 10) or
+             (ItemDB[chars[i].Inventory[4].iID].data.iType = 8) then
+              if chars[i].perks[6][3] > 0 then
+                 chars[i].Stats.DMG := 1 + trunc(chars[i].Stats.DMG * (1 + PerksDB[17].xyz[chars[i].perks[6][3]].x / 100));
 
-          {     // Перк 1р-мастери
-          if (ItemDB[chars[i].Inventory[4].iID].iType = 10) or
-             (ItemDB[chars[i].Inventory[4].iID].iType = 8) then
-              if chars[i].perks[6][3].pNum > 0 then
-                 chars[i].iDmg := 1 + trunc(chars[i].iDmg * (1 + PerksDB[17].xyz[chars[i].perks[6][3].pNum].x / 100));
-             }
 
           chars[i].hpmp.mHP:=hpmp_counter(chars[i].bHP, chars[i].Stats.Con) + base_hp[chars[i].header.level] - 40;
           chars[i].hpmp.mMP:=hpmp_counter(chars[i].bMP, chars[i].Stats.Int) + base_mp[chars[i].header.level] - 20;
