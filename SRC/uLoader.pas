@@ -43,6 +43,10 @@ begin
   // нулевая текстура
   texZero := tex_LoadFromFile( dirSys + 'zeroTex.png');
 
+  snd_gui[1] := snd_LoadFromFile('Data\Sound\click.wav');
+  snd_gui[2] := snd_LoadFromFile('Data\Sound\drag_onmousedown.wav');
+  snd_gui[3] := snd_LoadFromFile('Data\Sound\drag_onmouseup.wav');
+
   // шрифты
   if file_OpenArchive('Data\fonts.zep') then
      begin

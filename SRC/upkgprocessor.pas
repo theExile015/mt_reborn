@@ -103,6 +103,16 @@ type
     fail_code : byte;
   end;
 
+  TPkg030 = record
+    stat : byte;
+    fail_code : byte;
+  end;
+
+  TPkg031 = record
+    school, perk : byte;
+    fail_code    : byte;
+  end;
+
 procedure pkg000;
 procedure pkg001(pkg: TPkg001);   // Логин
 procedure pkg002(pkg: TPkg002);   // Список персонажей
@@ -384,6 +394,7 @@ end;
 procedure pkg011(pkg: TPkg011);
 begin
   activechar.Numbers := pkg.data;
+  block_btn := false;
 end;
 
 procedure pkg012(pkg: TPkg012);

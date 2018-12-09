@@ -247,7 +247,7 @@ procedure mGui_OnMouseClick( Parent, Sender : integer );
 var i, j, k: integer; p: TProps;
 begin
   if not mWins[parent].btns[sender].enabled then exit;
-
+  snd_Play(snd_gui[1], false, 0, 0, 0, 0.5);
       // Кнопка Cancel (Ok) при статусе подключения
   if (parent = 17) and (sender = 3) then
      begin
@@ -296,7 +296,10 @@ begin
 
   if (parent = 6) and (sender >= 5) and (sender <=10) then
      if activechar.Numbers.SP > 0 then
-       // SendData(inline_PkgCompile(50, activechar.Name + '`' + u_IntToStr(sender - 5) + '`'))
+     begin
+       if not block_btn then
+          DoStatUp(sender - 5); // повышение стата
+     end
      else
         Chat_AddMessage(3, high(word), 'Not enough SP to increase.');
 
@@ -696,6 +699,11 @@ begin
                           1 + mWins[6].rect.X + sk_x + sk_w / 2 - 7 * sk_z + sk_z * skills[j].dist * m_cos(round(skills[j].school * 360 / 7 + skills[j].ang + sk_a)),
                           1 + mWins[6].rect.Y + sk_y + sk_h / 2 - 7 * sk_z + sk_z * skills[j].dist * m_sin(round(skills[j].school * 360 / 7 + skills[j].ang + sk_a)),
                           u_IntToStr(skills[j].rank) );
+               // DEBUG
+                {   Text_draw(fntMain,
+                          1 + mWins[6].rect.X + sk_x + sk_w / 2 - 7 * sk_z + sk_z * skills[j].dist * m_cos(round(skills[j].school * 360 / 7 + skills[j].ang + sk_a)),
+                          21 + mWins[6].rect.Y + sk_y + sk_h / 2 - 7 * sk_z + sk_z * skills[j].dist * m_sin(round(skills[j].school * 360 / 7 + skills[j].ang + sk_a)),
+                          u_IntToStr(j) );    }
 
              end;
           end;
@@ -1002,6 +1010,7 @@ begin
                (on_DD = false) then                         // ещё нет днд
                if (i = 5) then                              // таскаем, только если открыт инвентарь
                begin
+                  snd_play(snd_gui[3], false, 0, 0, 0, 0.3);
                   on_DD := true;
                   ddIndex := j;
                   ddWin   := i;
@@ -1126,7 +1135,7 @@ begin
        mWins[5].texts[32].Text:=u_IntToStr(activechar.Stats.Int);  // инт
        mWins[5].texts[33].Text:=u_IntToStr(activechar.Stats.Spi);  // спи
 
-       mWins[5].texts[34].Text:=u_IntToStr(round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
+       mWins[5].texts[34].Text:=u_IntToStr(1 + round(activechar.Stats.DMG/10 * activechar.Stats.APH)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
        mWins[5].texts[35].Text:=u_IntToStr(activechar.Stats.APH);  // апх
        mWins[5].texts[36].Text:=u_FloatToStr(15/9) + '%';  // хит
        mWins[5].texts[37].Text:=u_FloatToStr(16/10) + '%';  // крит
@@ -1297,6 +1306,7 @@ begin
                ddIndex := 0;
                ddWin := 0;
                on_DD := false;
+               snd_play(snd_gui[2], false, 0, 0, 0, 0.5);
              end;
 
        for i := 1 to high(mwins[5].dnds) do
@@ -1310,11 +1320,13 @@ begin
                         ddIndex := 0;
                         ddWin := 0;
                         on_DD := false;
+                        snd_play(snd_gui[2], false, 0, 0, 0, 0.3);
                       end else
                       begin
                         ddItem.exist:=false;
                         ddItem.data.contain:=0;
                         on_DD := false;
+                        snd_play(snd_gui[2], false, 0, 0, 0, 0.3);
                       end;
                       break;
                  end else                            // попытка свапа предметов
@@ -1335,11 +1347,13 @@ begin
                         ddIndex := 0;
                         ddWin := 0;
                         on_DD := false;
+                        snd_play(snd_gui[2]);
                       end else
                       begin
                         ddItem.exist:=false;
                         ddItem.data.contain:=0;
                         on_DD := false;
+                        snd_play(snd_gui[2], false, 0, 0, 0, 0.3);
                       end;
                       break;
                  end;
@@ -1440,9 +1454,9 @@ begin
     mWins[11].dnds[i].data.contain:= 0;
 
   n := 2;
-  for i := 0 to 6 do
+  for i := 1 to high(skills) do
     begin
-      if skills[i * 25 + 1].rank > 0 then
+      if skills[i].rank > 0 then
          begin
            case i of
              1:
@@ -1452,42 +1466,42 @@ begin
                mWins[11].dnds[n].data.contain:=7;
                inc(n);
              end;
-             2:
+             26:
              begin     // дефенсив
                mWins[11].dnds[n].data.contain:=9;
                inc(n);
                mWins[11].dnds[n].data.contain:=15;
                inc(n);
              end;
-             3:
+             51:
              begin     // Ресторатив
                mWins[11].dnds[n].data.contain:=5;
                inc(n);
                mWins[11].dnds[n].data.contain:=12;
                inc(n)
              end;
-             4:
+             76:
              begin     // Элементал
                mWins[11].dnds[n].data.contain:=6;
                inc(n);
                mWins[11].dnds[n].data.contain:=8;
                inc(n)
              end;
-             5:
+             101:
              begin     // Спиритуал
                mWins[11].dnds[n].data.contain:=1;
                inc(n);
                mWins[11].dnds[n].data.contain:=14;
                inc(n)
              end;
-             6:
+             126:
              begin     // Сурвайвал
                mWins[11].dnds[n].data.contain:=4;
                inc(n);
                mWins[11].dnds[n].data.contain:=13;
                inc(n)
              end;
-             7:
+             151:
              begin     // сабт
                mWins[11].dnds[n].data.contain:=10;
                inc(n);
@@ -1642,7 +1656,7 @@ begin
     begin
       if stat_tab = 0 then
          begin
-           d1 := round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1);
+           d1 := 1 + round(activechar.Stats.DMG/10 * activechar.Stats.APH);
            d2 := 2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1);
            mWins[2].texts[1].Text := AnsiToUTF8(format(STT[17], [d1, d2]));
            mWins[2].texts[2].Text := STD[17];
@@ -1853,7 +1867,7 @@ begin
        mWins[4].texts[3].rect.H := fH;
        mWins[4].texts[3].rect.X := 0;
        mWins[4].texts[3].rect.Y := tH;
-       mWins[4].texts[3].Text:= u_IntToStr(round(1 + items[iID].data.props[2] / 10 * items[iID].data.props[4])) +
+       mWins[4].texts[3].Text:= u_IntToStr(1+ round(items[iID].data.props[2] / 10 * items[iID].data.props[4])) +
                                 ' - ' +
                                 u_IntToStr(2 + round(items[iID].data.props[2] / 10 * items[iID].data.props[4] * 1.1)) +
                                 ' Damage';

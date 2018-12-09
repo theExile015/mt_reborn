@@ -24,6 +24,8 @@ procedure DoPerkRequest();
 procedure DoSwap(_from, _to: byte);
 procedure DoSendMsg(msg: string);
 function DoWho(id : word): string;
+procedure DoStatUP(stat: byte);
+procedure DoPerkUP(sc, perk: byte);
 
 implementation
 
@@ -185,7 +187,7 @@ end;
 end;
 
 procedure DoPerkRequest();
-var _pkg  : TPkg016;
+var _pkg  : TPkg016;  _pkg011: TPkg011; _pkg012: TPkg012;
     _head : TPackHeader;
     mStr  : TMemoryStream;
 begin
@@ -198,6 +200,42 @@ try
        mStr.Position := 0;
        mStr.Write(_head, sizeof(_head));
        mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+finally
+       mStr.Free;
+end;
+
+       sleep(20);
+       _head._FLAG := $f;
+       _head._ID   := 11;
+       _pkg011.fail_code:= 0;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg011, sizeof(_pkg011));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+finally
+       mStr.Free;
+end;
+
+       sleep(20);
+       _head._FLAG := $f;
+       _head._ID   := 12;
+       _pkg012.fail_code:= 0;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg012, sizeof(_pkg012));
 
        TCP.FCon.IterReset;
        TCP.FCon.IterNext;
@@ -322,6 +360,63 @@ begin
   _head._ID   := 27;
 
   _pkg._who := id;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure DoStatUP(stat: byte);
+var _pkg  : TPkg030;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+  block_btn := true; // блокируем кнопку во избежании мультикликов
+
+  _head._FLAG := $f;
+  _head._ID   := 30;
+
+  _pkg.stat := stat;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure DoPerkUP(sc, perk: byte);
+var _pkg  : TPkg031;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+  block_btn := true; // блокируем кнопку во избежании мультикликов
+
+  Writeln(sc, ' ', perk);
+
+  _head._FLAG := $f;
+  _head._ID   := 31;
+
+  _pkg.school := sc;
+  _pkg.perk := perk;
 
 try
        mStr := TMemoryStream.Create;

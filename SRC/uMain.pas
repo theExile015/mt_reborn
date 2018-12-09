@@ -57,6 +57,7 @@ end;
 
 procedure Game_Init;
 begin
+  snd_Init();
   cam2d_Init( zglCam1 );
   cam2d_Init( zglCam2 );
 
@@ -115,6 +116,7 @@ end;
 
 procedure Game_Free;
 begin
+  snd_free();
   Gui.Free;
 end;
 

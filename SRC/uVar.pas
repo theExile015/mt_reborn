@@ -520,6 +520,7 @@ var
   chat_color: TChatColorPack;
   Tutorial  : word = 0;                                   // Стадия обучения
   tut_frame : word = 1;
+  block_btn : boolean = false; // блокировка обработки действий
 
   Inv                : array [1..100] of TDragAndDropObj; // элементы драг-н-дроп
   ddItem             : TDragAndDropObj;
@@ -551,6 +552,10 @@ var
    spID, spR             : word;
    curr_turn_name        : utf8string;
    t_mm, t_ss            : word;
+
+   // sound
+
+   snd_gui               : array [1..10] of zglPSound;
 
 
 implementation

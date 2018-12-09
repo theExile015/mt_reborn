@@ -15,7 +15,7 @@ procedure SF_Update();
 
 implementation
 
-uses uNetCore, uParser;
+uses uNetCore, uParser, uXClick;
 
 procedure FillWithNumbers(id, n1, n2, n3, n4, n5: integer);
 begin
@@ -426,9 +426,9 @@ begin
             if mouse_Click(M_BLEFT) then
             if skills[i].enabled then
             if skills[i].rank <> skills[i].maxrank then
-           { if activechar.TP >= skills[i].costs[skills[i].rank + 1] then
-               SendData(inline_PkgCompile(56, activechar.Name + '`' + u_IntToStr(skills[i].school) + '`' + u_IntToStr(i - (skills[i].school + 1) * 10) + '`'));
-       }end;
+            if activechar.numbers.TP >= skills[i].costs[skills[i].rank + 1] then
+               DoPerkUp( trunc((i - 1)/ 25), i - trunc((i - 1) / 25) * 25);
+       end;
 
   if skills[10].rank > 1 then skills[11].enabled:=true;
   if skills[10].rank > 1 then skills[12].enabled:=true;
