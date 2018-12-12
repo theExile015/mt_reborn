@@ -38,7 +38,7 @@ var
 implementation
 
 uses
-  uPkgProcessor;
+  uPkgProcessor, uChatManager;
 
 procedure TLTCPTest.OnEr(const msg: string; aSocket: TLSocket);
 begin
@@ -88,11 +88,11 @@ var
 
   _pkg010 : TPkg010;   _pkg011 : TPkg011;   _pkg012: TPkg012;
   _pkg013 : TPkg013;   _pkg014 : TPkg014;
-  _pkg016 : TPkg016;
+  _pkg016 : TPkg016;   _pkg017 : TPkg017;   _pkg018: TPkg018;
                        _pkg020 : TPkg020;
 
   _pkg025 : TPkg025;   _pkg026 : TPkg026;   _pkg027: Tpkg027;
-
+  _pkg028 : TPkg028;
   _pkg030 : TPkg030;   _pkg031 : TPkg031;
 begin
 try
@@ -182,6 +182,18 @@ try
            mStr.Read(_pkg016, SizeOf(_pkg016));
            pkg016(_pkg016, sID);
          end;
+         17:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg017, SizeOf(_pkg017));
+           pkg017(_pkg017, sID);
+         end;
+         18:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg018, SizeOf(_pkg018));
+           pkg018(_pkg018, sID);
+         end;
          20:
          begin
            mStr.Position:=SizeOf(_head);
@@ -205,6 +217,12 @@ try
            mStr.Position:=SizeOf(_head);
            mStr.Read(_pkg027, SizeOf(_pkg027));
            pkg027(_pkg027, sID);
+         end;
+         28:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg028, SizeOf(_pkg028));
+           pkg028(_pkg028, sID);
          end;
          30:
          begin
@@ -244,6 +262,10 @@ begin
            break;
          end;
   WriteSafeText('Lost connection ' + aSocket.PeerAddress, 2); // write info if connection was lost
+
+  for i := 0 to high(chars) do
+    if chars[i].exist then
+       Chat_GetMembersList(1, chars[i].header.loc, chars[i].sID);
 end;
 
 constructor TLTCPTest.Create;

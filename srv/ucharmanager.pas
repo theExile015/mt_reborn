@@ -7,7 +7,8 @@ interface
 uses
   Classes,
   vVar,
-  uDB;
+  uDB,
+  DOS;
 
 function hpmp_counter(base, par : dword) : dword;
 function GetPerkXYZ(sc, lid, lvl : byte) : TXYZ;
@@ -20,11 +21,12 @@ procedure Char_AddNumbers(charLID, Gold, Exp, lvl, SP, TP : DWORD);
 
 function Char_EnterTheWorld(sID, charID: DWORD): word;
 function Char_CalculateStats(charLID: dword): word;
+procedure char_MoveToLoc(charLID, locID : DWORD) ;
 
 
 implementation
 
-uses uPkgProcessor;
+uses uPkgProcessor, vNetCore, uChatManager;
 
 procedure Char_InitInventory();
 var i, j : integer;
@@ -177,16 +179,16 @@ begin
              chars[i].Numbers.Exp := chars[i].Numbers.Exp - exp_cap[chars[i].header.level + 1];
              Char_AddNumbers( i, 0, 0, 1, 3, 2);
            end;
-     {   // перемещение на локацию
+        // перемещение на локацию
         if chars[i].in_trvl then
            begin
              GetTime(hh, mm, ss, ms);
              if abs(mm * 60 + ss - chars[i].trvMin * 60 - chars[i].trvSec) >= chars[i].trvTime then
                 begin
-                  WriteSafeText(' Char ' + (chars[i].name) + ' to LOC > ' + locDB[chars[i].trvDest].name, 2);
+                //    Writeln(' Char ' + (chars[i].name) + ' to LOC > ' + locDB[chars[i].trvDest].name, 2);
                   Char_MoveToLoc(i, chars[i].trvDest);
                 end;
-           end;  }
+           end;
       end;
 end;
 
@@ -340,6 +342,48 @@ begin
           chars[i].Stats.MPReg :=chars[i].header.level + chars[i].iMP5 + trunc(chars[i].Stats.Spi/chars[i].header.level);
           chars[i].Stats.SPD   :=chars[i].iSPD;
       end;
+end;
+
+procedure char_MoveToLoc(charLID, locID : DWORD) ;
+var i, rs : integer;
+    s : string;
+    _head : TPackHeader;
+    _pkg  : TPkg028;
+    mStr  : TMemoryStream;
+begin
+  chars[charLID].in_trvl:=false;
+  chars[charLID].header.loc:= locID;
+  DB_SetCharData(charLID, chars[charLID].header.name);
+
+  try
+         mStr := TMemoryStream.Create;
+         _head._flag := $F;
+         _head._id   := 28;
+
+         //_pkg.name:='';
+         _pkg._to := locID;
+         _pkg._time := 0;
+         _pkg.fail_code := high(byte);
+
+         mStr.Write(_head, sizeof(_head));
+         mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[charLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[charLID].sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                Break;
+              end;
+       finally
+         mStr.Free;
+       end;
+  // локацию сменена. нужно разослать новые списки
+  for i := 0 to high(chars) do
+    if chars[i].exist then
+       Chat_GetMembersList(1, chars[i].header.loc, chars[i].sID);
 end;
 
 end.

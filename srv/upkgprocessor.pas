@@ -12,7 +12,8 @@ uses
   vServerLog,
   sysutils,
   uCharManager,
-  uChatManager;
+  uChatManager,
+  dos;
 
 type
   TPackHeader = record
@@ -76,6 +77,16 @@ type
     fail_code : byte;
   end;
 
+  TPkg017 = record
+    data      : array [1..50] of boolean;
+    fail_code : byte;
+  end;
+
+  TPkg018 = record
+    data  : TLocData;
+    fail_code : byte;
+  end;
+
   TPkg020 = record
     _from, _to : byte;
     fail_code  : byte;
@@ -97,6 +108,11 @@ type
     _who  : word;
     name  : string[50];
     fail_code : byte;
+  end;
+
+  TPkg028 = record
+    _to, _time : word;
+    fail_code  : byte;
   end;
 
   TPkg030 = record
@@ -125,8 +141,8 @@ procedure pkg013(pkg : TPkg013; sID : word);
 procedure pkg014(pkg : TPkg014; sID : word);
 procedure pkg015(pkg : TPkg015; sID : word);
 procedure pkg016(pkg : TPkg016; sID : word);
-  // 17
-  // 18
+procedure pkg017(pkg : TPkg017; sID : word);
+procedure pkg018(pkg : TPkg018; sID : word);
   // 19
 procedure pkg020(pkg : TPkg020; sID : word);
   // 21
@@ -136,6 +152,7 @@ procedure pkg020(pkg : TPkg020; sID : word);
 procedure pkg025(pkg : TPkg025; sID : word);
 procedure pkg026(pkg : TPkg026; sID : word);
 procedure pkg027(pkg : TPkg027; sID : word);
+procedure pkg028(pkg : TPkg028; sID : word);
 
 procedure pkg030(pkg : TPkg030; sID : word);
 procedure pkg031(pkg : TPkg031; sID : word);
@@ -582,6 +599,86 @@ finally
 end;
 end;
 
+// локации на карте
+procedure pkg017(pkg : TPkg017; sID : word);
+var charLID : DWORD;
+    _head   : TPackHeader; _pkg : TPkg017;
+    i,k     : word;
+    mStr    : TMemoryStream;
+begin
+  charLID := Sessions[sID].charLID;
+
+  for i := 1 to high(_pkg.data) do
+      _pkg.data[i]:=false;
+
+
+  for i := 1 to high(LocDB) do
+    if locDB[i].exist then
+       if (locDB[i].props[4] = 0) or         // если нет специальных условий
+          (DB_GetCharVar(charLID, 'q' + IntToStr(locDB[i].props[4])) = locDB[i].props[5]) then // или условие выполнено
+         _pkg.data[i]:=true;
+
+try
+    mStr := TMemoryStream.Create;
+    _head._flag := $F;
+    _head._id   := 17;
+
+    mStr.Write(_head, sizeof(_head));
+    mStr.Write(_pkg, sizeof(_pkg));
+
+    // Отправляем пакет
+    TCP.FCon.IterReset;
+    while TCP.FCon.IterNext do
+      if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
+      if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
+         begin
+           TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+           Break;
+         end;
+  finally
+    mStr.Free;
+  end;
+end;
+
+// локации на карте
+procedure pkg018(pkg : TPkg018; sID : word);
+var _head   : TPackHeader; _pkg : TPkg018;
+    i       : word;
+    mStr    : TMemoryStream;
+begin
+  i := pkg.data.id;
+
+  if not locDB[i].exist then Exit;
+
+  _pkg.data.id := i;
+  _pkg.data.name := LocDB[i].name;
+  _pkg.data.links := LocDB[i].links;
+  _pkg.data.x:= LocDB[i].props[1];
+  _pkg.data.y:= LocDB[i].props[2];
+  _pkg.data.pic:= LocDB[i].props[3];
+
+try
+    mStr := TMemoryStream.Create;
+    _head._flag := $F;
+    _head._id   := 18;
+
+    mStr.Write(_head, sizeof(_head));
+    mStr.Write(_pkg, sizeof(_pkg));
+
+    // Отправляем пакет
+    TCP.FCon.IterReset;
+    while TCP.FCon.IterNext do
+      if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
+      if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
+         begin
+           TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+           Break;
+         end;
+  finally
+    mStr.Free;
+  end;
+end;
+
 procedure pkg020(pkg : TPkg020; sID : word);
 var charLID : word;
     i1, i2  : byte;
@@ -681,6 +778,81 @@ try
 finally
   mStr.Free;
 end;
+end;
+
+procedure pkg028(pkg : TPkg028; sID : word);
+var i, rs : integer;
+    locID, charLID : DWORD;
+    hh, ms : WORD;
+var _pkg  : TPkg028;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+  charLID := Sessions[sID].charLID;
+
+  if chars[charLID].in_trvl then exit;                // уже в путешествии
+  if chars[charLID].in_combat then exit;              // уже в комбате
+
+  locID := pkg._to;
+  if not locDB[locID].exist then exit;
+
+  // проверяем есть ли данная локация в списке линков
+  rs := 0;
+  for i := 1 to high(locDB[chars[charLID].header.loc].links) do
+      if locDB[chars[charLID].header.loc].links[i] = locID then  // лока существует в списке линков
+         begin// теперь проверяем открыта ли она
+         WriteSafeText('m_Check 1 ' + IntToStr(locDB[locID].links[i]));
+         if locDB[locID].exist then
+            begin
+            WriteSafeText('m_Check 2');
+            if (locDB[locDB[locID].links[i]].props[4] = 0) or         // если нет специальных условий
+                (DB_GetCharVar(charLID, 'q' + IntToStr(locDB[locDB[locID].links[i]].props[4])) = locDB[locDB[locID].links[i]].props[5]) then // или условие выполнено
+                begin
+                  rs := 1;
+                  break;
+                end;
+           end;
+         end;
+
+  if rs = 0 then
+     begin
+       WriteSafeText('Can''t reach locID = ' + intToStr(locID));
+       exit;
+     end else
+     begin
+       chars[charLID].in_trvl := true;
+       GetTime(hh, chars[charLID].trvMin, chars[charLID].trvSec, ms);
+       chars[charLID].trvTime := 15;
+       chars[charLID].trvDest:=locID;
+     //  chars[charLID].header.loc := high(word);
+     end;
+
+
+try
+       mStr := TMemoryStream.Create;
+       _head._flag := $F;
+       _head._id   := 28;
+
+       //_pkg.name:='';
+       _pkg._to := locID;
+       _pkg._time := chars[charLID].trvTime;
+       _pkg.fail_code := rs;
+
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       // Отправляем пакет
+       TCP.FCon.IterReset;
+       while TCP.FCon.IterNext do
+         if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
+         if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
+            begin
+              TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+              Break;
+            end;
+     finally
+       mStr.Free;
+     end;
 end;
 
 procedure pkg030(pkg : TPkg030; sID : word);

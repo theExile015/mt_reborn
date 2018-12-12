@@ -83,10 +83,10 @@ type
     iStr, iAgi, iCon, iHst, iInt, iSpi      : DWORD;
     iHit, iCrit, iBlock, iAP                : DWORD;
     iMPReg, iHPReg, iBlValue, iResist       : DWORD;
-    iArmor, iIni, iSPD          : DWORD;
+    iArmor, iIni, iSPD                      : DWORD;
     Inventory                               : TInventory;
-  { trvMin, trvSec, trvTime, trvDest : word;
-    auras : array [1..16] of TAura; }
+    trvMin, trvSec, trvTime, trvDest : word;
+    // auras : array [1..16] of TAura; }
     perks : TPerks;
   end;
 
@@ -122,6 +122,20 @@ type
     discr : string;
   end;
 
+  TLocation = record
+    exist : boolean;
+    name  : string;
+    links : TProps;
+    props : TProps;
+  end;
+
+  TLocData = record
+    id        : word;
+    name      : string[50];
+    x, y, pic : word;
+    links     : TProps;
+  end;
+
   TChatMembersList = array [1..30] of TChatMember;
 
 Var
@@ -151,6 +165,7 @@ Var
   ItemDB   : array [1..1000] of TItem;       // База предметов
   LocObjs  : array [1..1000] of TLocObj;
   PerksDB  : array [1..100] of TPerkData;
+  LocDB    : array [1..50] of TLocation;
 
 implementation
 

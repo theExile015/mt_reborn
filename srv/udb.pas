@@ -248,7 +248,7 @@ TRY
          end;     }
     Query.Next;
   end;
-{
+
   WriteSafeText('Getting LocDB...', 2 );
   Query.Close;
   Query.SQL.Text:= 'SELECT * FROM locs';
@@ -266,7 +266,7 @@ TRY
     Query.Next;
   end;
 
-  WriteSafeText('Getting VendorDB...', 2 );
+{ WriteSafeText('Getting VendorDB...', 2 );
   Query.Close;
   Query.SQL.Text:= 'SELECT * FROM vendors';
   Query.Open;
@@ -863,15 +863,15 @@ var i : integer;
 begin
 try
   result := 0;
-{
   Query.Close;
   Query.SQL.Text:= 'SELECT vnum FROM char_vars WHERE (chid = "' +
-                   IntToStr(chars[charLID].charID) + '") and (vname = "' + vName + '")';
+                   IntToStr(chars[charLID].header.ID) + '") and (vname = "' + vName + '")';
   Query.Open;
   if Query.RecordCount > 0 then
      begin
        result := Query.FieldByName('vnum').AsInteger;
-     end;   }
+       writeln(vName, '=' , result);
+     end;
 except
   on E : Exception do
      WriteSafeText(e.message, 3);
@@ -883,25 +883,25 @@ var i : integer;
 begin
 try
   result := high(byte);
-{
+
   Query.Close;
   Query.SQL.Text:= 'SELECT vnum FROM char_vars WHERE (chid="' +
-                   IntToStr(chars[charLID].charID) + '") and (vname="' + vName + '")';
+                   IntToStr(chars[charLID].header.ID) + '") and (vname="' + vName + '")';
   Query.Open;
   if Query.RecordCount > 0 then
      begin
        Query.SQL.Text:= 'UPDATE char_vars SET vnum="' + IntToStr(vNum) + '"' +
-                        ' WHERE (chid="' + IntToStr(chars[charLID].charID) + '") and ' +
+                        ' WHERE (chid="' + IntToStr(chars[charLID].header.ID) + '") and ' +
                         '(vname="' + vName + '")';
        Query.ExecSQL;
      end else
      begin
        Query.SQL.Text:= 'INSERT INTO char_vars (chid, vname, vnum) VALUES (' +
-                        IntToStr(chars[charLID].charID) + ', "' +
+                        IntToStr(chars[charLID].header.ID) + ', "' +
                         vName + '", ' +
                         IntToStr(vNum) + ')';
        Query.ExecSQL;
-     end;      }
+     end;
 except
   on E : Exception do
      WriteSafeText(e.message, 3);
@@ -913,17 +913,17 @@ var i : integer;
 begin
 try
   result := high(byte);
-  {
+
   Query.Close;
   Query.SQL.Text:= 'SELECT tutorial FROM Chars WHERE (id="' +
-                   IntToStr(chars[charLID].charID) + '")';
+                   IntToStr(chars[charLID].header.ID) + '")';
   Query.Open;
   if Query.RecordCount > 0 then
      begin
        Query.SQL.Text:= 'UPDATE Chars SET tutorial="' + IntToStr(tutor) + '"' +
-                        ' WHERE (id="' + IntToStr(chars[charLID].charID) + '")';
+                        ' WHERE (id="' + IntToStr(chars[charLID].header.ID) + '")';
        Query.ExecSQL;
-     end;    }
+     end;
 except
   on E : Exception do
      WriteSafeText(e.message, 3);
@@ -933,15 +933,15 @@ end;
 function DB_GetCharCounter(charLID, c_ID : DWORD): DWORD;
 begin
   try
-   { Query.Close;
-    Query.SQL.Text:= 'SELECT * FROM char_counters WHERE (chID = "' + IntToStr(Chars[charLID].charID) +
+    Query.Close;
+    Query.SQL.Text:= 'SELECT * FROM char_counters WHERE (chID = "' + IntToStr(Chars[charLID].header.ID) +
                      '" AND cID = "' + IntToStr(c_ID) + '")';
     Query.Open;
     if Query.RecordCount = 1 then
        begin
          Query.First;
          Result := Query.FieldByName('cValue').AsInteger;
-       end else result := high(dword);   }
+       end else result := high(dword);
   except
     on E : Exception do
        WriteSafeText(e.message, 3);
@@ -951,15 +951,15 @@ end;
 function DB_GetCharCounter2(charLID, cLink : DWORD): DWORD;
 begin
   try
-  {  Query.Close;
-    Query.SQL.Text:= 'SELECT * FROM char_counters WHERE (chID = "' + IntToStr(Chars[charLID].charID) +
+    Query.Close;
+    Query.SQL.Text:= 'SELECT * FROM char_counters WHERE (chID = "' + IntToStr(Chars[charLID].header.ID) +
                      '" AND cLink = "' + IntToStr(cLink) + '")';
     Query.Open;
     if Query.RecordCount = 1 then
        begin
          Query.First;
            Result := Query.FieldByName('cID').AsInteger;
-       end else result := high(dword);  }
+       end else result := high(dword);
   except
     on E : Exception do
        WriteSafeText(e.message, 3);
@@ -969,22 +969,22 @@ end;
 function DB_StartCharCounter(charLID, c_ID, cType, cLink : DWORD): DWORD;
 begin
   try
-   { Query.Close;
-    Query.SQL.Text:= 'SELECT * FROM char_counters WHERE (chID = "' + IntToStr(Chars[charLID].charID) +
+    Query.Close;
+    Query.SQL.Text:= 'SELECT * FROM char_counters WHERE (chID = "' + IntToStr(Chars[charLID].header.ID) +
                      '" AND cID = "' + IntToStr(c_ID) + '")';
     Query.Open;
     if Query.RecordCount > 0 then exit else
        begin
          Query.Close;
          Query.SQL.Text:= 'INSERT INTO char_counters (chID, cID, cType, cLink, cValue) VALUES ('+
-                          IntToStr(chars[charLID].charID) + ', ' +
+                          IntToStr(chars[charLID].header.ID) + ', ' +
                           IntToStr(c_ID) + ', ' +
                           IntToStr(cType) + ', ' +
                           IntToStr(cLink) + ', ' +
                           IntToStr(0) + ')';
          WriteSafeText(query.SQL.Text);
          Query.ExecSQL;
-       end;  }
+       end;
   except
     on E : Exception do
        WriteSafeText(e.message, 3);
@@ -994,19 +994,19 @@ end;
 function DB_SetCharCounter(charLID, c_ID, cValue : DWORD): DWORD;
 begin
   try
-  {  Query.Close;
-    Query.SQL.Text:= 'SELECT * FROM char_counters WHERE (chID = "' + IntToStr(Chars[charLID].charID) +
+    Query.Close;
+    Query.SQL.Text:= 'SELECT * FROM char_counters WHERE (chID = "' + IntToStr(Chars[charLID].header.ID) +
                      '" AND cID = "' + IntToStr(c_ID) + '")';
     Query.Open;
     if Query.RecordCount = 0 then exit else
        begin
          //WriteSafeText('d123453876975423578654');
          Query.Close;
-         Query.SQL.Text:= 'UPDATE char_counters SET cValue = "' + IntToStr(cValue) + '" WHERE (chID = "' + IntToStr(Chars[charLID].charID) +
+         Query.SQL.Text:= 'UPDATE char_counters SET cValue = "' + IntToStr(cValue) + '" WHERE (chID = "' + IntToStr(Chars[charLID].header.ID) +
                      '" AND cID = "' + IntToStr(c_ID) + '")';
 
          Query.ExecSQL;
-       end;  }
+       end;
   except
     on E : Exception do
        WriteSafeText(e.message, 3);
