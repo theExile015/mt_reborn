@@ -243,6 +243,7 @@ begin
 end;
 
 function lua_combat_start(): byte;
+var i : integer;
 begin
   Combat_Init;
   sleep(50);
@@ -250,21 +251,34 @@ begin
   combat_id := $ABC;
   NonameFrame41.Move(scr_w - 120, scr_h - 190);
   NonameFrame41.Show;
-  gs  := gsCLoad;
-  iga := igaCombat;
 
-  units[1].exist:=true;
-  units[1].alive:=true;
-  units[1].pos.x:=2;
-  units[1].pos.y:=2;
-  units[1].Direct:=3;
-  units[1].sex:=1;
-  units[1].gSet.body:=1;
-  units[1].gSet.head:=1;
-  units[1].gSet.MH:=1;
-  units[1].gSet.OH:=1;
+  for i:= 1 to 8 do
+  begin
+  units[i].exist:=true;
+  units[i].alive:=true;
+  units[i].visible:=true;
+  units[i].complex:=true;
+  units[i].name:='Unit ' + IntToStr(i);
+  units[i].fTargetPos.x:= 15 - i;
+  units[i].fTargetPos.y:= 15 - i;
+  units[i].Direct:=i - 1;
+  units[i].sex:=1;
+  units[i].gSet.body:=1;
+  units[i].gSet.head:=1;
+  units[i].gSet.MH:=1;
+  units[i].gSet.OH:=1;
+  units[i].in_act:=false;
+  units[i].ani:=0;
+  end;
+
+  for i := 1 to 8 do
+     Writeln(round(units[i].pos.x) , ' ', round(units[i].pos.y));
 
   your_unit := 1;
+  your_turn := true;
+
+  gs  := gsCLoad;
+  iga := igaCombat;
 end;
 
 function lua_offline(): byte;

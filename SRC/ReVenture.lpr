@@ -13,12 +13,7 @@ uses
  uMain,
  uVar,
  uLUA,
- uPkgProcessor,
- uParser,
- uLoader,
- uLocation,
- uXClick, uCombatManager
- ;
+ uLoader;
 
 {$R *.res}
 
@@ -26,27 +21,31 @@ procedure Init;
 begin
   TCP := TLTCPTest.Create;
   Game_Init;
-  // wnd_SetPos(0, 0);
+  wnd_SetPos(trunc(Zgl_Get(DESKTOP_WIDTH)/2 - scr_w/2), trunc(Zgl_Get(DESKTOP_HEIGHT)/2 - scr_h/2));
 end;
 
 procedure Draw;
 begin
   Game_Render;
+  SSprite2d_Draw( tex_Cursors[cur_type], mouse_x() - 2, mouse_y() - 3, 32, 32, cur_angle);
+
   Text_Draw( fntMain, scr_w - 50, scr_h - 20, u_IntToStr(zgl_Get(RENDER_FPS)) );
   Text_Draw( fntMain, scr_w - 50, scr_h - 40, u_IntToStr(zgl_Get(RENDER_BATCHES_2D)) );
+  //Text_Draw( fntMain, scr_w - 80, scr_h - 60, u_IntToStr(zgl_Get(RENDER_VRAM_USED)) );
 end;
 
 procedure Loader;
 begin
   LoadMainData();
-  LoadCombatData();
-  LoadLocData();
 end;
 
 procedure Timer;
 begin
   if TCP.FConnect then
      TCP.Process;
+
+  LoadCombatData();
+  LoadLocData();
 
   Game_Update;
 
@@ -67,7 +66,7 @@ end;
 Begin
 try
   if not zglLoad( libZenGL ) Then exit;
-
+  //  DestinyMode := true;
   zgl_Disable(APP_USE_AUTOPAUSE);
 
   randomize();

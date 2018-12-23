@@ -1,6 +1,7 @@
 unit uMain;
 
 {$mode delphi}{$H+}
+{$codepage utf8}
 
 interface
 
@@ -16,13 +17,13 @@ uses
   uNetCore,
   sysutils,
   uAdd,
-  uTileMap,
   uCharSelect,
   uChat,
   uLocation,
   uSkillFl,
   uXClick,
-  uCombatManager;
+  uCombatManager,
+  DOS;
 
 procedure Game_PreInit;
 procedure Game_Init;
@@ -43,8 +44,17 @@ begin
   scr_h := ini_ReadKeyInt('SCREEN', 'HEIGHT');
   f_scr := ini_ReadKeyBool('SCREEN', 'FULLSCREEN');
 
-  if scr_w < 1024 then scr_w := 1024;
-  if scr_h < 594  then scr_h := 594 ;
+  case scr_w of
+     960  : scr_h := 540;
+     1024 : scr_h := 576;
+     1280 : scr_h := 720;
+     1366 : scr_h := 768;
+     1600 : scr_h := 900;
+     1920 : scr_h := 1080;
+  else
+    scr_w := 960; scr_h := 540;
+  end;
+
 
   Port1 := ini_ReadKeyInt('NET', 'PORT');
   IP1   := PChar(_ini_ReadKeyStr('NET', 'IP'));
@@ -121,6 +131,8 @@ begin
 end;
 
 procedure Game_Render;
+var i, t: integer;
+    hh, mm, ss, ms : word;
 begin
   if iga = igaCombat then
      begin
@@ -149,6 +161,22 @@ begin
   if (gs = gsMMenu) or (gs = gsCharSelect) then
      SSprite2d_Draw( video.Texture, 0 , 0 , scr_w, scr_h, 0);
 
+  if iga = igaTravel then
+     begin
+       SSprite2d_Draw( GetTex('trvlScreen'), 0, 0, scr_w, scr_h, 0);
+       Text_DrawEx( fntMain, scr_w - 20, 150, 1, 0, 'Пункт назначения:', 255, $ffffff, TEXT_HALIGN_RIGHT );
+       Text_DrawEx( fntMain, scr_w - 20, 170, 1, 0, trvlText, 255, $ffffff, TEXT_HALIGN_RIGHT );
+       Text_DrawEx( fntMain2, scr_w - 20, 200, 1, 0, 'Прибытие через:', 255, $5e4f21, TEXT_HALIGN_RIGHT );
+       GetTime(hh, mm, ss, ms);
+       t := trvlTime - abs(trvlMin - mm) * 60 - abs(trvlSec - ss);
+       if t < 0 then t := 0;
+       Text_DrawEx( fntMain2, scr_w - 20, 220, 1,0, u_IntToStr(t), 255, $5e4f21, TEXT_HALIGN_RIGHT );
+       if t = 0 then
+          begin
+
+          end;
+     end;
+
 
   if gs = gsCharSelect then CharSel_Render();
 
@@ -173,11 +201,11 @@ begin
   myGUI_Draw;
   Gui.Draw;
   Console_Draw();
-  Gui.DrawMouse;
+  //Gui.DrawMouse;
 end;
 
 procedure Game_Update;
-var i: integer;
+var i: integer; t: dword;
 begin
   inc(a_p);
   if a_p/2 = a_p div 2 then inc(sc_ani);
@@ -198,7 +226,7 @@ begin
             cns := csDisc;
             mWins[17].texts[1].Text:='Can''t connect with server.';
           end;
-       if GetTickCount() - Timeout > 1000 then
+       if GetTickCount() - Timeout > 2000 then
           begin
             cns := csDisc;
             mWins[17].texts[1].Text:='Can''t connect with server.';
@@ -270,6 +298,7 @@ begin
           ch_message_inp := false;
 
        if key_press(K_ENTER) then
+          if not con_visible then
           if not ch_message_inp then
              begin
                ch_message_inp := true;
@@ -279,6 +308,7 @@ begin
              end;
 
        if not ch_message_inp then
+       if not con_visible then
           if key_press(K_I) or key_press(K_B) then
              if igs <> igsInv then
                 begin
@@ -287,6 +317,7 @@ begin
                 end else igs := igsNone;
 
        if not ch_message_inp then
+       if not con_visible then
           if key_press(K_C) then
              if igs <> igsChar then
                 begin
@@ -303,21 +334,51 @@ try
   // запрос данных по предметам, при открытии инвентаря
   if igs = igsInv then
      begin
+       t := GetTickCount();
+       if t / 3000 = t div 3000 then        // снимаем счётчики
+       begin
+         for i := 1 to high(items) do
+              items[i].req := false;
+         in_request := false;
+         sleep(20);
+       end;
+
+      // writeln(in_request);
+
        if not in_request then
        for i := 1 to high(mWins[5].dnds) do
            if mWins[5].dnds[i].data.contain > 0 then
            if not items[mWins[5].dnds[i].data.contain].exist then
            if not items[mWins[5].dnds[i].data.contain].req then
               begin
+                writeln('tuta');
                 items[mWins[5].dnds[i].data.contain].req := true;
                 DoItemRequest(mWins[5].dnds[i].data.contain);
                 sleep(20);
               end;
      end;
 except
-  on e: ERangeError do Writeln('ERangeError :: uMain :: in_request ::', mWins[5].dnds[i].data.contain,
+  on e: ERangeError do
+  begin
+  Writeln('ERangeError :: uMain :: in_request ::', mWins[5].dnds[i].data.contain,
         '::', i);
+  mWins[5].dnds[i].data.contain := 0;
+  end;
 end;
+
+  if igs = igsMap then
+     begin
+       for i := 1 to high(locs) do
+           if locs[i].exist then
+           if not locs[i].request then
+              if locs[i].data.pic = 0 then
+                 begin
+                   DoRequestLoc(i);
+                   Locs[i].request:=true;
+                   Sleep(40);
+                 end;
+     end;
+
 {$R-}
   location_Update();
   myGUI_Update;

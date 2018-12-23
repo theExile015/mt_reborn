@@ -73,7 +73,7 @@ implementation
 
 // Store here recursive uses or proc implementation
 {IMPLEMENTATION}
-uses uLocalization, uLoader;
+uses uLocalization;
 {END}
 
 class procedure zglTGuiEventHandler.OnClick(Sender: zglTGUIObject; X, Y: integer);
@@ -231,7 +231,10 @@ begin
      if igs <> igsMap then
         begin
           igs := igsMap;
-          //SendData(inline_PkgCompile(40, IntToStr(activechar.ID) + '`'));
+          DoMapRequest();
+          for i := 1 to high(locs) do
+            if locs[i].exist then
+               Writeln(i, ' ', locs[i].data.name, ' ', locs[i].data.x, ' ', locs[i].data.y, ' ', locs[i].data.pic);
         end else igs := igsNone;
 
   if sender = bServants then
@@ -275,6 +278,8 @@ class procedure zglTGuiEventHandler.OnEnterKey(Sender: zglTGUIObject);
 {EVENT OnEnterKey:zglTEvent}
 var s : string;
 begin
+   if con_visible then exit();
+
    if (Sender = NonameEdit2) or (sender = NonameEdit3) then
    begin
      DoLogin();

@@ -26,7 +26,7 @@ procedure Chat_SaveToFile;
 
 implementation
 
-uses u_MM_gui, uNetCore, uPkgProcessor, uLoader, uXClick;
+uses u_MM_gui, uLoader, uXClick;
 
 procedure Chat_Init();
 var i, j, k : integer;
@@ -101,10 +101,10 @@ end;
 procedure Chat_Update();
 var i, j: integer; dy : single;
 begin
-{if iga = igaCombat then
+if iga = igaCombat then
    begin
      for i := 1 to 5 do
-         ActionBar[i].contains:=mWins[11].dnds[i].contains;
+         ActionBar[i].data.contain:=mWins[11].dnds[i].data.contain;
 
      if your_turn then
         begin
@@ -120,62 +120,62 @@ begin
               for j := 0 to 4 do
               if KEY_PRESS(K_1 + j) and (not ch_message_inp) then
                  begin
-                      if units[your_unit].cAP >= spells[ActionBar[1 + j].contains].AP_Cost then
+                      if units[your_unit].cAP >= spells[ActionBar[1 + j].data.contain].AP_Cost then
                          begin
-                           if units[your_unit].cMP >= spells[ActionBar[1 + j].contains].MP_Cost then
+                           if units[your_unit].cMP >= spells[ActionBar[1 + j].data.contain].MP_Cost then
                               begin
-                                spID := ActionBar[1 + j].contains;
+                                spID := ActionBar[1 + j].data.contain;
                                 if (spID = 11) or (spID = 8) or (spID = 13) or (spID = 14) or (spID = 15) then
                                    begin
-                                     SendData( inline_pkgCompile(058, u_IntToStr(combat_id) + '`' +
+                                    { SendData( inline_pkgCompile(058, u_IntToStr(combat_id) + '`' +
                                                                  u_IntToStr(units[your_unit].uType) + '`' +
                                                                  u_IntToStr(units[your_unit].uID)  + '`' +
-                                                                 u_IntToStr(spID) ) ) ;
+                                                                 u_IntToStr(spID) ) ) ;    }
                                      if spID = 15 then
                                         begin
                                           sleep(50);
-                                          SendData( inline_pkgCompile(032, u_IntToStr(combat_id) + '`'));
+                                        //  SendData( inline_pkgCompile(032, u_IntToStr(combat_id) + '`'));
                                           your_turn := false;
                                         end;
                                      exit;
                                    end;
-                                spR := spells[ActionBar[1 + j].contains].range;
+                                spR := spells[ActionBar[1 + j].data.contain].range;
                                 if (spID = 6) and (skills[42].rank > 0) then
                                     spR := spR + skills[42].xyz[skills[42].rank].X;
                                 if (spID = 1) or (spID = 5) or (spID = 4) or (spID = 6) or (spID = 12) then range_mode := true else range_mode := false;
-                              end else Chat_AddMessage(3, 'S', 'Not enough MP to cast ' + spells[ActionBar[1 + j].contains].name );
-                         end else Chat_AddMessage(3, 'S', 'Not enough AP to cast ' + spells[ActionBar[1 + j].contains].name );
+                              end else Chat_AddMessage(3, high(word), 'Not enough MP to cast ' + spells[ActionBar[1 + j].data.contain].name );
+                         end else Chat_AddMessage(3, high(word), 'Not enough AP to cast ' + spells[ActionBar[1 + j].data.contain].name );
                  end;
 
 
 
               if ActionBar[i].omo then
                  begin
-                   stt_Open(ActionBar[i].contains, 2);
-                   if Mouse_Click(M_BLEFT) and (ActionBar[i].contains > 0) then
-                      if units[your_unit].cAP >= spells[ActionBar[i].contains].AP_Cost then
+                   stt_Open(ActionBar[i].data.contain, 2);
+                   if Mouse_Click(M_BLEFT) and (ActionBar[i].data.contain > 0) then
+                      if units[your_unit].cAP >= spells[ActionBar[i].data.contain].AP_Cost then
                          begin
-                           if units[your_unit].cMP >= spells[ActionBar[i].contains].MP_Cost then
+                           if units[your_unit].cMP >= spells[ActionBar[i].data.contain].MP_Cost then
                               begin
-                                spID := ActionBar[i].contains;
+                                spID := ActionBar[i].data.contain;
                                 if (spID = 1) or (spID = 5) or (spID = 4)or (spID = 12) then range_mode := true else range_mode := false;
-                                spR := spells[ActionBar[i].contains].range;
-                              end else Chat_AddMessage(3, 'S', 'Not enough MP to cast ' + spells[ActionBar[i].contains].name );
-                         end else Chat_AddMessage(3, 'S', 'Not enough AP to cast ' + spells[ActionBar[i].contains].name );
+                                spR := spells[ActionBar[i].data.contain].range;
+                              end else Chat_AddMessage(3, high(word), 'Not enough MP to cast ' + spells[ActionBar[i].data.contain].name );
+                         end else Chat_AddMessage(3, high(word), 'Not enough AP to cast ' + spells[ActionBar[i].data.contain].name );
                  end;
 
               if SystemBar[i].omo then
                  begin
-                   Stt_Open(100 - SystemBar[i].contains, 2);
+                   Stt_Open(100 - SystemBar[i].data.contain, 2);
                    if mouse_click(m_bleft) then
                       begin
-                        if systembar[i].contains = 1 then
+                        if systembar[i].data.contain = 1 then
                             begin
-                              SendData( inline_pkgCompile(032, u_IntToStr(combat_id) + '`'));
+                              //SendData( inline_pkgCompile(032, u_IntToStr(combat_id) + '`'));
                               your_turn := false;
                             end;
 
-                        if systembar[i].contains = 4 then
+                        if systembar[i].data.contain = 4 then
                            begin
                              range_mode := true;
                              spR := 8;
@@ -183,7 +183,7 @@ begin
                                 spR := spR + skills[62].xyz[skills[62].rank].X;
                            end;
 
-                        if systembar[i].contains = 7 then
+                        if systembar[i].data.contain = 7 then
                            if units[your_unit].cAP > 4 then
                               turn_mode := true;
                       end;
@@ -194,11 +194,10 @@ begin
           if com_face <> -50 then com_face := com_face - (com_face - 50) / 12;
         end;
       Nonameframe41.Hide;
-   end; }
-
+   end;
 
 // действия с чатом
-begin
+
   // omo_ch_scr_up, omo_ch_scr_dw, omo_ch_scr_spot
   omo_ch_scr_up := col2d_PointInCircle( Mouse_X, Mouse_Y, circle(scr_w - 25, scr_h - 120, 10));
   omo_ch_scr_spot := col2d_PointInCircle( Mouse_X, Mouse_Y, circle(scr_w - 25, scr_h - 100 + ch_mem_scroll_pos * 60, 10));
@@ -330,7 +329,6 @@ begin
             if mouse_y > scr_h - 50 then ch_scroll_pos := 1;
           end;
      end;
-end;
 end;
 
 procedure Chat_Draw();

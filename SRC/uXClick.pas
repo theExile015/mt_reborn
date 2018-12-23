@@ -26,10 +26,15 @@ procedure DoSendMsg(msg: string);
 function DoWho(id : word): string;
 procedure DoStatUP(stat: byte);
 procedure DoPerkUP(sc, perk: byte);
+procedure DoMapRequest();
+procedure DoRequestLoc(id: word);
+procedure DoRequestObj(id: word);
+procedure DoTravel(id: word);
+procedure DoObjectClick(id: word);
 
 implementation
 
-uses u_MM_gui, uMyGui, uNetCore, uPkgProcessor, uChat;
+uses u_MM_gui, uNetCore, uPkgProcessor, uChat;
 
 procedure DoLogin();
 begin
@@ -167,7 +172,11 @@ procedure DoOpenInv();
 var _pkg  : TPkg013;
     _head : TPackHeader;
     mStr  : TMemoryStream;
+    i     : integer;
 begin
+  for i := 0 to high(items) do
+      items[i].req:=false;
+
        _head._FLAG := $f;
        _head._ID   := 13;
        _pkg.fail_code:= 1;
@@ -253,7 +262,7 @@ begin
        _head._FLAG := $f;
        _head._ID   := 14;
        _pkg.data.ID := ID;
-
+       writeln('item request ## :', id);
 try
        mStr := TMemoryStream.Create;
        mStr.Position := 0;
@@ -302,6 +311,7 @@ var _pkg  : TPkg025;
     s     : String;
     i     : integer;
 begin
+  if msg = '' then Exit;
   s := Chat_CatchPrivte( msg ) ;
  // if Chat_CheckMessage( msg ) then //проверим сообщение
   if s = '' then
@@ -431,6 +441,136 @@ try
 finally
        mStr.Free;
 end;
+end;
+
+procedure DoMapRequest();
+var _pkg  : TPkg017;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 17;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure DoRequestLoc(id: word);
+var _pkg  : TPkg018;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 18;
+
+  _pkg.data.id:=id;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure DoTravel(id: word);
+var _pkg  : TPkg028;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+  if id = 0 then exit;
+  _head._FLAG := $f;
+  _head._ID   := 28;
+
+  _pkg._to := id;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure DoRequestObj(id: word);
+var _pkg  : TPkg032;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+if objstore[id].request then exit;
+
+  objstore[id].request:=true;
+  _head._FLAG := $f;
+  _head._ID   := 32;
+
+  _pkg.id:=id;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+  sleep(50);
+end;
+
+procedure DoObjectClick(id: word);
+var
+  _pkg : TPkg040; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  objstore[id].request:=true;
+  _head._FLAG := $f;
+  _head._ID   := 40;
+
+  _pkg.id:=id;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+
 end;
 
 end.

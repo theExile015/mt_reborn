@@ -1,37 +1,38 @@
 unit uAdd;
 
 interface
+
 {$codepage utf8}
 
 uses uVar,
-     Windows,
-     zglHeader,
-     md5,
-    { jwatlhelp32,  }
-     sysutils;
+  Windows,
+  zglHeader,
+  md5,
+  { jwatlhelp32,  }
+  SysUtils;
 
-function _Mouse_X : single; inline;
-function _Mouse_Y : single; inline;
-function Line(x1, y1, x2, y2 : single): zglTLine; inline;
-function Circle(x, y, r : single) : zglTCircle; inline;
-function Rect(x, y, w, h: single) : zglTRect; inline;
-function GetRaceName(rID : byte): utf8string;
-function GetClassName(cID : byte): utf8string;
-function GetClassNameS(cID : byte): utf8string;
-function GetLocName(lID : word): utf8string;
-function CheckSymbolsLP(const s: String): Boolean;
-function CheckSymbolsN(const s: String): Boolean;
-function md5(s: utf8string): utf8string;  inline;
+function _Mouse_X: single; inline;
+function _Mouse_Y: single; inline;
+function Line(x1, y1, x2, y2: single): zglTLine; inline;
+function Circle(x, y, r: single): zglTCircle; inline;
+function Rect(x, y, w, h: single): zglTRect; inline;
+function GetRaceName(rID: byte): utf8string;
+function GetClassName(cID: byte): utf8string;
+function GetClassNameS(cID: byte): utf8string;
+function GetLocName(lID: word): utf8string;
+function CheckSymbolsLP(const s: string): boolean;
+function CheckSymbolsN(const s: string): boolean;
+function md5(s: utf8string): utf8string; inline;
 //function GetSector( dir : byte ) : TSector;
-function InSector( dir : byte; angle : single) : boolean;
+function InSector(dir: byte; angle: single): boolean;
 
 procedure Clean_CharList();
 
-function itt_GetProperty( pID, pV : longword ): UTF8String;
-function itt_GetType( pID : longword ): UTF8String;
+function itt_GetProperty(pID, pV: longword): UTF8String;
+function itt_GetType(pID: longword): UTF8String;
 
 procedure Map_CreateMask;
-function SearchWay(uLID: byte; StartX, StartY, FinishX, FinishY: Integer): Boolean;
+function SearchWay(uLID: byte; StartX, StartY, FinishX, FinishY: integer): boolean;
 
 function str_trans1(s: utf8string): utf8string;
 function str_trans2(s: utf8string): utf8string;
@@ -40,14 +41,15 @@ procedure qlog_Save();
 procedure qlog_Open();
 function qlog_QAccepted(qID : longword): boolean;
 function qlog_GetQLID(qID : longword): byte;
-
+    }
 procedure SaveItemCache();
-procedure ItemDataRequests();
+procedure SaveLocCache();
+{procedure ItemDataRequests();
 }
-function inv_FindFreeSpot() : word;
+function inv_FindFreeSpot(): word;
 
-function sp_GetSchool(sID : word) : utf8string;
-function sp_GetType(tID : word) : utf8string;
+function sp_GetSchool(sID: word): utf8string;
+function sp_GetType(tID: word): utf8string;
 
 
 //function KillTask(ExeFileName: string): Integer;
@@ -55,25 +57,26 @@ function sp_GetType(tID : word) : utf8string;
 implementation
 
 uses
-  uLocalization, uNetCore;
+  uLocalization;
 
-function _Mouse_X : single; inline;
+function _Mouse_X: single; inline;
 begin
-  result := Mouse_X() / ScaleXY + (zglCam1.X - (1920 - scr_w) / 2);
+  Result := Mouse_X() / ScaleXY + (zglCam1.X - (1920 - scr_w) / 2);
 end;
 
-function _Mouse_Y : single; inline;
+function _Mouse_Y: single; inline;
 begin
-  result := Mouse_Y()  / ScaleXY + (zglCam1.Y - (1080 - scr_h) / 2);
+  Result := Mouse_Y() / ScaleXY + (zglCam1.Y - (1080 - scr_h) / 2);
 end;
 
 function md5(s: utf8string): utf8string; inline;
 begin
-  result := MD5Print(MD5String(s + 're:venture secret word'));
+  Result := MD5Print(MD5String(s + 're:venture secret word'));
 end;
 
 procedure Clean_CharList();
-var i: integer;
+var
+  i: integer;
 begin
   {for I := 0 to length(CharList) - 1 do
     begin
@@ -86,80 +89,84 @@ begin
     end; }
 end;
 
-function Line(x1, y1, x2, y2 : single): zglTLine; inline;
+function Line(x1, y1, x2, y2: single): zglTLine; inline;
 begin
-  result.x0 := x1;
-  result.y0 := y1;
-  result.x1 := x2;
-  result.y1 := y2;
+  Result.x0 := x1;
+  Result.y0 := y1;
+  Result.x1 := x2;
+  Result.y1 := y2;
 end;
 
-function Circle(x, y, r : single) : zglTCircle; inline;
+function Circle(x, y, r: single): zglTCircle; inline;
 begin
-  result.cX := x;
-  result.cY := y;
-  result.Radius := r;
+  Result.cX := x;
+  Result.cY := y;
+  Result.Radius := r;
 end;
 
-function Rect(x, y, w, h: single) : zglTRect; inline;
+function Rect(x, y, w, h: single): zglTRect; inline;
 begin
-  result.X := x;
-  result.Y := y;
-  result.W := W;
-  result.H := H;
+  Result.X := x;
+  Result.Y := y;
+  Result.W := W;
+  Result.H := H;
 end;
 
-function GetRaceName(rID : byte): utf8string;
+function GetRaceName(rID: byte): utf8string;
 begin
   case rID of
-    1 : result := (Race_Names[rID]);
-    2 : result := (Race_Names[rID]);
-    3 : result := (Race_Names[rID]);
-    4 : result := (Race_Names[rID]);
-    5 : result := (Race_Names[rID]);
-  else
-    result := '';
+    1: Result := (Race_Names[rID]);
+    2: Result := (Race_Names[rID]);
+    3: Result := (Race_Names[rID]);
+    4: Result := (Race_Names[rID]);
+    5: Result := (Race_Names[rID]);
+    else
+      Result := '';
   end;
 end;
 
-function GetClassName(cID : byte): utf8string;
+function GetClassName(cID: byte): utf8string;
 begin
   case cID of
-    1 : result := AnsiToUTF8('Adventurer');
-  else
-    result := '';
+    1: Result := AnsiToUTF8('Adventurer');
+    else
+      Result := '';
   end;
 end;
 
-function GetClassNameS(cID : byte): utf8string;
+function GetClassNameS(cID: byte): utf8string;
 begin
   case cID of
-    1 : result := AnsiToUTF8('Adv');
-  else
-    result := '';
+    1: Result := AnsiToUTF8('Adv');
+    else
+      Result := '';
   end;
 end;
 
-function GetLocName(lID : word): utf8string;
+function GetLocName(lID: word): utf8string;
 begin
   case lID of
-    0: result := AnsiToUTF8('Pure Spring');
-    1: result := AnsiToUTF8('Pure Spring');
-    2: result := AnsiToUTF8('Eastern Bridge');
-    3: result := AnsiToUTF8('Robbers Camp');
-  else
-    result := '';
+    0: Result := AnsiToUTF8('Pure Spring');
+    1: Result := AnsiToUTF8('Pure Spring');
+    2: Result := AnsiToUTF8('Eastern Bridge');
+    3: Result := AnsiToUTF8('Robbers Camp');
+    else
+      Result := '';
   end;
 end;
 
-function CheckSymbolsLP(const s: String): Boolean;
-var i, len: Integer;   s_ : string;
+function CheckSymbolsLP(const s: string): boolean;
+var
+  i, len: integer;
+  s_: string;
 begin
   len := Length(s);
-  if len > 0 then begin
+  if len > 0 then
+  begin
     Result := True;
     for i := 1 to len do
-      if not (s[i] in ['a'..'z','A'..'Z','0'..'9']) then begin
+      if not (s[i] in ['a'..'z', 'A'..'Z', '0'..'9']) then
+      begin
         Result := False;
         break;
       end;
@@ -168,14 +175,18 @@ begin
     Result := False;
 end;
 
-function CheckSymbolsN(const s: String): Boolean;
-var i, len: Integer;   s_ : string;
+function CheckSymbolsN(const s: string): boolean;
+var
+  i, len: integer;
+  s_: string;
 begin
   len := Length(s);
-  if len > 2 then begin
+  if len > 2 then
+  begin
     Result := True;
     for i := 1 to len do
-      if not (s[i] in ['a'..'z','A'..'Z']) then begin
+      if not (s[i] in ['a'..'z', 'A'..'Z']) then
+      begin
         Result := False;
         break;
       end;
@@ -184,159 +195,168 @@ begin
     Result := False;
 end;
 
-function InSector( dir : byte; angle : single) : boolean;
-var aD : integer;
+function InSector(dir: byte; angle: single): boolean;
+var
+  aD: integer;
 begin
-  result := false;
-  aD := round( (360 - angle) / 45 ) + 3;
-  if aD > 7 then aD := aD - 8;
-  if abs(dir - aD) <= 1 then result := true;
-  if (dir = 0) and (aD = 7) then result := true;
-  if (dir = 7) and (aD = 0) then result := true;
+  Result := False;
+  aD := round((360 - angle) / 45) + 3;
+  if aD > 7 then
+    aD := aD - 8;
+  if abs(dir - aD) <= 1 then
+    Result := True;
+  if (dir = 0) and (aD = 7) then
+    Result := True;
+  if (dir = 7) and (aD = 0) then
+    Result := True;
 end;
 
-function itt_GetProperty( pID, pV : longword ): UTF8String;
+function itt_GetProperty(pID, pV: longword): UTF8String;
 begin
   case pID of
-    1 : result := 'Durability ' + u_IntToStr(pV) + '/' + u_IntToStr(pV);
-    2 : result := u_IntToStr(pV) + ' - ';
-    3 : result := 'Requires ' + u_IntToStr(pV) + ' level' ;
-    4 : result := u_IntToStr(pV) + ' AP';
-    5 : result := u_IntToStr(pV) + ' armor';
-    6 : result := '+' + u_IntToStr(pV) + ' Strength';
-    7 : result := '+' + u_IntToStr(pV) + ' Agility';
-    8 : result := '+' + u_IntToStr(pV) + ' Constitution';
-    9 : result := '+' + u_IntToStr(pV) + ' Haste';
-    10: result := '+' + u_IntToStr(pV) + ' Intellect';
-    11: result := '+' + u_IntToStr(pV) + ' Spirit';
-    12: result := 'Improves hit rating by ' + u_IntToStr(pV) + '.';
-    13: result := 'Improves crit rating by ' + u_IntToStr(pV) + '.';
-    14: result := 'Improves spell power by ' + u_IntToStr(pV) + '.';
-    15: result := 'Improves initiative by ' + u_IntToStr(pV) + '.';
-    16: result := 'Increase action points by ' + u_IntToStr(pV) + '.';
-    17: result := 'Improves dodge rating by ' + u_IntToStr(pV) + '.';
-    18: result := 'Improves block rating by ' + u_IntToStr(pV) + '.';
-    19: result := 'Improves HP regeneration by ' + u_IntToStr(pV) + '.';
-    20: result := 'Improves MP regeneration by ' + u_IntToStr(pV) + '.';
-    // 22 - тип прока 23 величина прока
-    // 24 - тип стата 25 требования стата
-  else
-    result := 'Unknown property';
+    1: Result := 'Durability ' + u_IntToStr(pV) + '/' + u_IntToStr(pV);
+    2: Result := u_IntToStr(pV) + ' - ';
+    3: Result := 'Requires ' + u_IntToStr(pV) + ' level';
+    4: Result := u_IntToStr(pV) + ' AP';
+    5: Result := u_IntToStr(pV) + ' armor';
+    6: Result := '+' + u_IntToStr(pV) + ' Strength';
+    7: Result := '+' + u_IntToStr(pV) + ' Agility';
+    8: Result := '+' + u_IntToStr(pV) + ' Constitution';
+    9: Result := '+' + u_IntToStr(pV) + ' Haste';
+    10: Result := '+' + u_IntToStr(pV) + ' Intellect';
+    11: Result := '+' + u_IntToStr(pV) + ' Spirit';
+    //12: result := 'Improves hit rating by ' + u_IntToStr(pV) + '.';
+    12: Result := 'Improves crit rating by ' + u_IntToStr(pV) + '.';
+    13: Result := 'Improves spell power by ' + u_IntToStr(pV) + '.';
+    14: Result := 'Improves initiative by ' + u_IntToStr(pV) + '.';
+    15: Result := 'Increase action points by ' + u_IntToStr(pV) + '.';
+    16: Result := 'Improves dodge rating by ' + u_IntToStr(pV) + '.';
+    17: Result := 'Improves block rating by ' + u_IntToStr(pV) + '.';
+    //19: result := 'Improves HP regeneration by ' + u_IntToStr(pV) + '.';
+    18: Result := 'Improves MP regeneration by ' + u_IntToStr(pV) + '.';
+      // 22 - тип прока 23 величина прока
+      // 24 - тип стата 25 требования стата
+    else
+      Result := 'Unknown property';
   end;
   //Log_Add(result);
 end;
 
-function itt_GetType( pID : longword ): UTF8String;
+function itt_GetType(pID: longword): UTF8String;
 begin
   case pID of
-    1: result := 'Two-Hand mace';
-    2: result := 'Two-Hand sword';
-    3: result := 'Two-Hand axe';
-    4: result := 'Staff';
-    5: result := 'Bow';
-    6: result := 'Crossbow';
-    7: result := 'One-hand mace';
-    8: result := 'One-hand sword';
-    9: result := 'One-hand axe';
-    10: result := 'Dagger';
-    11: result := 'Helm';
-    13: result := 'Cloak';
-    12: result := 'Amulet';
-    14: result := 'Shield';
-    15: result := 'Chest';
-    16: result := 'Legs';
-    17: result := 'Gloves';
-    18: result := 'Boots';
-    19: result := 'Belt';
-    20: result := 'Ring';
-    21: result := 'Polearm';
-    22: result := 'Meals';
-    23: result := 'Potions';
-    24: result := 'Misc.';
-    35: result := 'Quest Item';
-    52: result := 'Reagent';
-  else
-    result := 'Unknown';
+    1: Result := 'Two-Hand mace';
+    2: Result := 'Two-Hand sword';
+    3: Result := 'Two-Hand axe';
+    4: Result := 'Staff';
+    5: Result := 'Bow';
+    6: Result := 'Crossbow';
+    7: Result := 'One-hand mace';
+    8: Result := 'One-hand sword';
+    9: Result := 'One-hand axe';
+    10: Result := 'Dagger';
+    11: Result := 'Helm';
+    13: Result := 'Cloak';
+    12: Result := 'Amulet';
+    14: Result := 'Shield';
+    15: Result := 'Chest';
+    16: Result := 'Legs';
+    17: Result := 'Gloves';
+    18: Result := 'Boots';
+    19: Result := 'Belt';
+    20: Result := 'Ring';
+    21: Result := 'Polearm';
+    22: Result := 'Meals';
+    23: Result := 'Potions';
+    24: Result := 'Misc.';
+    35: Result := 'Quest Item';
+    52: Result := 'Reagent';
+    else
+      Result := 'Unknown';
   end;
 end;
 
 
 procedure Map_CreateMask;
-var i, j : integer;
+var
+  i, j: integer;
 begin
 
   for I := 0 to 20 do
     for j := 0 to 20 do
-      MapMatrix[i,j].cType:=0 ; // заполняем карту
+      MapMatrix[i, j].cType := 0; // заполняем карту
 
   for I := 0 to 20 do
     for j := 0 to 20 do
-      if (i = 0) or (i = 20) then MapMatrix[i,j].cType:=1  // края карты
+      if (i = 0) or (i = 20) then
+        MapMatrix[i, j].cType := 1  // края карты
       else
-        begin
-          if (j = 0) or (j = 20) then MapMatrix[i,j].cType:=1; // края карты
-        end;
+      begin
+        if (j = 0) or (j = 20) then
+          MapMatrix[i, j].cType := 1; // края карты
+      end;
 end;
 
 
 
-function SearchWay(uLID: byte; StartX, StartY, FinishX, FinishY: Integer): Boolean;
+function SearchWay(uLID: byte; StartX, StartY, FinishX, FinishY: integer): boolean;
 var
-   Angle, X, Y, i, j, Step: Integer;
-   Added: Boolean;
-   Point: TMPoint;
+  Angle, X, Y, i, j, Step: integer;
+  Added: boolean;
+  Point: TMPoint;
 begin
    {
    SetLength(units[uLID].Way, 0); // Обнуляем массив с путем
    }
-   for i := 0 to High(MapMatrix) do
-     for j := 0 to High(MapMatrix[i]) do
-       MapMatrix[i][j].Step := -1;
+  for i := 0 to High(MapMatrix) do
+    for j := 0 to High(MapMatrix[i]) do
+      MapMatrix[i][j].Step := -1;
 
-   // Мы еще нигде не были
-   // До финиша ноль шагов - от него будем разбегаться
-   MapMatrix[FinishX][FinishY].Step := 0;
-   Step := 0; // Изначально мы сделали ноль шагов
-   Added := True; // Для входа в цикл
+  // Мы еще нигде не были
+  // До финиша ноль шагов - от него будем разбегаться
+  MapMatrix[FinishX][FinishY].Step := 0;
+  Step := 0; // Изначально мы сделали ноль шагов
+  Added := True; // Для входа в цикл
 
-   while Added And (MapMatrix[StartX][StartY].Step = -1) do
-   begin
-   // Пока вершины добаляются и мы не дошли до старта
-     Added := False; // Пока что ничего не добавили
-     Inc(Step); // Увеличиваем число шагов
-     for i := 0 to High(MapMatrix) do
-       for j := 0 to High(MapMatrix[i]) do // Пробегаем по всей карте
-         if MapMatrix[i][j].Step = Step - 1 then
-         begin
-         // Если (i, j) была добавлена на предыдущем шаге
-         // Пробегаем по всем четырем сторонам света
-           for Angle := 0 to 3 do
-           begin
-             X := i + Round(Cos(Angle/2*pi)); // Вычисляем коор-
-             Y := j + Round(Sin(Angle/2*pi)); // динаты соседа
-           // Если вышли за пределы поля, (X, Y) не обрабатываем
-             if (X < 0) Or (Y < 0) Or (X > High(MapMatrix)) Or (Y > High(MapMatrix[0])) then
-               Continue;
-           // Если (X, Y) уже добавлено или непроходимо, то не обрабатываем
-             if (MapMatrix[X][Y].cType = 1) Or (MapMatrix[X][Y].Step <> -1) then
-               Continue;
-             MapMatrix[X][Y].Step := Step; // Добав-
-             MapMatrix[X][Y].Parent.X := i; // ля-
-             MapMatrix[X][Y].Parent.Y := j; // ем
-             Added := True; // Что-то добавили
-           end;
-         end;
-   end;
+  while Added and (MapMatrix[StartX][StartY].Step = -1) do
+  begin
+    // Пока вершины добаляются и мы не дошли до старта
+    Added := False; // Пока что ничего не добавили
+    Inc(Step); // Увеличиваем число шагов
+    for i := 0 to High(MapMatrix) do
+      for j := 0 to High(MapMatrix[i]) do // Пробегаем по всей карте
+        if MapMatrix[i][j].Step = Step - 1 then
+        begin
+          // Если (i, j) была добавлена на предыдущем шаге
+          // Пробегаем по всем четырем сторонам света
+          for Angle := 0 to 3 do
+          begin
+            X := i + Round(Cos(Angle / 2 * pi)); // Вычисляем коор-
+            Y := j + Round(Sin(Angle / 2 * pi)); // динаты соседа
+            // Если вышли за пределы поля, (X, Y) не обрабатываем
+            if (X < 0) or (Y < 0) or (X > High(MapMatrix)) or
+              (Y > High(MapMatrix[0])) then
+              Continue;
+            // Если (X, Y) уже добавлено или непроходимо, то не обрабатываем
+            if (MapMatrix[X][Y].cType = 1) or (MapMatrix[X][Y].Step <> -1) then
+              Continue;
+            MapMatrix[X][Y].Step := Step; // Добав-
+            MapMatrix[X][Y].Parent.X := i; // ля-
+            MapMatrix[X][Y].Parent.Y := j; // ем
+            Added := True; // Что-то добавили
+          end;
+        end;
+  end;
 
-// Если до старта не дошли,
-   if MapMatrix[StartX][StartY].Step = -1 then
-   begin
-     Result := False; // то пути не существует
-     Exit;
-   end;
+  // Если до старта не дошли,
+  if MapMatrix[StartX][StartY].Step = -1 then
+  begin
+    Result := False; // то пути не существует
+    Exit;
+  end;
 
-   Point.X := StartX;
-   Point.Y := StartY;
+  Point.X := StartX;
+  Point.Y := StartY;
    {
 // Пока не дойдем до финиша
    while MapMatrix[Point.X][Point.Y].Step <> 0 do
@@ -350,7 +370,7 @@ begin
    units[uLID].Way[High(units[uLID].Way)].X := FinishX;
    units[uLID].Way[High(units[uLID].Way)].Y := FinishY;
    }
-   Result := True;
+  Result := True;
 end;
 
 {
@@ -383,42 +403,83 @@ begin
 end;
 }
 
+procedure SaveItemCache();
+var
+  Cache: zglTFile;
+  Data: TItemData;
+  i: integer;
+begin
+  if File_Exists('Cache\items.rec') then
+  begin
+    File_Open(Cache, 'Cache\items.rec', FOM_OPENRW);
+    File_Flush(cache);
+    for i := 1 to high(items) do
+      if items[i].exist then
+        file_Write(cache, items[i].Data, sizeof(Data));
+  end;
+  File_Close(Cache);
+end;
+
+procedure SaveLocCache();
+var
+  Cache: zglTFile;
+  Data: TLocData;
+  i: integer;
+begin
+  if File_Exists('Cache\locs.rec') then
+  begin
+    File_Open(Cache, 'Cache\locs.rec', FOM_OPENRW);
+    File_Flush(cache);
+    for i := 1 to high(locs) do
+      if locs[i].exist then
+        file_Write(cache, locs[i].Data, sizeof(Data));
+  end;
+  File_Close(Cache);
+end;
+
 function str_trans1(s: utf8string): utf8string;
-var i, k: integer;
-    c : utf8string;
+var
+  i, k: integer;
+  c: utf8string;
 begin
   k := utf8_length(s);
   i := 1;
-  result := '';
+  Result := '';
   while i <= k do
+  begin
+    c := utf8_copy(s, i, 2);
+    if c = #13#10 then
     begin
-      c := utf8_copy(s, i, 2);
-      if c = #13#10 then
-         begin
-           result := result + '~';
-           inc(i, 2);
-         end else
-         begin
-           result := result + utf8_copy(s, i, 1);
-           inc(i, 1);
-         end;
+      Result := Result + '~';
+      Inc(i, 2);
+    end
+    else
+    begin
+      Result := Result + utf8_copy(s, i, 1);
+      Inc(i, 1);
     end;
+  end;
 end;
 
 function str_trans2(s: utf8string): utf8string;
-var i, k: integer;
-    c : utf8string;
+var
+  i, k: integer;
+  c: utf8string;
 begin
   k := utf8_length(s);
   i := 1;
-  result := '';
+  Result := '';
   while i <= k do
-    begin
-      c := utf8_copy(s, i, 1);
-      if c = '~' then result := result + #13#10 else result := result + c;
-      inc(i);
-    end;
+  begin
+    c := utf8_copy(s, i, 1);
+    if c = '~' then
+      Result := Result + #13#10
+    else
+      Result := Result + c;
+    Inc(i);
+  end;
 end;
+
 {
 procedure qlog_Save();
 var i: integer;
@@ -498,42 +559,43 @@ begin
           end;
 end;
 }
-function inv_FindFreeSpot() : word;
-var i : integer;
+function inv_FindFreeSpot(): word;
+var
+  i: integer;
 begin
-  result := high(word);
+  Result := high(word);
   for i := 22 to 38 do
-    if mWins[5].dnds[i].data.contain = 0 then
-       begin
-         result := i;
-         break;
-       end;
+    if mWins[5].dnds[i].Data.contain = 0 then
+    begin
+      Result := i;
+      break;
+    end;
 end;
 
-function sp_GetSchool(sID : word) : utf8string;
+function sp_GetSchool(sID: word): utf8string;
 begin
   case sID of
-    1: result := 'Combat Arts';
-    2: result := 'Defensive Arts';
-    3: result := 'Restoration Arts';
-    4: result := 'Elemental Arts';
-    5: result := 'Spriritual Arts';
-    6: result := 'Survival Arts';
-    7: result := 'Subtlety Arts';
-  else
-    result := 'No school';
+    1: Result := 'Combat Arts';
+    2: Result := 'Defensive Arts';
+    3: Result := 'Restoration Arts';
+    4: Result := 'Elemental Arts';
+    5: Result := 'Spriritual Arts';
+    6: Result := 'Survival Arts';
+    7: Result := 'Subtlety Arts';
+    else
+      Result := 'No school';
   end;
 end;
 
-function sp_GetType(tID : word) : utf8string;
+function sp_GetType(tID: word): utf8string;
 begin
   case tID of
-    0: result := 'Common';
-    1: result := 'Single, Material';
-    2: result := 'Single, Melee';
-    3: result := 'Single, Range';
-  else
-    result := 'Unknown';
+    0: Result := 'Common';
+    1: Result := 'Single, Material';
+    2: Result := 'Single, Melee';
+    3: Result := 'Single, Range';
+    else
+      Result := 'Unknown';
   end;
 end;
 

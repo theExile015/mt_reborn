@@ -13,14 +13,11 @@ uses
   uVar,
   zglHeader,
   zglGUI,
-  uLocalization,
   uTileMap,
   uLocation,
   u_MM_GUI,
-  uMyGUI,
  // uCombat,
-  uChat,
-  uNetCore;
+  uChat;
  // uParser;
 
 procedure LoadBaseData();
@@ -34,7 +31,7 @@ function Find_TexInList(name : utf8string) : word;
 
 implementation
 
-uses uXClick, uAdd;
+uses uXClick;
 
 // загрузка базовых данных при инициализации игры
 procedure LoadBaseData();
@@ -71,53 +68,69 @@ begin
   // анимациая первого экрана
   video := video_OpenFile( 'Data\giphy.ogv' );
 
-  // подгрузка скинов гуя
-  for i := 1 to 3 do
-    begin
-      frmPak[i].brd:= tex_LoadFromFile( dirUI + 'frm_brd' + u_IntToStr(i) + '.png');
-      frmPak[i].crn:= tex_LoadFromFile( dirUI + 'frm_crn' + u_IntToStr(i) + '.png');
-      frmPak[i].w:=frmPak[i].brd.Width;
-      frmPak[i].h:=frmPak[i].brd.Height;
-      frmPak[i].c:=frmPak[i].crn.Width;
-    end;
-  // подгрузка кнопок-картинок
-  tex_IBtn[2] := tex_LoadFromFile( dirUI + 'CloseButton.tga');
-  tex_IBtn[3] := tex_LoadFromFile( dirUI + 'PLUSIK.tga' );
-  tex_IBtn[4] := tex_LoadFromFile( dirUI + 'MINUS.tga');
-  tex_IBtn[5] := tex_LoadFromFile( dirUI + 'ArrowLeft.tga');
-  tex_IBtn[6] := tex_LoadFromFile( dirUI + 'ArrowRight.tga');
-  tex_IBtn[7] := tex_LoadFromFile( dirUI + 'Magic.tga');
-  tex_IBtn[8] := tex_LoadFromFile( dirUI + 'Def.tga');
-  tex_IBtn[9] := tex_LoadFromFile( dirUI + 'Swo.tga');
-  tex_IBtn[10] := tex_LoadFromFile( dirUI + 'Bubble.tga');
-  tex_IBtn[11] := tex_LoadFromFile( dirUI + 'Cogwheel.tga');
-  tex_IBtn[12] := tex_LoadFromFile( dirUI + 'Korobka.tga');
-  tex_IBtn[13] := tex_LoadFromFile( dirUI + 'halochka.tga');
+  if file_OpenArchive('Data\UI.zep') then
+     begin
+       // подгрузка скинов гуя
+       for i := 1 to 3 do
+         begin
+           frmPak[i].brd:= tex_LoadFromFile( 'frm_brd' + u_IntToStr(i) + '.png');
+           frmPak[i].crn:= tex_LoadFromFile( 'frm_crn' + u_IntToStr(i) + '.png');
+           frmPak[i].w:=frmPak[i].brd.Width;
+           frmPak[i].h:=frmPak[i].brd.Height;
+           frmPak[i].c:=frmPak[i].crn.Width;
+         end;
+       for i := 2 to 14 do
+           tex_IBtn[i] := tex_LoadFromFile('b' + u_IntToStr(i) + '.tga');
 
-  tex_AddBtn := tex_LoadFromFile( dirUI + 'ch_plus.png');
-  tex_ChBkgr := tex_LoadFromFile( dirUI + 'ch_bkgr.png');
+       tex_AddBtn := tex_LoadFromFile( 'ch_plus.png');
+       tex_ChBkgr := tex_LoadFromFile( 'ch_bkgr.png');
+       tex_Btn    := tex_LoadFromFile( 'btn1.png');
+
+        // подгрузка элементов прогресс-бара
+        tex_PBar[1]      := tex_LoadFromFile( 'ProgressBarBorder.png');
+        tex_PBar[2]      := tex_LoadFromFile( 'ProgressBarBorder1.png');
+        tex_PBar[3]      := tex_LoadFromFile( 'ProgressBarFiller.png');
+        tex_PBar[4]      := tex_LoadFromFile( 'ProgressBarFiller1.png');
+        // Стрелочка-указатель для туториала
+        tex_Arr_Point    := tex_LoadFromFile( 'Arrow_pointer2.png');
+        tex_SetFrameSize(tex_Arr_Point, 64, 64);
+
+        tex_item_slots   := tex_LoadFromFile('item_slots.png');
+        tex_SetFrameSize(tex_item_slots, tex_item_slots.Width div 6, tex_item_slots.Width div 6);
+        tex_Skills       := tex_LoadFromFile('skillflower.png');
+
+        tex_ui_scr_arr   := tex_LoadFromFile( 'scroll_arr.png');
+        tex_SetFrameSize(tex_ui_scr_arr, 39, 29);
+        tex_ui_scr_bod   := tex_LoadFromFile( 'scroll_bod.png');
+        tex_ui_scr_spot  := tex_LoadFromFile( 'scroll_spot.png');
+        tex_SetFrameSize(tex_ui_scr_spot, 31, 31);
+
+        tex_ATB          := tex_LoadFromFile( 'Ini bar1.tga');
+        tex_ATB_Rect     := tex_LoadFromFile( 'Ini bar unit1.tga');
+        tex_WMap         := tex_LoadFromFile( 'world_map.png');
+        tex_map_locs     := tex_LoadFromFile( 'MapLocs.png');
+        tex_SetFrameSize(tex_map_locs, 64, 64);
+        tex_Belt         := tex_LoadFromFile( 'belt.png');
+        tex_Chest        := tex_LoadFromFile( 'chest.png');
+        tex_glow         := tex_LoadFromFile( 'glowbox.png');
+        tex_SetFrameSize(tex_map_spot, 32, 32);
+
+        // Загрузка курсоров
+        for i := 1 to 5 do
+            tex_Cursors[i] := tex_LoadFromFile( 'cr_main' + u_IntToStr(i) +'.png' );
+     end else
+     begin
+       Writeln('Can''t open archive Chars.zep');
+       MessageBoxA( 0, 'Re: client seem to be broken.', 'Error', $00000010 );
+     end;
+  file_CloseArchive();
+
   tex_ChMask := tex_LoadFromFile( dirSys + 'mask0.png');
-  tex_Btn    := tex_LoadFromFile( dirUI + 'btn1.png');
-  // подгрузка элементов прогресс-бара
-  tex_PBar[1]      := tex_LoadFromFile( dirUI + 'ProgressBarBorder.png');
-  tex_PBar[2]      := tex_LoadFromFile( dirUI + 'ProgressBarBorder1.png');
-  tex_PBar[3]      := tex_LoadFromFile( dirUI + 'ProgressBarFiller.png');
-  tex_PBar[4]      := tex_LoadFromFile( dirUI + 'ProgressBarFiller1.png');
-  // Стрелочка-указатель для туториала
-  tex_Arr_Point    := tex_LoadFromFile( dirUI + 'Arrow_pointer2.png');
-  tex_SetFrameSize(tex_Arr_Point, 64, 64);
-
-  // Загрузка курсоров
-  for i := 1 to 5 do
-      tex_Cursors[i] := tex_LoadFromFile( dirUI + 'cr_main' + u_IntToStr(i) +'.png' );
 
   lScreen := tex_LoadFromFile( dirRes + 'Back03.jpg' );
+
 //------------------------------------------------
-  tex_item_slots   := tex_LoadFromFile( dirUI + 'item_slots.png');
-  tex_SetFrameSize(tex_item_slots, tex_item_slots.Width div 6, tex_item_slots.Width div 6);
-  tex_Skills       := tex_LoadFromFile( dirUI + 'skillflower.png' );
-//------------------------------------------------
-  for i := 2 to 13 do
+  for i := 2 to 14 do
       Tex_SetFrameSize( tex_IBtn[i], 16, 16);
   Tex_SetFrameSize( tex_Btn, 24, 24 );
 
@@ -135,7 +148,9 @@ begin
       objMan_Clear;
       objMan_Fill;
 
-      //  ЧАСТИЦЫ ДЛЯ ЗАКЛИНАНИЙ ИТП
+      // video_Del(video);
+
+   {   //  ЧАСТИЦЫ ДЛЯ ЗАКЛИНАНИЙ ИТП
       em_Test := emitter2d_LoadFromFile('Data\fx\em_recovery.zei');
       em_test.Params.Position.X:=0;
       em_test.Params.Position.Y:=0;
@@ -171,7 +186,7 @@ begin
       fx_pr[6].Params.Position.Y:=0;
       fx_pr[6].Params.Loop:=false;
 
-      pengine2d_Set( @particles );
+      pengine2d_Set( @particles );}
     end;
 // блок второй - загрузка элементов локаций
   if lVProgress = 20 then
@@ -222,17 +237,17 @@ begin
              tex_Units[0, 0].OH[1] := tex_loadFromFile( 'male_buckler.png' );
              tex_Units[0, 0].OH[2] := tex_loadFromFile( 'male_shield.png' );
 
-             tex_Units[1, 0].head[1] := tex_loadFromFile( 'male_head_long.png' );
-             tex_Units[1, 0].body[1] := tex_loadFromFile( 'male_clothes.png');
-             tex_Units[1, 0].body[2] := tex_loadFromFile( 'male_leather_armor.png');
-             tex_Units[1, 0].body[3] := tex_loadFromFile( 'male_steel_armor.png');
-             tex_Units[1, 0].MH[1] := tex_loadFromFile( 'male_dagger.png' );
-             tex_Units[1, 0].MH[2] := tex_loadFromFile( 'male_greatstaff.png' );
-             tex_Units[1, 0].MH[3] := tex_loadFromFile( 'male_greatsword.png' );
-             tex_Units[1, 0].MH[4] := tex_loadFromFile( 'male_shortbow.png' );
-             tex_Units[1, 0].MH[5] := tex_loadFromFile( 'male_shortsword.png' );
-             tex_Units[1, 0].OH[1] := tex_loadFromFile( 'male_buckler.png' );
-             tex_Units[1, 0].OH[2] := tex_loadFromFile( 'male_shield.png' );
+             tex_Units[1, 0].head[1] := tex_loadFromFile( 'female_head_long.png' );
+             tex_Units[1, 0].body[1] := tex_loadFromFile( 'female_clothes.png');
+             tex_Units[1, 0].body[2] := tex_loadFromFile( 'female_leather_armor.png');
+             tex_Units[1, 0].body[3] := tex_loadFromFile( 'female_steel_armor.png');
+             tex_Units[1, 0].MH[1] := tex_loadFromFile( 'female_dagger.png' );
+             tex_Units[1, 0].MH[2] := tex_loadFromFile( 'female_greatstaff.png' );
+             tex_Units[1, 0].MH[3] := tex_loadFromFile( 'female_greatsword.png' );
+             tex_Units[1, 0].MH[4] := tex_loadFromFile( 'female_shortbow.png' );
+             tex_Units[1, 0].MH[5] := tex_loadFromFile( 'female_shortsword.png' );
+             tex_Units[1, 0].OH[1] := tex_loadFromFile( 'female_buckler.png' );
+             tex_Units[1, 0].OH[2] := tex_loadFromFile( 'female_shield.png' );
 
              file_CloseArchive();
 
@@ -275,27 +290,6 @@ begin
            tex_BIcons := tex_LoadFromFile( dirSys + 'BIcons.png', $ff00ff);
            tex_SetFrameSize(tex_LocIcons, 16, 16);
            tex_SetFrameSize(tex_BIcons, 16, 16);
-
-           tex_ui_scr_arr   := tex_LoadFromFile( dirUI + 'scroll_arr.png');
-           tex_SetFrameSize(tex_ui_scr_arr, 39, 29);
-           tex_ui_scr_bod   := tex_LoadFromFile( dirUI + 'scroll_bod.png');
-           tex_ui_scr_spot  := tex_LoadFromFile( dirUI + 'scroll_spot.png');
-
-
-           tex_SetFrameSize(tex_ui_scr_spot, 31, 31);
-           tex_ATB          := tex_LoadFromFile( dirUI + 'Ini bar1.tga');
-           tex_ATB_Rect     := tex_LoadFromFile( dirUI + 'Ini bar unit1.tga');
-           tex_WMap         := tex_LoadFromFile( dirRes + 'world_map.png');
-           tex_map_spot     := tex_LoadFromFile( dirUI + 'map_spot.png');
-           tex_map_locs     := tex_LoadFromFile( dirUI + 'maplocs.png', $5F5F5F);
-           tex_SetFrameSize(tex_map_locs, 64, 64);
-           tex_Xb           := tex_LoadFromFile( dirUI + 'Xb.png');
-           tex_Pb           := tex_LoadFromFile( dirUI + 'Pb.png');
-           tex_Ab           := tex_LoadFromFile( dirUI + 'Arb.png');
-           tex_Belt         := tex_LoadFromFile( dirUI + 'belt.png');
-           tex_Chest        := tex_LoadFromFile( dirUI + 'chest.png');
-           tex_glow         := tex_LoadFromFile( dirUI + 'glowbox.png');
-           tex_SetFrameSize(tex_map_spot, 32, 32);
 
            for i := 1 to 10 do
              begin
@@ -378,6 +372,7 @@ begin
     3 : loadMap( dirRes + '\maps\robbers_camp.tmx');
     4 : loadMap( dirRes + '\maps\forrest1.tmx');
   end;
+ // objMan_Fill;
   l_ms := false;
 end;
 

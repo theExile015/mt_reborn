@@ -6,7 +6,6 @@ unit uNetCore;
 interface
 
 uses
-  Classes,
   lnet,
   zglHeader,
   uVar,

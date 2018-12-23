@@ -28,11 +28,17 @@ function  cm_InRange( x, y, rng : byte ): boolean;
 function  cm_InRangeOfMove( x, y, rng : byte) : boolean;
 function  cm_ShootLine( x, y : byte ) : boolean;
 
+type
+  TUnitQ = record
+    id, y : dword;
+  end;
+
 implementation
 
 procedure Combat_Init;
 var i : integer;
 begin
+  Writeln('Combat Init.');
   in_action := false;
   your_turn := false;
   range_mode := false;
@@ -64,10 +70,14 @@ var i, j, k, step_ap : integer;
     x, y : single;
     alpha: byte;
     FX   : DWORD;
+
+    draw_q : array [1..50] of TUnitQ;
+    buffer : TUnitQ;
 begin
+
   if iga <> igaCombat then Exit;
   if gs  <> gsGame    then Exit;
-
+Scissor_Begin(0, 0, scr_w, scr_h, false);
   DrawTiles();
 
   step_ap  := 5;
@@ -120,6 +130,26 @@ begin
                end;
           end;
   Batch2d_End();
+
+  for i := 1 to high(units) do
+      if units[i].exist then
+         begin
+           draw_q[i].id:=i;
+           draw_q[i].y:= units[i].pos.y * 32 - (19 - units[i].pos.x) * 32  + 400 - 112;;
+         end else draw_q[i].id:=high(units);
+
+  for i := 1 to 49 do
+        for j := 1 to 50-i do
+            if draw_q[j].y > draw_q[j+1].y then
+            begin
+                buffer := draw_q[j];
+                draw_q[j] := draw_q[j+1];
+                draw_q[j+1] := buffer;
+            end;
+
+  for i := 1 to high(draw_q) do
+      Unit_Draw(draw_q[i].id);
+Scissor_End();
 end;
 
 procedure Combat_GUI_Draw;
@@ -203,6 +233,7 @@ begin
 end;
 
 procedure Combat_Update;
+var i : integer;
 begin
   if iga <> igaCombat then Exit;
   if gs  <> gsGame    then Exit;
@@ -218,7 +249,8 @@ begin
   if fCam_X > scr_w then fCam_X := scr_w;
   if fCam_Y > scr_h then fCam_Y := scr_h;
 
-  Unit_Update(1);
+  for i := 1 to high(units) do
+    Unit_Update(i);
 end;
 
 procedure Unit_Update(id : integer);
@@ -256,7 +288,9 @@ begin
      end;
 
   if not units[id].in_act then
-     if units[id].fTargetPos.x <> units[id].pos.y then units[id].pos := units[id].fTargetPos;
+     if units[id].fTargetPos.x <> units[id].pos.x then
+     if units[id].fTargetPos.y <> units[id].pos.y then
+        units[id].pos := units[id].fTargetPos;
 
   // выставляем параметры аницмации
   if units[id].complex then
@@ -345,38 +379,36 @@ begin
   if not units[id].exist then Exit;
   if not (gs = gsGame) then Exit;
 
-  if units[id].exist then
-     begin
        if units[your_unit].team <> units[id].team then
           if not units[id].visible then exit else alpha := 255;
 
        if units[your_unit].team = units[id].team then
           if not units[id].visible then alpha := 150 else alpha := 255;
 
-       x := units[id].pos.y * 64 + (19 - units[id].pos.x) * 64 - 32 ;
-       y := units[id].pos.y * 32 - (19 - units[id].pos.x) * 32  + 400 - 112;
+       x := units[id].pos.y * 64 + (19 - units[id].pos.x) * 64 - 65;
+       y := units[id].pos.y * 32 - (19 - units[id].pos.x) * 32  + 240;
 
        if units[id].ani = 1 then
           begin
-            x2 := units[id].TargetPos.y * 64 + (19 - units[id].TargetPos.x) * 64 - 32 ;
-            y2 := units[id].TargetPos.y * 32 - (19 - units[id].TargetPos.x) * 32  + 400 - 112;
-            x := x + units[id].WayProg/16 * (x2 - x);
-            y := y + units[id].WayProg/16 * (y2 - y);
+            x2 := units[id].TargetPos.y * 64 + (19 - units[id].TargetPos.x) * 64 - 65 ;
+            y2 := units[id].TargetPos.y * 32 - (19 - units[id].TargetPos.x) * 32  + 240;
+            x := x + units[id].WayProg / 16 * (x2 - x);
+            y := y + units[id].WayProg / 16 * (y2 - y);
           end;
 
        if units[id].complex then
           begin
-            ASprite2d_Draw( tex_Units[units[id].sex, 0].body[units[id].gSet.body], x, y, 196, 196, 0, units[id].ani_frame, alpha );
-            ASprite2d_Draw( tex_Units[units[id].sex, 0].head[units[id].gSet.head], x, y, 196, 196, 0, units[id].ani_frame, alpha );
-            ASprite2d_Draw( tex_Units[units[id].sex, 0].MH[units[id].gSet.MH], x, y, 196, 196, 0, units[id].ani_frame, alpha );
-            ASprite2d_Draw( tex_Units[units[id].sex, 0].OH[units[id].gSet.OH], x, y, 196, 196, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].sex, 0].body[units[id].gSet.body], x, y, 256, 256, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].sex, 0].head[units[id].gSet.head], x, y, 256, 256, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].sex, 0].MH[units[id].gSet.MH], x, y, 256, 256, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].sex, 0].OH[units[id].gSet.OH], x, y, 256, 256, 0, units[id].ani_frame, alpha );
           end else
             ASprite2d_Draw( tex_Creatures[units[id].ani_key], x, y, 196, 196, units[id].ani_frame, alpha);
 
        if units[id].team = 2 then color := $aa7777 else color := $7777aa;
        w := text_GetWidth( fntCombat, units[id].name, 1) * 0.7;
        h := text_GetHeight( fntCombat, w, units[id].name, 0.3 / scaleXY, 0);
-   //    pr2d_Rect(x + 196/2 - w/2, y, w, h, $222222, 150, PR2D_FILL);
+       //pr2d_Rect(x + 196/2 - w/2 + 400, y, w, h, $222222, 150, PR2D_FILL);
        for i := 1 to high(units[id].auras) do
          if units[id].auras[i].exist then
             begin
@@ -387,9 +419,7 @@ begin
 
             end;
 
-       Text_DrawInRectEx( fntCombat, rect(x + 196/2 - w/2, y, w, h), 0.3 / scaleXY, 0, units[id].name + ' ' + s, 255, color, TEXT_HALIGN_CENTER );
-
-     end;
+       Text_DrawInRectEx( fntCombat, rect(x + 256/2 - w/2, y, w, h), 0.3 / scaleXY, 0, units[id].name + ' ' + s, 255, color, TEXT_HALIGN_CENTER );
 end;
 
 function cm_SetDir( sX, sY, fX, fY : word ) : byte;
@@ -416,6 +446,7 @@ end;
 procedure cm_ClearUnit( uLID : byte);
 var i: integer;
 begin
+  Writeln('Clear unit ', uLID);
   i := uLID;
   units[i].exist:= false;
   units[i].alive:= false;
@@ -449,7 +480,7 @@ begin
   result := col2d_LineVsCircle( line( units[your_unit].pos.x * 64 + 32,
                                       units[your_unit].pos.y * 64 + 32,
                                       m_x * 64 + 32, m_y * 64 + 32 ),
-                                circle( x * 64 + 32, y * 64 + 32, 32 ) );
+                              circle( x * 64 + 32, y * 64 + 32, 32 ) );
 end;
 
 end.

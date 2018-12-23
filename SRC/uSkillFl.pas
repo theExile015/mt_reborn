@@ -7,15 +7,14 @@ interface
 uses
   uAdd,
   uVar,
-  zglHeader,
-  uMyGui;
+  zglHeader;
 
 procedure SF_Init();
 procedure SF_Update();
 
 implementation
 
-uses uNetCore, uParser, uXClick;
+uses uXClick, uMyGUITT;
 
 procedure FillWithNumbers(id, n1, n2, n3, n4, n5: integer);
 begin

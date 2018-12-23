@@ -8,7 +8,7 @@ uses
   uVar,
   uAdd,
   zglHeader,
-  uMyGui;
+  uMyGuiTT;
 
 type
   TCharItem = record
@@ -212,7 +212,7 @@ procedure DestSel_Update;
 var i, j: integer;  delta : single;
     fly : boolean;  si : integer; sx : integer;
 begin
-   if not DestinyMode then Exit;
+  if not DestinyMode then Exit;
   fly := true; si := 0;
   for i := 1 to 4 do
     begin

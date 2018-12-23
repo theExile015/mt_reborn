@@ -1,6 +1,7 @@
 unit uVar;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 
@@ -122,12 +123,17 @@ type
       bgr_color : longword;
     end;
 
+    TDialogData = record
+      dID : dword;
+      dType : byte;
+      text  : string[60];
+    end;
+
     TMyDialog = packed record
       exist : boolean;
-      dType, dID : longword;
+      data  : TDialogData;
       dy    : integer;
       omo   : boolean;
-      text  : utf8string;
     end;
 
     TMyProgressBar = packed record
@@ -161,13 +167,13 @@ type
       flag : byte;
       rect : zglTRect;
       fType: integer;
-      btns : array [1..16] of TMyGuiButton;
-      lines: array [1..20] of TMyGuiLine;
-      texts: array [1..45] of TMyGuiText;
-      imgs : array [1..10] of TMyImage;
+      btns : array [1..16]  of TMyGuiButton;
+      lines: array [1..20]  of TMyGuiLine;
+      texts: array [1..45]  of TMyGuiText;
+      imgs : array [1..10]  of TMyImage;
       dnds : array [1..100] of TDragAndDropObj;
-      dlgs : array [1..25] of TMyDialog;
-      pbs  : array [1..10] of TMyProgressBar;
+      dlgs : array [1..25]  of TMyDialog;
+      pbs  : array [1..10]  of TMyProgressBar;
     end;
 
   TProps = array [1..25] of Integer;
@@ -210,12 +216,12 @@ type
 
   // игровой персонаж
   TCharHeader = record
-    ID                   : dword;    // ID персонажа (глобальный)
+    ID                   : dword;        // ID персонажа (глобальный)
     Name                 : String[20];  // Имя
-    classID, raceID, avID: byte;        // класс, раса, аватар
-    level, sex, destiny  : byte;        // уровень, пол, предназначение
-    tutorial             : byte;        // стадия обучения (не то чтобы оно очень нужно в заголовке...)
-    loc                  : word;        // локация
+    classID, raceID, avID: byte;       // класс, раса, аватар
+    level, sex, destiny  : byte;      // уровень, пол, предназначение
+    tutorial             : byte;     // стадия обучения (не то чтобы оно очень нужно в заголовке...)
+    loc                  : word;    // локация
   end;
 
   TCharHPMP = record
@@ -311,26 +317,33 @@ type
     normal  : longword;
   end;
 
+  TLocData = record
+    id        : word;
+    name      : string[50];
+    x, y, pic : word;
+    links     : TProps;
+  end;
+
   TLoc = record
-    exist : boolean;
-    name  : utf8string;
-    x, y  : single;
-    pic   : word;
-    links : TProps;
+    exist, request : boolean;
+    data  : TLocData;
+  end;
+
+  TLocObjData = record
+    x, y, w, h : integer;
+    cType, oID, gID, tID : word;
+    enabled, animation : word;
+    name : string[30];
   end;
 
   TLocObject = record                     // объект на карте локации
-    exist, anim : boolean;                // существуем ли?
-    x, y, w, h : single;                  // параметры текстуры
-    cType : byte;                         // тип проверки коллизии 0 - прямоуг 1 - круг
-    cCircle: zglTCircle;                  // радиус объекта
-    tID   : word;                         // ID текстуры
-    oID   : byte;                         // тип объекта
-    gID   : DWORD;                        // глобальный ID
-    enabled, visible : boolean;           // состояние объекта (доступность и видимость)
-    MouseOver : boolean;                  // мышка над объектом?
-    a_fr, c_fr: integer;
-    name, discr : utf8string;
+    exist, anim, visible : boolean;                // существуем ли?
+    request              : boolean;
+    Data                 : TLocObjData;
+    cCircle              : zglTCircle;                  // радиус объекта
+    MouseOver            : boolean;                  // мышка над объектом?
+    a_fr, c_fr           : integer;
+    Descr                : string;
   end;
 
   TItemData = record
@@ -380,7 +393,7 @@ type
     TargetPos, fTargetPos: TMPoint;
     NextPos  : TMPoint;
     uType    : word;
-    team,race,sex: byte;
+    team, race, sex: byte;
     uID      : longword;
     name     : UTF8String;
     cAP, mAP, cHP, mHP, cMP, mMP, Init, Rage : longword;
@@ -407,33 +420,33 @@ type
 
 var
   // CORE VARS
-  GUI          : zglTGui;                   // ГУИ
-  gSkin        : zglTGuiSkin;               // скин ГУЯ
+  GUI            : zglTGui;                   // ГУИ
+  gSkin          : zglTGuiSkin;               // скин ГУЯ
 
-  scr_w, scr_h : longword;                  // ширина и высота экрана
-  ScaleXY      : single  ;                  // скалирование изображения (возможно не пригодится)
-  f_scr        : boolean ;                  // фулскрин
-  oMX, oMY     : single  ;                  // старая позиция курсора
-  fCam_X, fCam_Y : single;                  // целевая позиция камеры
+  scr_w, scr_h   : longword;                  // ширина и высота экрана
+  ScaleXY        : single  ;                  // скалирование изображения (возможно не пригодится)
+  f_scr          : boolean ;                  // фулскрин
+  oMX, oMY       : single  ;                  // старая позиция курсора
+  fCam_X, fCam_Y : single;                    // целевая позиция камеры
 
-  texZero      : zglPTexture;
-  tex_man      : array [1..2000] of TTexManObj;
-  tex_list     : array [1..2000] of TTexListObj;
+  texZero        : zglPTexture;
+  tex_man        : array [1..2000] of TTexManObj;
+  tex_list       : array [1..2000] of TTexListObj;
 
-  gs           : TGameStatus = gsMMenu;     // переключатель сцеy
-  igs          : TInGameStatus = igsNone;   // переключатель состояний в игре
-  cns          : TConnectionStatus = csDisc;// состояние подключения к серверу
-  iga          : TInGameAction = igaLoc;    // локация/комбат/добыча итд.
+  gs             : TGameStatus = gsMMenu;     // переключатель сцеy
+  igs            : TInGameStatus = igsNone;   // переключатель состояний в игре
+  cns            : TConnectionStatus = csDisc;// состояние подключения к серверу
+  iga            : TInGameAction = igaLoc;    // локация/комбат/добыча итд.
 
   DelCharMode, CreateCharMode, DestinyMode  : boolean;   // Режимы в меню персонажа
 
-  con_visible         : boolean;            // Параметры
-  con_string, con_log : string;             // консоли
+  con_visible           : boolean;                // Параметры
+  con_string, con_log   : string;                 // консоли
 
   l_ms                  : boolean = false;        // статус загрузки карты
   a_p                   : integer;                // char select vars
   sc_ani, tut_timer     : integer;
-  gSI, dSI              : byte;                   // индекс персонажа для удаления
+  gSI, dSI              : byte   ;                // индекс персонажа для удаления
   lProgress, lVProgress : integer;                // состояние загрузки ресурсов
   In_Request            : boolean;                // В процессе запроса
 
@@ -471,7 +484,7 @@ var
   CharPack     : array [1..10] of TCharTexPack;
   tex_Icons    : array [1..3] of zglPTexture;
   tex_WMap, tex_map_spot, tex_map_locs   : zglPTexture;
-  tex_Xb, tex_Pb, tex_Ab, tex_Skills  : zglPTexture;
+  tex_Skills  : zglPTexture;
   tex_belt, tex_chest, tex_glow : zglPTexture;
 
   fx_pr          : array [1..10] of zglPEmitter2D;
@@ -526,6 +539,7 @@ var
   ddItem             : TDragAndDropObj;
   ddIndex, ddWin     : word;
   on_DD              : boolean;
+  Loc_OMO            : word;
 
   // INGAME CHAT
   ch_tab_curr, ch_tab_total : byte;                        // Текущая вкладка, всего вкладок
