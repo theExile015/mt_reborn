@@ -14,7 +14,7 @@ uses
   vServerLog,
   udb,
   uPkgProcessor,
-  uCharManager;
+  uCharManager, uObjManager;
 
 begin
 try

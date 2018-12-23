@@ -189,9 +189,10 @@ TRY
   while not Query.EOF do
   begin
     id := Query.FieldByName('ID').AsInteger;
- {   ObjDialogs[id].exist:=true;
-    ObjDialogs[id].text:=Query.FieldByName('text').AsString;
-    ObjDialogs[id].dType:=Query.FieldByName('dType').AsInteger;
+    ObjDialogs[id].exist:=true;
+    ObjDialogs[id].data.dID:=id;
+    ObjDialogs[id].data.text:=Query.FieldByName('text').AsString;
+    ObjDialogs[id].data.dType:=Query.FieldByName('dType').AsInteger;
     ObjDialogs[id].vName:=Query.FieldByName('vName').AsString;
     ObjDialogs[id].vVal:=Query.FieldByName('vVal').AsInteger;
     ObjDialogs[id].qLink:=Query.FieldByName('qLink').AsInteger;
@@ -200,7 +201,7 @@ TRY
     ObjDialogs[id].vName3:=Query.FieldByName('vName3').AsString;
     ObjDialogs[id].vVal3:=Query.FieldByName('vVal3').AsInteger;
     ObjDialogs[id].props:=GetItemProps(Query.FieldByName('Props').AsString);
-    //WriteSafeText( IntToStr(ObjDialogs[id].props[1].pNum), 2);  }
+    //WriteSafeText( IntToStr(ObjDialogs[id].props[1].pNum), 2);
     Query.Next;
   end;
 

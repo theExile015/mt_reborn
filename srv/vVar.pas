@@ -118,8 +118,8 @@ type
     exist : boolean;
     oType, en, vis, pic : dword;
     props, props2 : TProps;
-    name  : string;
-    discr : string;
+    name  : string[30];
+    discr : string[200];
   end;
 
   TLocation = record
@@ -136,7 +136,28 @@ type
     links     : TProps;
   end;
 
+  TLocObjData = record
+    x, y, w, h : integer;
+    cType, oID, gID, tID : word;
+    enabled, animation   : word;
+    name : string[30];
+  end;
+
   TChatMembersList = array [1..30] of TChatMember;
+
+  TDialogData = record
+    dID   : dword;
+    dType : byte;
+    text  : string[60];
+  end;
+
+  TObjDialog = record
+    exist : boolean;
+    data  : TDialogData;
+    vName, vName2, vName3 : string;
+    vVal, vVal2, vVal3, qLink : DWORD;
+    props : TProps;
+  end;
 
 Var
   CS : TCriticalSection;
@@ -159,13 +180,14 @@ Var
   lpMin, lpSec : word;
   cm_total     : DWORD;
 
-  sessions : array [0..127] of TGameSession; // сессии
-  chars    : array [0..127] of TCharacter;   // данные о чарах
-  b_chars  : array [1..25] of TCharacter;    // базовые чары
-  ItemDB   : array [1..1000] of TItem;       // База предметов
-  LocObjs  : array [1..1000] of TLocObj;
-  PerksDB  : array [1..100] of TPerkData;
-  LocDB    : array [1..50] of TLocation;
+  sessions  : array [0..127] of TGameSession; // сессии
+  chars     : array [0..127] of TCharacter;   // данные о чарах
+  b_chars   : array [1..25] of TCharacter;    // базовые чары
+  ItemDB    : array [1..1000] of TItem;       // База предметов
+  LocObjs   : array [1..1000] of TLocObj;
+  PerksDB   : array [1..100] of TPerkData;
+  LocDB     : array [1..50] of TLocation;
+  ObjDialogs: array [1..1000] of TObjDialog ;
 
 implementation
 

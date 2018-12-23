@@ -6,6 +6,7 @@ interface
 
 uses
   Classes,
+  sysutils,
   vVar,
   uDB,
   DOS;
@@ -22,7 +23,7 @@ procedure Char_AddNumbers(charLID, Gold, Exp, lvl, SP, TP : DWORD);
 function Char_EnterTheWorld(sID, charID: DWORD): word;
 function Char_CalculateStats(charLID: dword): word;
 procedure char_MoveToLoc(charLID, locID : DWORD) ;
-
+procedure char_SendLocObjs(charLID, locLID: DWORD) ;
 
 implementation
 
@@ -385,6 +386,76 @@ begin
     if chars[i].exist then
        Chat_GetMembersList(1, chars[i].header.loc, chars[i].sID);
 end;
+
+procedure char_SendLocObjs(charLID, locLID: DWORD) ;
+var i, j, k, rs1, rs2, tmp : integer;
+    _pkg : TPkg029;  _head : TPackHeader;
+    mStr : TMemoryStream;
+begin
+  k := 1;
+  // формируем список локациий
+  if not LocDB[locLID].exist then
+     begin
+       Writeln('Illegal request [52] from : ' + IntToStr(1));
+       exit;
+     end;
+  for i := 6 to 15 do
+      if locDB[locLID].props[i] > 0 then
+         begin
+           rs1 := 0; rs2 := 0;
+           for j := 10 to 22 do
+             if (j - 10) / 3 = (j - 10) div 3 then
+                begin
+                  Writeln('Obj ## ' , locDb[loclid].props[i]);
+                  Writeln(LocObjs[locDB[locLID].props[i]].props2[j], ' ',
+                          LocObjs[locDB[locLID].props[i]].props2[j + 1], ' ',
+                          LocObjs[locDB[locLID].props[i]].props2[j + 2]);
+                  if LocObjs[locDB[locLID].props[i]].props2[j] = 1 then
+                     begin
+                       inc(rs1);
+                       tmp := DB_GetCharVar(charLID, 'q' + IntToStr(LocObjs[locDB[locLID].props[i]].props2[j + 1]));
+                       Writeln(IntToStr(j) + ' ' + IntToStr(tmp) + ' ' + IntToStr(LocObjs[locDB[locLID].props[i]].props2[j + 2]), 2);
+                       if tmp = LocObjs[locDB[locLID].props[i]].props2[j + 2] then inc(rs2);
+                     end;
+                  if LocObjs[locDB[locLID].props[i]].props2[j] = 2 then
+                     begin
+                       inc(rs1);
+                       tmp := DB_GetCharVar(charLID, 'v' + IntToStr(LocObjs[locDB[locLID].props[i]].props2[j + 1]));
+                       Writeln(IntToStr(j) + ' ' + IntToStr(tmp) + ' ' + IntToStr(LocObjs[locDB[locLID].props[i]].props2[j + 2]), 2);
+                       if tmp = LocObjs[locDB[locLID].props[i]].props2[j + 2] then inc(rs2);
+                     end;
+                end;
+           if rs1 = rs2 then
+              begin
+                _pkg.data[k] := locDB[locLID].props[i];
+                inc(k);
+              end;
+         end;
+
+  try
+         mStr := TMemoryStream.Create;
+         _head._flag := $F;
+         _head._id   := 29;
+
+         _pkg.fail_code:= k - 1;
+
+         mStr.Write(_head, sizeof(_head));
+         mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[charLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[charLID].sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                Break;
+              end;
+       finally
+         mStr.Free;
+       end;
+end;
+
 
 end.
 

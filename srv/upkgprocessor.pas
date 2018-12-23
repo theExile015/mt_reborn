@@ -13,6 +13,7 @@ uses
   sysutils,
   uCharManager,
   uChatManager,
+  uObjManager,
   dos;
 
 type
@@ -115,6 +116,11 @@ type
     fail_code  : byte;
   end;
 
+  TPkg029 = record
+     data : array [1..16] of Integer;
+     fail_code : byte;
+  end;
+
   TPkg030 = record
     stat  : byte;
     fail_code : byte;
@@ -123,6 +129,25 @@ type
   TPkg031 = record
     school, perk : byte;
     fail_code    : byte;
+  end;
+
+  TPkg032 = record
+    id        : word;
+    data      : TLocObjData;
+    fail_code : byte;
+  end;
+
+  TPkg040 = record
+    ID    : dword;
+    fail_code : byte;
+  end;
+
+  TPkg041 = record
+    ID, pic : dword;
+    name : string[30];
+    descr: string[200];
+    data : array[1..10] of TDialogData;
+    fail_code : byte;
   end;
 
 procedure pkg001(pkg : TPkg001; sID : word);
@@ -153,9 +178,12 @@ procedure pkg025(pkg : TPkg025; sID : word);
 procedure pkg026(pkg : TPkg026; sID : word);
 procedure pkg027(pkg : TPkg027; sID : word);
 procedure pkg028(pkg : TPkg028; sID : word);
-
+procedure pkg029(pkg : TPkg029; sID : word);
 procedure pkg030(pkg : TPkg030; sID : word);
 procedure pkg031(pkg : TPkg031; sID : word);
+procedure pkg032(pkg : TPkg032; sID : word);
+
+procedure pkg040(pkg : TPkg040; sID : word);
 
 procedure pkgProcess(msg: string);
 
@@ -855,6 +883,11 @@ try
      end;
 end;
 
+procedure pkg029(pkg : TPkg029; sID : word);
+begin
+  char_SendLocObjs(sessions[sID].charLID, chars[sessions[sID].charLID].header.loc);
+end;
+
 procedure pkg030(pkg : TPkg030; sID : word);
 var stat    : byte;   pkg1 : TPkg010; pkg2 : TPkg011; pkg3: TPkg012;
     cap     : word;
@@ -957,6 +990,61 @@ begin
   pkg011(_pkg011, sID);
   pkg012(_pkg012, sID);
   pkg016(_pkg016, sID);
+end;
+
+procedure pkg032(pkg : TPkg032; sID : word);
+var _pkg  : TPkg032;
+    _head : TPackHeader;
+    mStr  : TMemoryStream;
+begin
+if not LocObjs[pkg.id].exist then exit;
+   _pkg.data.x:=LocObjs[pkg.id].props2[1];
+   _pkg.data.y:=LocObjs[pkg.id].props2[2];
+   _pkg.data.w:=LocObjs[pkg.id].props2[3];
+   _pkg.data.h:=LocObjs[pkg.id].props2[4];
+   _pkg.data.cType:=LocObjs[pkg.id].props2[5];
+   _pkg.data.oID:=LocObjs[pkg.id].props2[6];
+   _pkg.data.gID:=pkg.id;
+   _pkg.data.tID:=LocObjs[pkg.id].props2[7];
+   _pkg.data.enabled:=1;
+   _pkg.data.name:=LocObjs[pkg.id].name;
+   _pkg.data.animation:=LocObjs[pkg.id].props2[8];;
+try
+       mStr := TMemoryStream.Create;
+       _head._flag := $F;
+       _head._id   := 32;
+
+       _pkg.id:= pkg.id;
+
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       // Отправляем пакет
+       TCP.FCon.IterReset;
+       while TCP.FCon.IterNext do
+         if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
+         if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
+            begin
+              TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+              Break;
+            end;
+     finally
+       mStr.Free;
+     end;
+end;
+
+procedure pkg040(pkg : TPkg040; sID : word);
+begin
+try
+  if LocObjs[pkg.ID].exist then
+     case LocObjs[pkg.ID].oType of
+       1 : Obj_SendDialogs(sID, pkg.ID);
+     else
+       WriteSafeText('DUMMY!!!', 1);
+     end;
+except
+  WriteSafeText('Illegal object request', 1);
+end;
 end;
 
 procedure pkgProcess(msg: string);
