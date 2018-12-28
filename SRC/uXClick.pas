@@ -31,6 +31,9 @@ procedure DoRequestLoc(id: word);
 procedure DoRequestObj(id: word);
 procedure DoTravel(id: word);
 procedure DoObjectClick(id: word);
+procedure DoDlgClick(id: word);
+procedure DoSendQuest(id, action : word);
+procedure DoSendTutorial(step : byte);
 
 implementation
 
@@ -556,6 +559,7 @@ begin
   _head._ID   := 40;
 
   _pkg.id:=id;
+  _pkg.fail_code:=0;
 
 try
        mStr := TMemoryStream.Create;
@@ -571,6 +575,133 @@ finally
        mStr.Free;
 end;
 
+end;
+
+procedure DoDlgClick(id: word);
+var
+  _pkg : TPkg040; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  objstore[id].request:=true;
+  _head._FLAG := $f;
+  _head._ID   := 40;
+
+  _pkg.id := id;
+  _pkg.fail_code := 1;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+
+end;
+
+procedure DoSendQuest(id, action : word);
+var
+  _pkg : TPkg043; _head: TPackHeader;
+  mStr : TMemoryStream;
+  i, j, k : integer;
+begin
+  objstore[id].request:=true;
+  _head._FLAG := $f;
+  _head._ID   := 43;
+
+  _pkg.qid := id;
+  _pkg.rID:= 0;
+  _pkg.fail_code:=255;
+  if mWins[8].flag = 11 then
+     _pkg.fail_code := 0
+  else
+     _pkg.fail_code := 1;
+
+  if _pkg.fail_code = 1 then
+     begin
+       j := 0; k := 0;
+       for i := 6 to 10 do
+         if mWins[8].dnds[i].exist then
+            if mWins[8].dnds[i].data.contain > 0 then inc(k);
+       //Chat_AddMessage(ch_tab_curr, '', u_IntToStr(j));
+       //k := j;
+       if k > 0 then
+       begin
+          for i := 6 to 10 do
+            if mWins[8].dnds[i].exist then
+               if mWins[8].dnds[i].selected then j := i;
+          if (k > 0) and (j = 0) then
+             begin
+               Chat_AddMessage(ch_tab_curr, high(word), 'Choose reward first.');
+               Exit;
+             end
+       end;
+       if (k <> 0) and (j <> 0) then _pkg.rID := j - 2;
+
+       if k = 0 then
+          begin
+            mWins[8].visible:=false;
+            Chat_AddMessage(ch_tab_curr, high(word), 'Quest "' + mWins[8].texts[1].Text + '" complete.');
+            igs := igsNone;
+          end else
+          if j <> 0 then
+          begin
+            mWins[8].visible:=false;
+            Chat_AddMessage(ch_tab_curr, high(word), 'Quest "' + mWins[8].texts[1].Text + '" complete.');
+            igs := igsNone;
+          end;
+     end else
+     begin
+        mWins[8].visible:=false;
+        Chat_AddMessage(ch_tab_curr, high(word), 'Quest "' + mWins[8].texts[1].Text + '" accepted.');
+        igs := igsNone;
+     end;
+
+if (k <> 0) and (j = 0) then Exit;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure DoSendTutorial(step : byte);
+var
+  _pkg : TPkg045; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 45;
+
+  _pkg.fail_code := step;
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
 end;
 
 end.

@@ -315,6 +315,11 @@ begin
        mWins[7].visible:=true;
      end;
 
+  if (parent = 8) and (sender = 2) then
+     begin
+       DoSendQuest(StrToInt(mWins[8].Name), 0);
+     end;
+
  { if (parent = 8) and (sender = 2) then
   //if not qlog_QAccepted( u_StrToInt(mWins[8].Name) ) then
   if mWins[8].flag = 0 then
@@ -410,7 +415,6 @@ var i, j, k  : integer;
     dx, dy : single;
     s : utf8string;
     hh, mm, ss, ms : word;
-    _tex : zglPTexture;
 begin
 
  // отрисовка портрета инфы на локации
@@ -658,8 +662,7 @@ begin
               begin
             //    fx2d_S
               //  if mWins[i].imgs[j].iType = 1 then
-                   _tex := GetTex(mWins[i].imgs[j].texID);
-                   tex_SetMask( _tex, tex_qMask[mWins[i].imgs[j].maskID]);
+                //   tex_SetMask( _tex, tex_qMask[mWins[i].imgs[j].maskID]);
                    SSprite2d_Draw( GetTex(mWins[i].imgs[j].texID),
                                    mWins[i].rect.X + mWins[i].imgs[j].rect.X + frmPak[mWins[i].fType].w,
                                    mWins[i].rect.Y + mWins[i].imgs[j].rect.Y + frmPak[mWins[i].fType].w,
@@ -2100,12 +2103,12 @@ begin
             // sleep(50);
             // SendData( inline_PkgCompile(4, u_IntToStr(dID) + '`1`'));
           end;
-      // SendData( inline_PkgCompile(23, u_IntToStr(dID) + '`2`'));   // сдать квест
+       DoDlgClick(dID);
      end;
 
   if (dType = 11) or (dType = 10) then                     // взять квест
      begin
-       // SendData( inline_PkgCompile(23, u_IntToStr(dID) + '`1`'));
+       DoDlgClick(dID);
      end;
 end;
 
@@ -2156,6 +2159,7 @@ var i, j: integer ;
     Cache : zglTFile;
     data  : TItemData;
     ldata : TLocData;
+    odata : TLocObjData;
 begin
 {$R+}
 try
@@ -2190,7 +2194,7 @@ try
        begin
         // Writeln(file_getpos(itemcache), '/', file_getsize(itemcache));
          file_Read(Cache, ldata, sizeof(ldata));
-         if data.ID <> 0 then
+         if ldata.ID <> 0 then
             begin
               Locs[ldata.id].data := ldata;
             end;
@@ -2200,6 +2204,26 @@ except
   On e: ERangeError do writeln('ERangeError :: uMyGui :: CacheLoad' );
 end;
   File_Close(Cache);
+ {
+  try
+    if File_Exists('Cache\objs.rec') then
+       begin
+         File_Open(Cache, 'Cache\objs.rec', FOM_OPENR);
+         if file_GetSize(Cache) >= sizeof(odata) then
+         while file_getpos(Cache) < file_getsize(Cache) do
+         begin
+          // Writeln(file_getpos(itemcache), '/', file_getsize(itemcache));
+           file_Read(Cache, odata, sizeof(odata));
+           if odata.gID <> 0 then
+              begin
+                ObjStore[odata.gid].data := odata;
+              end;
+         end;
+       end else file_open(Cache, 'Cache\objs.rec', FOM_CREATE);
+  except
+    On e: ERangeError do writeln('ERangeError :: uMyGui :: CacheLoad' );
+  end;
+    File_Close(Cache);
 {$R-}
 
   items[1000].exist:=true;

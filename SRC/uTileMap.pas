@@ -107,6 +107,9 @@ begin
       debug('');
     end;
   end;
+
+  Csv.Free;
+
   Chat_AddMessage(3, high(word), 'Map loading...');
   CloseFile(mapfile);
   l_ms := False;

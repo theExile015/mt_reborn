@@ -338,7 +338,9 @@ try
        if t / 3000 = t div 3000 then        // снимаем счётчики
        begin
          for i := 1 to high(items) do
-              items[i].req := false;
+             items[i].req := false;
+         for i := 1 to high(objstore) do
+             objstore[i].request := false;
          in_request := false;
          sleep(20);
        end;

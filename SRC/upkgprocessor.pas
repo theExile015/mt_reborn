@@ -6,6 +6,7 @@ unit uPkgProcessor;
 interface
 
 uses
+  sysutils,
   Classes,
   uVar,
   uAdd,
@@ -152,6 +153,34 @@ type
     fail_code : byte;
   end;
 
+  TPkg042 = record
+    qID   : DWORD;
+    name  : string[40];
+    descr : string[255];
+    descr2: string[255];
+    descr3: string[255];
+    obj   : string[200];
+    spic, smask : dword;
+    reward : TProps;
+    fail_code : byte;
+  end;
+
+  TPkg043 = record
+    rID : byte;
+    qID : dword;
+    fail_code : byte;
+  end;
+
+  TPkg044 = record
+    _what : dword;
+    _num  : dword;
+    fail_code : byte;
+  end;
+
+  TPkg045 = record
+    fail_code : byte;
+  end;
+
 procedure pkg000;
 procedure pkg001(pkg: TPkg001);   // Логин
 procedure pkg002(pkg: TPkg002);   // Список персонажей
@@ -183,7 +212,10 @@ procedure pkg029(pkg: TPkg029);   // loc objs
 procedure pkg032(pkg: TPkg032);   // obj data
 
 
-procedure pkg041(pkg: TPkg041);   // obj data
+procedure pkg041(pkg: TPkg041);   // dialog data
+procedure pkg042(pkg: TPkg042);   // q data
+
+procedure pkg044(pkg: TPkg044);   // NEW
 
 procedure pkgProcess(var msg: string);
 
@@ -211,7 +243,8 @@ var
     _pkg028: TPkg028;   _pkg029: TPkg029;
                         _pkg032: TPkg032;
 
-                        _pkg041: TPkg041;
+                        _pkg041: TPkg041;   _pkg042: TPkg042;
+                        _pkg044: TPkg044;
 begin
   try
        begin
@@ -335,6 +368,16 @@ begin
            begin
              mStr.Read(_pkg041, SizeOf(_pkg041));
              pkg041(_pkg041);
+           end;
+           42:
+           begin
+             mStr.Read(_pkg042, SizeOf(_pkg042));
+             pkg042(_pkg042);
+           end;
+           44:
+           begin
+             mStr.Read(_pkg044, SizeOf(_pkg044));
+             pkg044(_pkg044);
            end;
          else
            // ID пакета кривой
@@ -651,7 +694,6 @@ begin
     activechar.header.loc := pkg._to;
     //SetLength(layer, 0);
     LoadLoc(activechar.header.loc);
-    iga := igaLoc;
     fInGame.Show;
 
     _head._FLAG := $f;
@@ -678,14 +720,18 @@ begin
 try
   objMan_HideAll();
 
-  if pkg.fail_code < 1 then exit;
-
+  if pkg.fail_code < 1 then Writeln('Fail code ## ', pkg.fail_code) else
   for i := 1 to pkg.fail_code do
     begin
       writeln(pkg.data[i]);
       objStore[pkg.data[i]].visible := true;
       objStore[pkg.data[i]].exist   := true;
+      if objStore[pkg.data[i]].Data.tID = 0 then
+         DoRequestObj(i);
+      sleep(50);
     end;
+
+  iga := igaLoc;
 
 except
   writeln('Range error desu');
@@ -697,6 +743,10 @@ procedure pkg032(pkg: TPkg032);   // loc objs
 begin
 try
   objStore[pkg.id].Data := pkg.data;
+
+  SaveObjCache();
+
+  writeln('tID ## ', objstore[pkg.id].Data.tID);
      objStore[pkg.id].cCircle := Circle(objStore[pkg.id].Data.x + objStore[pkg.id].Data.w / 2,
                                         objStore[pkg.id].Data.y + objStore[pkg.id].Data.h / 2,
                                         objStore[pkg.id].Data.h / 2);
@@ -705,18 +755,20 @@ try
      objStore[pkg.id].c_fr := 1;
      if objStore[pkg.id].a_fr > 0 then
         objStore[pkg.id].anim := True;
+  objStore[pkg.id].request:=false;
+  //scr_Flush;
 except
   Writeln('obj data failed');
 end;
 end;
 
-procedure pkg041(pkg: TPkg041);   // obj data
+procedure pkg041(pkg: TPkg041);   // dialog data
 var i, k: integer;
 begin
-  mWins[7].texts[1].Text:= pkg.name;
-  mWins[7].texts[2].Text:= pkg.descr;
-  mWins[7].imgs[1].maskID:=1;
-  mWins[7].imgs[1].texID:= 'qp' + u_IntToStr(pkg.pic);
+  mWins[7].texts[1].Text   := pkg.name;
+  mWins[7].texts[2].Text   := pkg.descr;
+  mWins[7].imgs[1].maskID  := 0;
+  mWins[7].imgs[1].texID   := 'qp' + u_IntToStr(pkg.pic);
 
   for i := 1 to high(mWins[7].dlgs) do
     mWins[7].dlgs[i].exist := false;
@@ -746,6 +798,101 @@ begin
 
   igs := igsNPC;
   mWins[7].visible:=true;
+end;
+
+procedure pkg042(pkg: TPkg042);   // q data
+var i : integer;
+begin
+  mWins[7].visible:=false;
+
+  if tutorial = 0 then
+     begin
+       tutorial := 1;
+       DoSendTutorial( 1 );
+       mWins[8].btns[1].enabled := false;
+     end;
+
+  for i := 1 to 10 do
+      begin
+        mWins[8].dnds[i].data.contain:=0;
+        mWins[8].dnds[i].data.dur:=0;
+      end;
+  writeln(pkg.descr);
+  writeln(pkg.descr2);
+
+  mWins[8].Name := IntToStr(pkg.qID);
+  mWins[8].texts[1].Text := pkg.name;
+  mWins[8].texts[3].Text := string(pkg.descr) + string(pkg.descr2) + string(pkg.descr3) ;
+
+  if pkg.fail_code = 11 then
+     begin
+       mWins[8].texts[5].Text:=pkg.obj;
+       mWins[8].texts[4].visible:=true;
+       mWins[8].texts[5].visible:=true;
+       mWins[8].flag := pkg.fail_code;
+     end else
+     begin
+       mWins[8].texts[4].visible:=false;
+       mWins[8].texts[5].visible:=false;
+       mWins[8].flag := pkg.fail_code;
+     end;
+
+  if pkg.fail_code = 11 then
+     begin
+       mWins[8].imgs[1].texID:='qp'+u_IntToStr(pkg.spic);
+       mWins[8].imgs[1].maskID:=pkg.smask;
+     end;
+
+  if pkg.reward[1] > 0 then
+     begin
+       mWins[8].dnds[1].data.contain:=1000;
+       mWins[8].dnds[1].data.dur:= pkg.reward[1];
+     end;
+
+  if pkg.reward[2] > 0 then
+     begin
+       mWins[8].dnds[2].data.contain := 999;
+       mWins[8].dnds[2].data.dur := pkg.reward[2];
+     end;
+
+  for i := 3 to 10 do
+      if pkg.reward[i * 2 - 3] <> 0 then
+         begin
+           mWins[8].dnds[i].data.contain:=pkg.reward[i * 2 - 3];
+           mWins[8].dnds[i].data.dur:=pkg.reward[i * 2 - 2];
+         end;
+
+  for i := 3 to 10 do
+    if mWins[8].dnds[i].data.contain > 0 then
+      if not items[mWins[8].dnds[i].data.contain].exist then
+        if not items[mWins[8].dnds[i].data.contain].req then
+          begin
+            items[mWins[8].dnds[i].data.contain].req := true;
+            DoItemRequest(mWins[8].dnds[i].data.contain);
+            sleep(50);
+          end;
+
+
+  // Заблокировать кнопку "отмена" для первого квеста.
+  if (activechar.header.tutorial = 1) or
+     (activechar.header.tutorial = 4) then mWins[8].btns[1].enabled:=false;
+
+  igs := igsNPC;
+  mWins[8].visible:=true;
+end;
+
+procedure pkg044(pkg: TPkg044);   // NEW
+begin
+  case pkg._what of
+    0: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' experience.');
+    1: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' gold.');
+    2: Chat_AddMessage(ch_tab_curr, high(word), 'You have reached ' + IntToStr(pkg._num) + ' level.');
+    3: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' stat points.');
+    4: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' perk points.');
+    5: Chat_AddMessage(ch_tab_curr, high(word), 'You recieved ' + '{!:' + IntToStr(pkg._num) + ':0:0:' + Items[pkg._num].data.name + '}{ ' );
+  else
+    Writeln('IDK what to add.');
+  end;
 end;
 
 end.

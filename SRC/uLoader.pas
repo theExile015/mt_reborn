@@ -45,7 +45,7 @@ begin
   snd_gui[3] := snd_LoadFromFile('Data\Sound\drag_onmouseup.wav');
 
   // шрифты
-  if file_OpenArchive('Data\fonts.zep') then
+  if file_OpenArchive('Data\fonts.red') then
      begin
        fntMain := font_LoadFromFile( 'font_1.zfi' );
        fntMain2:= font_LoadFromFile( 'font_2.zfi' );
@@ -53,7 +53,7 @@ begin
        fntChat := font_LoadFromFile( 'chat2.zfi' );
      end else
      begin
-       Writeln('Can''t open archive Chars.zep');
+       Writeln('Can''t open archive fonts.red');
        MessageBoxA( 0, 'Re: client seem to be broken.', 'Error', $00000010 );
      end;
   file_CloseArchive();
@@ -68,7 +68,7 @@ begin
   // анимациая первого экрана
   video := video_OpenFile( 'Data\giphy.ogv' );
 
-  if file_OpenArchive('Data\UI.zep') then
+  if file_OpenArchive('Data\UI.red') then
      begin
        // подгрузка скинов гуя
        for i := 1 to 3 do
@@ -120,7 +120,7 @@ begin
             tex_Cursors[i] := tex_LoadFromFile( 'cr_main' + u_IntToStr(i) +'.png' );
      end else
      begin
-       Writeln('Can''t open archive Chars.zep');
+       Writeln('Can''t open archive UI.red');
        MessageBoxA( 0, 'Re: client seem to be broken.', 'Error', $00000010 );
      end;
   file_CloseArchive();
@@ -222,7 +222,7 @@ begin
 
         tex_node := tex_LoadFromFile( dirRes + 'node.png');
 
-        if file_OpenArchive('Data\Chars.zep') then
+        if file_OpenArchive('Data\Chars.red') then
            begin
 
              tex_Units[0, 0].head[1] := tex_loadFromFile( 'male_head1.png' );
@@ -253,7 +253,7 @@ begin
 
            end else
                begin
-                 Writeln('Can''t open archive Chars.zep');
+                 Writeln('Can''t open archive Chars.red');
                  MessageBoxA( 0, 'Re: client seem to be broken.', 'Error', $00000010 );
                end;
 
@@ -338,6 +338,7 @@ begin
             bServants.Enabled:=true;
             bMail.Enabled:=true;
             bMap.Enabled:=true;
+            mWins[18].visible:=true;
          end;
    if lVProgress > pbLoading.Progress then
       pbLoading.Progress:=pbLoading.Progress + round((lVProgress - pbLoading.Progress)/3);
@@ -364,7 +365,7 @@ end;
 procedure LoadLoc(ID : word);
 begin
   l_ms := true;
-  objMan_HideAll();
+  // objMan_HideAll();
   // SendData(inline_pkgCompile(52, u_IntToStr(activechar.ID) + '`' + u_IntToStr(ID) + '`'));
   case id of
     1 : loadMap( dirRes + '\maps\pure_spring3.tmx');

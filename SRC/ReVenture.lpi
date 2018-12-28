@@ -21,6 +21,7 @@
       <AutoIncrementBuild Value="True"/>
       <RevisionNr Value="1"/>
       <BuildNr Value="1"/>
+      <Attributes pvaDebug="True"/>
       <StringTable ProductVersion="0.0.1.0"/>
     </VersionInfo>
     <BuildModes Count="1">
@@ -98,6 +99,9 @@
       </Optimizations>
     </CodeGeneration>
     <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf2"/>
+      </Debugging>
       <LinkSmart Value="True"/>
     </Linking>
   </CompilerOptions>

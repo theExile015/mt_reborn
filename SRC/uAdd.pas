@@ -44,6 +44,7 @@ function qlog_GetQLID(qID : longword): byte;
     }
 procedure SaveItemCache();
 procedure SaveLocCache();
+procedure SaveObjCache();
 {procedure ItemDataRequests();
 }
 function inv_FindFreeSpot(): word;
@@ -433,6 +434,23 @@ begin
     for i := 1 to high(locs) do
       if locs[i].exist then
         file_Write(cache, locs[i].Data, sizeof(Data));
+  end;
+  File_Close(Cache);
+end;
+
+procedure SaveObjCache();
+var
+  Cache: zglTFile;
+  Data : TLocObjData;
+  i    : integer;
+begin
+  if File_Exists('Cache\objs.rec') then
+  begin
+    File_Open(Cache, 'Cache\objs.rec', FOM_OPENRW);
+    File_Flush(cache);
+    for i := 1 to high(objstore) do
+      if objstore[i].exist then
+         file_Write(cache, objstore[i].Data, sizeof(Data));
   end;
   File_Close(Cache);
 end;
