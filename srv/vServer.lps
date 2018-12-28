@@ -8,17 +8,18 @@
       <Unit0>
         <Filename Value="vServer.pas"/>
         <IsPartOfProject Value="True"/>
-        <TopLine Value="13"/>
+        <TopLine Value="4"/>
         <CursorPos X="3" Y="17"/>
-        <UsageCount Value="82"/>
+        <UsageCount Value="94"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="vVar.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="3"/>
-        <CursorPos X="46" Y="146"/>
-        <UsageCount Value="82"/>
+        <TopLine Value="153"/>
+        <CursorPos X="11" Y="164"/>
+        <UsageCount Value="94"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
@@ -26,8 +27,8 @@
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="2"/>
         <TopLine Value="80"/>
-        <CursorPos X="21" Y="98"/>
-        <UsageCount Value="82"/>
+        <CursorPos X="49" Y="102"/>
+        <UsageCount Value="94"/>
         <Loaded Value="True"/>
       </Unit2>
       <Unit3>
@@ -36,231 +37,230 @@
         <UnitName Value="vServerLog"/>
         <EditorIndex Value="5"/>
         <CursorPos X="11" Y="10"/>
-        <UsageCount Value="74"/>
+        <UsageCount Value="86"/>
         <Loaded Value="True"/>
       </Unit3>
       <Unit4>
         <Filename Value="upkgprocessor.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="uPkgProcessor"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="4"/>
-        <TopLine Value="134"/>
-        <CursorPos X="60" Y="134"/>
-        <UsageCount Value="70"/>
+        <TopLine Value="1046"/>
+        <CursorPos X="87" Y="1096"/>
+        <UsageCount Value="82"/>
         <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="ucharmanager.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="uCharManager"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="434"/>
-        <CursorPos X="71" Y="436"/>
-        <UsageCount Value="57"/>
+        <TopLine Value="142"/>
+        <CursorPos X="25" Y="141"/>
+        <UsageCount Value="69"/>
         <Loaded Value="True"/>
       </Unit5>
       <Unit6>
+        <Filename Value="uobjmanager.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uObjManager"/>
+        <EditorIndex Value="6"/>
+        <TopLine Value="156"/>
+        <CursorPos X="31" Y="141"/>
+        <UsageCount Value="36"/>
+        <Loaded Value="True"/>
+      </Unit6>
+      <Unit7>
         <Filename Value="lnet\lnet.pp"/>
         <UnitName Value="lNet"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="1432"/>
         <CursorPos X="5" Y="1511"/>
-        <UsageCount Value="10"/>
-      </Unit6>
-      <Unit7>
+        <UsageCount Value="9"/>
+      </Unit7>
+      <Unit8>
         <Filename Value="C:\lazarus\fpc\3.0.2\source\packages\rtl-extra\src\inc\socketsh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="168"/>
         <CursorPos X="10" Y="182"/>
-        <UsageCount Value="6"/>
-      </Unit7>
-      <Unit8>
+        <UsageCount Value="5"/>
+      </Unit8>
+      <Unit9>
         <Filename Value="lnet\lcommon.pp"/>
         <UnitName Value="lCommon"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="51"/>
         <CursorPos X="5" Y="59"/>
-        <UsageCount Value="6"/>
-      </Unit8>
-      <Unit9>
+        <UsageCount Value="5"/>
+      </Unit9>
+      <Unit10>
         <Filename Value="lnet\levents.pp"/>
         <UnitName Value="lEvents"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="598"/>
         <CursorPos X="36" Y="533"/>
-        <UsageCount Value="6"/>
-      </Unit9>
-      <Unit10>
+        <UsageCount Value="5"/>
+      </Unit10>
+      <Unit11>
         <Filename Value="udb.pas"/>
         <UnitName Value="uDB"/>
         <EditorIndex Value="8"/>
-        <TopLine Value="40"/>
-        <CursorPos X="20" Y="192"/>
-        <UsageCount Value="36"/>
+        <TopLine Value="912"/>
+        <CursorPos X="49" Y="927"/>
+        <UsageCount Value="42"/>
         <Loaded Value="True"/>
-      </Unit10>
-      <Unit11>
+      </Unit11>
+      <Unit12>
         <Filename Value="..\..\..\..\usr\share\fpcsrc\3.0.4\rtl\inc\objpash.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="195"/>
         <CursorPos X="21" Y="203"/>
-        <UsageCount Value="7"/>
-      </Unit11>
-      <Unit12>
+        <UsageCount Value="6"/>
+      </Unit12>
+      <Unit13>
         <Filename Value="..\..\..\..\usr\share\fpcsrc\3.0.4\rtl\inc\objpas.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="274"/>
         <CursorPos X="12" Y="286"/>
-        <UsageCount Value="7"/>
-      </Unit12>
-      <Unit13>
+        <UsageCount Value="6"/>
+      </Unit13>
+      <Unit14>
         <Filename Value="..\..\..\..\usr\share\fpcsrc\3.0.4\packages\rtl-extra\src\linux\unxsockh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="295"/>
         <CursorPos X="25" Y="295"/>
-        <UsageCount Value="6"/>
-      </Unit13>
-      <Unit14>
+        <UsageCount Value="5"/>
+      </Unit14>
+      <Unit15>
         <Filename Value="uchatmanager.pas"/>
         <UnitName Value="uChatManager"/>
         <EditorIndex Value="7"/>
-        <TopLine Value="22"/>
-        <CursorPos X="29" Y="22"/>
-        <UsageCount Value="23"/>
-        <Loaded Value="True"/>
-      </Unit14>
-      <Unit15>
-        <Filename Value="uobjmanager.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="uObjManager"/>
-        <EditorIndex Value="6"/>
-        <TopLine Value="26"/>
-        <CursorPos X="31" Y="31"/>
-        <UsageCount Value="24"/>
+        <CursorPos Y="12"/>
+        <UsageCount Value="29"/>
         <Loaded Value="True"/>
       </Unit15>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="404" Column="12" TopLine="390"/>
+        <Filename Value="uobjmanager.pas"/>
+        <Caret Line="188" Column="22" TopLine="177"/>
       </Position1>
       <Position2>
-        <Filename Value="ucharmanager.pas"/>
-        <Caret Line="412" Column="72" TopLine="402"/>
+        <Filename Value="uobjmanager.pas"/>
+        <Caret Line="194" Column="54" TopLine="184"/>
       </Position2>
       <Position3>
-        <Filename Value="upkgprocessor.pas"/>
-        <Caret Line="182" Column="45" TopLine="135"/>
+        <Filename Value="uobjmanager.pas"/>
+        <Caret Line="211" Column="54" TopLine="192"/>
       </Position3>
       <Position4>
-        <Filename Value="udb.pas"/>
-        <Caret Line="864" Column="79" TopLine="853"/>
+        <Filename Value="uobjmanager.pas"/>
+        <Caret Line="19" Column="50" TopLine="2"/>
       </Position4>
       <Position5>
-        <Filename Value="udb.pas"/>
-        <Caret Line="203" Column="67" TopLine="184"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="484" Column="52" TopLine="462"/>
       </Position5>
       <Position6>
-        <Filename Value="vVar.pas"/>
-        <Caret Line="155" Column="29" TopLine="140"/>
+        <Filename Value="uobjmanager.pas"/>
+        <Caret Line="189" Column="9" TopLine="180"/>
       </Position6>
       <Position7>
-        <Filename Value="upkgprocessor.pas"/>
-        <Caret Line="147" Column="24" TopLine="136"/>
+        <Filename Value="uobjmanager.pas"/>
+        <Caret Line="240" Column="72" TopLine="227"/>
       </Position7>
       <Position8>
-        <Filename Value="vVar.pas"/>
-        <Caret Line="155" Column="29" TopLine="173"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="469" Column="10" TopLine="457"/>
       </Position8>
       <Position9>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="32" Column="41" TopLine="23"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="471" Column="25" TopLine="460"/>
       </Position9>
       <Position10>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="16" Column="24"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="483" Column="22" TopLine="467"/>
       </Position10>
       <Position11>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="27" Column="35" TopLine="14"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="480" Column="15" TopLine="469"/>
       </Position11>
       <Position12>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="56" Column="74" TopLine="37"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="490" Column="22" TopLine="472"/>
       </Position12>
       <Position13>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="93" Column="53" TopLine="78"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="1076" Column="43" TopLine="1059"/>
       </Position13>
       <Position14>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="96" Column="55" TopLine="78"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="1084" Column="61" TopLine="1068"/>
       </Position14>
       <Position15>
         <Filename Value="uobjmanager.pas"/>
-        <Caret Line="48" Column="46" TopLine="48"/>
+        <Caret Line="15" Column="18" TopLine="4"/>
       </Position15>
       <Position16>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="85" Column="60" TopLine="66"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="514" Column="15" TopLine="499"/>
       </Position16>
       <Position17>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="51" Column="105" TopLine="41"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="506" Column="24" TopLine="495"/>
       </Position17>
       <Position18>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="41" Column="95" TopLine="41"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="28" Column="53" TopLine="19"/>
       </Position18>
       <Position19>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="21" Column="15" TopLine="14"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="21" Column="19" TopLine="13"/>
       </Position19>
       <Position20>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="22" Column="26" TopLine="8"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="27" Column="21" TopLine="10"/>
       </Position20>
       <Position21>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="16" Column="30"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="174" Column="22" TopLine="1077"/>
       </Position21>
       <Position22>
-        <Filename Value="upkgprocessor.pas"/>
-        <Caret Line="146" Column="21" TopLine="1034"/>
+        <Filename Value="uobjmanager.pas"/>
+        <Caret Line="15" Column="23" TopLine="4"/>
       </Position22>
       <Position23>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="16" Column="36" TopLine="5"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="508" Column="17" TopLine="489"/>
       </Position23>
       <Position24>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="94" Column="67" TopLine="78"/>
+        <Filename Value="upkgprocessor.pas"/>
+        <Caret Line="174" Column="22"/>
       </Position24>
       <Position25>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="104" Column="27" TopLine="104"/>
+        <Filename Value="udb.pas"/>
+        <Caret Line="32" Column="21" TopLine="25"/>
       </Position25>
       <Position26>
         <Filename Value="vNetCore.pas"/>
-        <Caret Line="255" Column="18" TopLine="238"/>
+        <Caret Line="270" Column="18" TopLine="256"/>
       </Position26>
       <Position27>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="101" Column="30" TopLine="89"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="23" Column="20" TopLine="7"/>
       </Position27>
       <Position28>
-        <Filename Value="uobjmanager.pas"/>
-        <Caret Line="19" Column="25" TopLine="7"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="32" Column="56" TopLine="20"/>
       </Position28>
       <Position29>
-        <Filename Value="upkgprocessor.pas"/>
-        <Caret Line="145" Column="3" TopLine="139"/>
+        <Filename Value="ucharmanager.pas"/>
+        <Caret Line="147" Column="29" TopLine="146"/>
       </Position29>
       <Position30>
         <Filename Value="uobjmanager.pas"/>
-        <Caret Line="4" Column="17" TopLine="7"/>
+        <Caret Line="14" Column="20" TopLine="3"/>
       </Position30>
     </JumpHistory>
   </ProjectSession>

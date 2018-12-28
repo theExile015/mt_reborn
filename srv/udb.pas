@@ -212,7 +212,7 @@ TRY
   while not Query.EOF do
   begin
     id := Query.FieldByName('ID').AsInteger;
-    {QuestDB[id].exist:=true;
+    QuestDB[id].exist:=true;
     QuestDB[id].name:=Query.FieldByName('name').AsString;
     QuestDB[id].discr:=Query.FieldByName('discr').AsString;
     QuestDB[id].fdiscr:=Query.FieldByName('fdiscr').AsString;
@@ -225,7 +225,7 @@ TRY
     QuestDB[id].fmask:=Query.FieldByName('fmask').AsInteger;
     QuestDB[id].reward:=Query.FieldByName('reward').AsString;
     QuestDB[id].prors := GetItemProps(QuestDB[id].reward);
-    QuestDB[id].props2 := GetItemProps(Query.FieldByName('props').AsString); }
+    QuestDB[id].props2 := GetItemProps(Query.FieldByName('props').AsString);
     Query.Next;
   end;
 
@@ -924,6 +924,7 @@ try
        Query.SQL.Text:= 'UPDATE Chars SET tutorial="' + IntToStr(tutor) + '"' +
                         ' WHERE (id="' + IntToStr(chars[charLID].header.ID) + '")';
        Query.ExecSQL;
+       Chars[CharLID].header.tutorial := tutor;
      end;
 except
   on E : Exception do

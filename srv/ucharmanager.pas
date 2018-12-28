@@ -24,10 +24,12 @@ function Char_EnterTheWorld(sID, charID: DWORD): word;
 function Char_CalculateStats(charLID: dword): word;
 procedure char_MoveToLoc(charLID, locID : DWORD) ;
 procedure char_SendLocObjs(charLID, locLID: DWORD) ;
+procedure Char_AddItem(charLID, protID : DWORD) ;
+procedure Char_SendNew(charLID, what, num: DWORD);
 
 implementation
 
-uses uPkgProcessor, vNetCore, uChatManager;
+uses uPkgProcessor, vNetCore, uChatManager, uObjManager;
 
 procedure Char_InitInventory();
 var i, j : integer;
@@ -134,7 +136,7 @@ begin
         Char_CalculateStats( i );
         break;
       end;
-  if not sessions[i].exist then Exit; // если сессии такой нет, то выходим
+  if not chars[i].exist then Exit; // если сессии такой нет, то выходим
   // Персонаж подготовлен. Теперь нужно отправить базовые данные клиенту
   pkg010(_pkg10, sID); // отправляем-с
   pkg011(_pkg11, sID); // отправляем-с
@@ -148,6 +150,9 @@ begin
            _pkg26.channel := 1;
            pkg026(_pkg26, chars[i].sID);
          end;
+
+  if chars[Sessions[sID].charLID].header.tutorial = 0 then
+     Obj_QuestSend(Sessions[sID].charLID, 26);
 end;
 
 procedure Char_AddNumbers(charLID, Gold, Exp, lvl, SP, TP : DWORD);
@@ -161,6 +166,12 @@ begin
 
       DB_SetCharData( charLID, chars[charLID].header.name );
       DB_GetCharData( charLID );
+
+      if Exp  > 0 then Char_SendNew(charLID, 0, exp);
+      if Gold > 0 then Char_SendNew(charLID, 1, gold);
+      if lvl  > 0 then Char_SendNew(charLID, 2, chars[charLID].Header.level);
+      if SP   > 0 then Char_SendNew(charLID, 3, SP);
+      if TP   > 0 then Char_SendNew(charLID, 4, TP);
 
       pkg011( pkg, chars[charLID].sID );
       pkg015( pkg2, chars[charLID].sID );
@@ -456,6 +467,81 @@ begin
        end;
 end;
 
+procedure Char_AddItem(charLID, protID : DWORD) ;
+var
+  i, rs : integer;
+  s, s1, s_c, s1_c: string;
+  cID : dword;
+  stak: boolean;
+begin
+  DB_InventoryCleanUP();
+  if protID = 0 then exit;
+  Writeln('Add ITEM: ' + IntToStr(protID));
+  stak := false; // флаг того, что добавили в стак
+  if ItemDB[protID].data.iType = 24 then              // если предмет стакающийся, то проверяем
+     for i:= 21 to 40 do                          // возможность добавить шмотку в стак
+     if chars[charLID].Inventory[i].gID > 0 then
+       if chars[charLID].Inventory[i].iID = protID then  // и добавляем
+         if chars[charLID].Inventory[i].cDur < 10 then
+            begin
+              Writeln( 'SOVSEM DO > ' + IntToStr( chars[charLID].Inventory[i].cDur ));
+              inc(chars[charLID].Inventory[i].cDur);
+              stak := true;
+              Writeln( 'DO > ' + IntToStr( chars[charLID].Inventory[i].cDur ));
+              DB_SetCharInv( charLID );
+              DB_GetCharInv( charLID );
+              Writeln( 'POSLE > ' +  IntToStr( chars[charLID].Inventory[i].cDur ));
+              stak := true; // флагнулись
+            end;
+
+  if not stak then // если в стак не добавляли, тогда создаем новый слот
+  for i := 21 to 40 do
+    if chars[charLID].Inventory[i].gID = 0 then
+      begin
+        chars[charLID].Inventory[i].gID := -1;
+        chars[charLID].Inventory[i].iID:= protID;
+        //chars[charLID].Inventory[i].sub:= ItemDB[protID].props[1];
+        if ItemDB[protID].data.props[1] > 0 then
+           chars[charLID].Inventory[i].cDur:= ItemDB[protID].data.props[1]
+        else
+           chars[charLID].Inventory[i].cDur := 1;
+
+        DB_SetCharInv( charLID );
+        DB_GetCharInv( charLID );
+        Break;
+      end;
+
+  Char_SendNew(CharLID, 5, protID);
+end;
+
+procedure Char_SendNew(charLID, what, num: DWORD);
+var _head : TPackHeader; _pkg : Tpkg044;
+    mStr  : TMemoryStream;
+begin
+  try
+         mStr := TMemoryStream.Create;
+         _head._flag := $F;
+         _head._id   := 44;
+
+         _pkg._what := what;
+         _pkg._num  := num;
+
+         mStr.Write(_head, sizeof(_head));
+         mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[charLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[charLID].sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                Break;
+              end;
+       finally
+         mStr.Free;
+       end;
+end;
 
 end.
 

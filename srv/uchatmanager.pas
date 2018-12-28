@@ -10,7 +10,6 @@ uses
 
 function Chat_GetMembersList(chatID, locID, sID : DWORD) : string;
 
-
 function Chat_SendMessageToGlobal(msg : string; _sID : word): byte;
 function Chat_SendMessageToLocal(locID, from: word; msg : string): byte;
 function Chat_SendMessageToPrivate(_from, _to : word; msg : string): byte;

@@ -150,6 +150,34 @@ type
     fail_code : byte;
   end;
 
+  TPkg042 = record
+    qID   : DWORD;
+    name  : string[40];
+    descr : string[255];
+    descr2: string[255];
+    descr3: string[255];
+    obj   : string[200];
+    spic, smask : dword;
+    reward : TProps;
+    fail_code : byte;
+  end;
+
+  TPkg043 = record
+    rID : byte;
+    qID : dword;
+    fail_code : byte;
+  end;
+
+  TPkg044 = record
+    _what : dword;
+    _num  : dword;
+    fail_code : byte;
+  end;
+
+  TPkg045 = record
+    fail_code : byte;
+  end;
+
 procedure pkg001(pkg : TPkg001; sID : word);
    // 2
 procedure pkg003(pkg : TPkg003; sID : word);   // 3
@@ -184,6 +212,11 @@ procedure pkg031(pkg : TPkg031; sID : word);
 procedure pkg032(pkg : TPkg032; sID : word);
 
 procedure pkg040(pkg : TPkg040; sID : word);
+
+
+procedure pkg043(pkg : TPkg043; sID : word);
+
+procedure pkg045(pkg : TPkg045; sID : word);
 
 procedure pkgProcess(msg: string);
 
@@ -1036,15 +1069,36 @@ end;
 procedure pkg040(pkg : TPkg040; sID : word);
 begin
 try
+  if pkg.fail_code <> 1 then
   if LocObjs[pkg.ID].exist then
      case LocObjs[pkg.ID].oType of
        1 : Obj_SendDialogs(sID, pkg.ID);
+      // 2 : Obj_SendVerndor(sId, pkg.ID);
      else
        WriteSafeText('DUMMY!!!', 1);
+     end;
+
+  if pkg.fail_code = 1 then
+  if ObjDialogs[pkg.ID].exist then
+     case ObjDialogs[pkg.ID].data.dType of
+       11, 7 : Obj_QuestSend(Sessions[sID].charLID, pkg.ID);
+     else
+       WriteSafeText('~~ !!! ~~', 2);
      end;
 except
   WriteSafeText('Illegal object request', 1);
 end;
+end;
+
+procedure pkg043(pkg : TPkg043; sID : word);
+begin
+  if QuestDB[pkg.qID].exist then
+     Obj_QuestProcess(sID, pkg.qID, pkg.rID, pkg.fail_code);
+end;
+
+procedure pkg045(pkg : TPkg045; sID : word);
+begin
+
 end;
 
 procedure pkgProcess(msg: string);

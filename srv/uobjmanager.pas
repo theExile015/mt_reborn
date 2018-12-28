@@ -9,12 +9,14 @@ uses
   Classes, SysUtils, vNetCore, vVar;
 
 procedure Obj_SendDialogs(sID, oID : DWORD);
+//procedure Obj_SendVendors(sID, oID : DWORD)
 
-//procedure Obj_QuestProcess(charLID, qLink : DWORD);
+procedure Obj_QuestSend(charLID, dID : DWORD);
+procedure Obj_QuestProcess(sID, qID, rID, f_code : DWORD);
 
 implementation
 
-uses uPkgProcessor, uDB, vServerLog;
+uses uPkgProcessor, uDB, vServerLog, uCharManager;
 
 procedure Obj_SendDialogs(sID, oID : DWORD);
 var _head: TPackHeader; _pkg : TPkg041;
@@ -124,7 +126,129 @@ begin
        end;
 end;
 
-//procedure Obj_QuestProcess(charLID, qLink : DWORD);
+procedure Obj_QuestSend(charLID, dID : DWORD);
+var _head: TPackHeader; _pkg : TPkg042;
+    mStr : TMemoryStream;
+    qlid : dword;
+begin
+  qlid := objdialogs[did].qLink;
+  if not QuestDB[qLID].exist then exit;
+
+  _head._flag:=$f;
+  _head._id:=42;
+  _pkg.qID:=qLID;
+
+  if ObjDialogs[dID].data.dType = 11 then
+     begin
+       _pkg.name:=questDB[qlid].name;
+       _pkg.descr:=Copy(questDB[qlid].discr, 1, 255);
+       _pkg.descr2:=Copy(questDB[qlid].discr, 256, 255);
+       _pkg.descr3:=Copy(questDB[qlid].discr, 511, 255);
+       _pkg.obj:=questDB[qlid].objective;
+       _pkg.reward := questDB[qlid].prors;
+       _pkg.spic:= questDB[qlid].spic;
+       _pkg.smask:= questDB[qlid].smask;
+       _pkg.fail_code := 11;
+     end;
+
+  if ObjDialogs[dID].data.dType = 7 then
+     begin
+       _pkg.name:=questDB[qlid].name;
+       _pkg.descr:=Copy(questDB[qlid].fdiscr, 1, 256);
+       _pkg.descr2:=Copy(questDB[qlid].fdiscr, 256, 256);
+       _pkg.descr3:=Copy(questDB[qlid].fdiscr, 511, 256);
+       _pkg.reward := questDB[qlid].prors;
+       _pkg.spic:= questDB[qlid].fpic;
+       _pkg.smask:= questDB[qlid].fmask;
+       _pkg.fail_code := 7;
+     end;
+
+  try
+         mStr := TMemoryStream.Create;
+
+         mStr.Write(_head, sizeof(_head));
+         mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                Break;
+              end;
+       finally
+         mStr.Free;
+       end;
+end;
+
+
+procedure Obj_QuestProcess(sID, qID, rID, f_code : DWORD);
+var  qS, charLID : DWORD;
+     i, j : integer;
+begin
+   charLID := Sessions[sID].charLID;
+   Writeln(' Processing quest ID = ', qID);
+   qS := 0;
+   qS := DB_GetCharVar(charLID, QuestDB[qID].vName );
+
+ //  if qID = 2 then qS :=
+
+   if qS > f_code then Exit;
+
+   if f_code = 0 then
+      begin
+        for j := 1 to 25 do
+            if (j - 1) / 3 = (j - 1) div 3 then
+               case questDB[qID].props2[j] of
+                    7:
+                      begin
+                        Char_AddItem(charLID, questDB[qID].props2[j + 1]);
+                        DB_GetCharInv(charLID);
+                      end;
+                    10:
+                      begin
+                        DB_StartCharCounter(charLID, questDB[qID].props2[j + 1],
+                        1, questDB[qID].props2[j + 2] );
+                      end;
+               end;
+      end;
+
+   if f_code = 1 then
+     begin
+        Char_AddNumbers(charLID, questDB[qID].prors[2], questDB[qID].prors[1], 0, 0, 0);
+        for i := 1 to 3 do
+            if questDB[qID].prors[i * 2 + 1] <> 0 then
+               Begin
+                 WriteLN(questDB[qID].prors[i * 2 + 1]);
+                 Char_AddItem(charLID, questDB[qID].prors[i * 2 + 1] );
+               end;
+        if rID <> 0 then
+        if questDB[qID].prors[rID * 2 + 1] > 0 then
+           Char_AddItem(charLID, questDB[qID].prors[rID * 2 + 1]);
+
+        for j := 1 to 25 do
+            if (j - 1) / 3 = (j - 1) div 3 then
+               case questDB[qID].props2[j] of
+                    1:
+                      begin
+                        for i := 1 to high(chars[charLID].Inventory) do
+                            if chars[charLID].Inventory[i].iID = questDB[qID].props2[j + 1] then
+                               DB_DelItem(charLID, i);
+                        DB_GetCharInv(charLID);
+                      end;
+                    2:
+                      begin
+                        DB_SetCharVar(charLID, questDB[qID].props2[j + 2],
+                                               'v' + IntToStr(questDB[qID].props2[j + 1]));
+                        Char_SendLocObjs(charLID, chars[charLID].header.loc);
+                      end;
+               end;
+     end;
+
+  DB_SetCharVar( charLID, qS + 1, QuestDB[qID].vName );
+end;
 
 end.
 

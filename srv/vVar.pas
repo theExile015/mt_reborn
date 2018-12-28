@@ -159,6 +159,15 @@ type
     props : TProps;
   end;
 
+  TQuest = record
+    exist : boolean;
+    name, discr, objective, fdiscr, reward : string;
+    prors, props2 : TProps;
+    spic, smask, fpic, fmask : DWORD;
+    vName : string;
+    qType : DWORD;
+  end;
+
 Var
   CS : TCriticalSection;
 
@@ -187,7 +196,8 @@ Var
   LocObjs   : array [1..1000] of TLocObj;
   PerksDB   : array [1..100] of TPerkData;
   LocDB     : array [1..50] of TLocation;
-  ObjDialogs: array [1..1000] of TObjDialog ;
+  ObjDialogs: array [1..1000] of TObjDialog;
+  QuestDB   : array [1..1000] of TQuest;
 
 implementation
 
