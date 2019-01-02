@@ -35,27 +35,30 @@ type
 
 implementation
 
+uses
+  uXClick;
+
 procedure Combat_Init;
 var i : integer;
 begin
   Writeln('Combat Init.');
-  in_action := false;
-  your_turn := false;
+  in_action  := false;
+  your_turn  := false;
   range_mode := false;
-  turn_mode := false;
-  your_unit := 0;
+  turn_mode  := false;
+  your_unit  := 0;
   for i := 1 to high(cText) do
       cText[i].exist:=false;
 
-  for i := 1 to length(units) - 1 do
+  for i := 0 to length(units) - 1 do
       begin
         units[i].exist:= false;
         units[i].alive:= false;
-        units[i].pos.x := 0;
-        units[i].pos.y := 0;
+        units[i].data.pos.x := 0;
+        units[i].data.pos.y := 0;
         units[i].uID := 0;
         units[i].uType := 0;
-        units[i].sex:=0;
+        units[i].vdata.sex:=0;
         units[i].in_act:=false;
       end;
 
@@ -71,13 +74,13 @@ var i, j, k, step_ap : integer;
     alpha: byte;
     FX   : DWORD;
 
-    draw_q : array [1..50] of TUnitQ;
+    draw_q : array [0..20] of TUnitQ;
     buffer : TUnitQ;
 begin
 
   if iga <> igaCombat then Exit;
   if gs  <> gsGame    then Exit;
-Scissor_Begin(0, 0, scr_w, scr_h, false);
+//Scissor_Begin(0, 0, scr_w, scr_h, false);
   DrawTiles();
 
   step_ap  := 5;
@@ -93,20 +96,20 @@ Scissor_Begin(0, 0, scr_w, scr_h, false);
             alpha := 100;
             FX := FX_BLEND or FX_COLOR;
             if your_turn and (not in_action) and (not Range_mode) and (not turn_mode) then
-               if cm_InRangeOfMove(i, j, units[your_unit].cAP div step_ap) then alpha := 175;
+               if cm_InRangeOfMove(i, j, units[your_unit].data.cAP div step_ap) then alpha := 175;
 
             if your_turn and range_mode then
-               if cm_InRange(i, j, spR) and InSector(units[your_unit].Direct, m_Angle(units[your_unit].pos.x, units[your_unit].pos.y, i, j))
+               if cm_InRange(i, j, spR) and InSector(units[your_unit].data.Direct, m_Angle(units[your_unit].data.pos.x, units[your_unit].data.pos.y, i, j))
                   then FX := FX_BLEND or FX_COLOR
                   else FX := FX_BLEND;
 
             if your_turn and range_mode then
-                if cm_InRange(i, j, 8) and InSector(units[your_unit].Direct, m_Angle(units[your_unit].pos.x, units[your_unit].pos.y, i, j)) then
+                if cm_InRange(i, j, 8) and InSector(units[your_unit].data.Direct, m_Angle(units[your_unit].data.pos.x, units[your_unit].data.pos.y, i, j)) then
                     if cm_shootline(i, j) then fx2d_setcolor($cc0000);
 
 
             if your_turn and turn_mode then
-               if InSector(n_dir, m_Angle(units[your_unit].pos.x, units[your_unit].pos.y, i, j)) then
+               if InSector(n_dir, m_Angle(units[your_unit].data.pos.x, units[your_unit].data.pos.y, i, j)) then
                   FX := FX_BLEND or FX_COLOR
                else FX := FX_BLEND;
 
@@ -116,7 +119,7 @@ Scissor_Begin(0, 0, scr_w, scr_h, false);
              // отрисовка положения курсора
              if (not in_action) then
                 begin
-                  if  cm_InRangeOfMove(m_x, m_y, trunc(units[your_unit].cAP / step_ap)) then
+                  if  cm_InRangeOfMove(m_x, m_y, trunc(units[your_unit].data.cAP / step_ap)) then
                       fx2d_setcolor($44FF44) else fx2d_SetColor($FF4444);
                   if (mouse_y() < (scr_h - 150)) and
                      (not col2d_PointInRect(mouse_x(), mouse_y(), rect(0, scr_h - 200 + com_face, 200, 50))) then
@@ -131,15 +134,16 @@ Scissor_Begin(0, 0, scr_w, scr_h, false);
           end;
   Batch2d_End();
 
-  for i := 1 to high(units) do
+  for i := 0 to high(units) do
       if units[i].exist then
-         begin
+         Unit_Draw(i);
+        { begin
            draw_q[i].id:=i;
-           draw_q[i].y:= units[i].pos.y * 32 - (19 - units[i].pos.x) * 32  + 400 - 112;;
-         end else draw_q[i].id:=high(units);
+           draw_q[i].y:= units[i].data.pos.y * 32 - (19 - units[i].data.pos.x) * 32  + 400 - 112;;
+         end else draw_q[i].id := high(units);
 
-  for i := 1 to 49 do
-        for j := 1 to 50-i do
+  for i := 0 to 20 do
+        for j := 0 to 20 - i do
             if draw_q[j].y > draw_q[j+1].y then
             begin
                 buffer := draw_q[j];
@@ -147,9 +151,9 @@ Scissor_Begin(0, 0, scr_w, scr_h, false);
                 draw_q[j+1] := buffer;
             end;
 
-  for i := 1 to high(draw_q) do
-      Unit_Draw(draw_q[i].id);
-Scissor_End();
+  for i := 0 to high(draw_q) do
+      Unit_Draw(draw_q[i].id);   }
+//Scissor_End();
 end;
 
 procedure Combat_GUI_Draw;
@@ -199,30 +203,30 @@ begin
       mWins[15].imgs[3].visible:=false;
       mWins[15].texts[1].visible:=false;
       mWins[15].texts[2].visible:=false;
-      mWins[15].pbs[1].cProg:=units[your_unit].cHP;
-      mWins[15].pbs[1].mProg:=units[your_unit].mHP;
-      mWins[15].pbs[2].mProg:=units[your_unit].mMP;
-      mWins[15].pbs[2].cProg:=units[your_unit].cMP;
-      mWins[15].pbs[3].mProg:=units[your_unit].mAP;
-      mWins[15].pbs[3].cProg:=units[your_unit].cAP;
+      mWins[15].pbs[1].cProg:=units[your_unit].data.cHP;
+      mWins[15].pbs[1].mProg:=units[your_unit].data.mHP;
+      mWins[15].pbs[2].mProg:=units[your_unit].data.mMP;
+      mWins[15].pbs[2].cProg:=units[your_unit].data.cMP;
+      mWins[15].pbs[3].mProg:=units[your_unit].data.mAP;
+      mWins[15].pbs[3].cProg:=units[your_unit].data.cAP;
       mWins[15].pbs[4].mProg:=100;
       mWins[15].pbs[4].cProg:=units[your_unit].Rage;
       mWins[15].imgs[1].texID:= 'ava' + u_IntToStr((activechar.header.raceID - 1) * 2 + activechar.header.sex + 1);
 
-      for i := 1 to high(units) do
+      for i := 0 to high(units) do
         if units[i].exist then
-         if units[i].pos.x = m_X then
-           if units[i].pos.y = m_y then
+         if units[i].data.pos.x = m_X then
+           if units[i].data.pos.y = m_y then
               begin
                  mWins[16].visible:=true;
-                 mWins[16].pbs[1].cProg:=units[i].cHP;
-                 mWins[16].pbs[1].mProg:=units[i].mHP;
-                 mWins[16].pbs[2].mProg:=units[i].mMP;
-                 mWins[16].pbs[2].cProg:=units[i].cMP;
-                 mWins[16].pbs[3].mProg:=units[i].mAP;
-                 mWins[16].pbs[3].cProg:=units[i].cAP;
+                 mWins[16].pbs[1].cProg:=units[i].data.cHP;
+                 mWins[16].pbs[1].mProg:=units[i].data.mHP;
+                 mWins[16].pbs[2].mProg:=units[i].data.mMP;
+                 mWins[16].pbs[2].cProg:=units[i].data.cMP;
+                 mWins[16].pbs[3].mProg:=units[i].data.mAP;
+                 mWins[16].pbs[3].cProg:=units[i].data.cAP;
                  mWins[16].texts[1].Text:=units[i].name;
-                 mWins[16].imgs[1].texID:= 'ava' + u_IntToStr((units[i].race - 1) * 2 + units[i].sex + 1);
+                 mWins[16].imgs[1].texID:= 'ava' + u_IntToStr((units[i].VData.race - 1) * 2 + units[i].vdata.sex + 1);
                  flag := true;
               end;
 
@@ -234,9 +238,21 @@ end;
 
 procedure Combat_Update;
 var i : integer;
+    hh, mm, ss, ms : word;
 begin
   if iga <> igaCombat then Exit;
   if gs  <> gsGame    then Exit;
+
+  if wait_for_103 <> 255 then
+     begin
+       GetTime(hh, mm, ss, ms);
+       if abs(ss - wait_for_103) > 5 then
+          begin
+            for i := 0 to high(units) do
+              if units[i].exist then
+                 DoRequestUnit(units[i].uLID, units[i].uType, 1);
+          end;
+     end;
 
    // движение камеры
   if mouse_x() < 0 then fCam_X := fCam_X + mouse_x() / 10 - 1;
@@ -245,22 +261,24 @@ begin
   if mouse_y() > scr_h then fCam_y := fCam_y + (mouse_y() - scr_h) / 10 + 1;
 
   if fCam_X < scr_w / 4 then fCam_X := scr_w / 4;
-  if fCam_Y < 0 then fCam_Y := 0;
-  if fCam_X > scr_w then fCam_X := scr_w;
+  if fCam_Y < -200 then fCam_Y := -200;
+  if fCam_X > scr_w + 200 then fCam_X := scr_w + 200;
   if fCam_Y > scr_h then fCam_Y := scr_h;
 
-  for i := 1 to high(units) do
+  for i := 0 to high(units) do
     Unit_Update(i);
 end;
 
 procedure Unit_Update(id : integer);
 var i, f1, f2, asp : integer;
 begin
+  if id > high(units) then Writeln(id);
+  if id > high(units) then Exit;
   if not units[id].exist then exit;
   if not units[id].alive then
      begin
         // если трупик, то лежим и не дёргаемся
-       if not units[id].alive then units[id].ani_frame:= 24 + units[id].Direct * 32;
+       if not units[id].alive then units[id].ani_frame:= 24 + units[id].data.Direct * 32;
        exit;
      end;
 
@@ -276,21 +294,21 @@ begin
                begin
                  units[id].in_act:=false;
                  units[id].ani:=0;
-                 units[id].pos := units[id].fTargetPos;
+                 units[id].data.pos := units[id].fTargetPos;
                end else
                begin
-                 units[id].pos := units[id].Way[units[id].waypos];
+                 units[id].data.pos := units[id].Way[units[id].waypos];
                  units[id].TargetPos := units[id].Way[units[id].waypos + 1];
-                 units[id].Direct:=cm_SetDir(units[id].pos.x, units[id].pos.y,
+                 units[id].data.Direct:=cm_SetDir(units[id].data.pos.x, units[id].data.pos.y,
                                              units[id].TargetPos.x, units[id].TargetPos.y );
                end;
           end;
      end;
 
   if not units[id].in_act then
-     if units[id].fTargetPos.x <> units[id].pos.x then
-     if units[id].fTargetPos.y <> units[id].pos.y then
-        units[id].pos := units[id].fTargetPos;
+     if units[id].fTargetPos.x <> units[id].data.pos.x then
+     if units[id].fTargetPos.y <> units[id].data.pos.y then
+        units[id].data.pos := units[id].fTargetPos;
 
   // выставляем параметры аницмации
   if units[id].complex then
@@ -306,8 +324,8 @@ begin
     7: begin f1 := 29; f2 := 32; asp := 6; end;   // стрельба 4
   end;
     // коррекция на направление
-    f1 := f1 + units[id].Direct * 32;
-    f2 := f2 + units[id].Direct * 32;
+    f1 := f1 + units[id].data.Direct * 32;
+    f2 := f2 + units[id].data.Direct * 32;
   end else
   begin
     case units[id].ani of
@@ -318,8 +336,8 @@ begin
     5: begin f1 := 19; f2 := 24; asp := 4; end;   // смерть 6
   end;
     // коррекция на направление
-    f1 := f1 + units[id].Direct * 24;
-    f2 := f2 + units[id].Direct * 24;
+    f1 := f1 + units[id].data.Direct * 24;
+    f2 := f2 + units[id].data.Direct * 24;
   end;
 
   // кадры
@@ -376,6 +394,7 @@ var f1, f2, i : integer;
     s : string;
     alpha: byte;
 begin
+  if id > high(units) then Exit;
   if not units[id].exist then Exit;
   if not (gs = gsGame) then Exit;
 
@@ -385,8 +404,8 @@ begin
        if units[your_unit].team = units[id].team then
           if not units[id].visible then alpha := 150 else alpha := 255;
 
-       x := units[id].pos.y * 64 + (19 - units[id].pos.x) * 64 - 65;
-       y := units[id].pos.y * 32 - (19 - units[id].pos.x) * 32  + 240;
+       x := units[id].data.pos.y * 64 + (19 - units[id].data.pos.x) * 64 - 65;
+       y := units[id].data.pos.y * 32 - (19 - units[id].data.pos.x) * 32  + 240;
 
        if units[id].ani = 1 then
           begin
@@ -398,10 +417,10 @@ begin
 
        if units[id].complex then
           begin
-            ASprite2d_Draw( tex_Units[units[id].sex, 0].body[units[id].gSet.body], x, y, 256, 256, 0, units[id].ani_frame, alpha );
-            ASprite2d_Draw( tex_Units[units[id].sex, 0].head[units[id].gSet.head], x, y, 256, 256, 0, units[id].ani_frame, alpha );
-            ASprite2d_Draw( tex_Units[units[id].sex, 0].MH[units[id].gSet.MH], x, y, 256, 256, 0, units[id].ani_frame, alpha );
-            ASprite2d_Draw( tex_Units[units[id].sex, 0].OH[units[id].gSet.OH], x, y, 256, 256, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].vdata.sex, 0].body[units[id].VData.skinArm], x, y, 256, 256, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].vdata.sex, 0].head[1], x, y, 256, 256, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].vdata.sex, 0].MH[units[id].VData.skinMH], x, y, 256, 256, 0, units[id].ani_frame, alpha );
+            ASprite2d_Draw( tex_Units[units[id].vdata.sex, 0].OH[units[id].VData.skinOH], x, y, 256, 256, 0, units[id].ani_frame, alpha );
           end else
             ASprite2d_Draw( tex_Creatures[units[id].ani_key], x, y, 196, 196, units[id].ani_frame, alpha);
 
@@ -409,7 +428,7 @@ begin
        w := text_GetWidth( fntCombat, units[id].name, 1) * 0.7;
        h := text_GetHeight( fntCombat, w, units[id].name, 0.3 / scaleXY, 0);
        //pr2d_Rect(x + 196/2 - w/2 + 400, y, w, h, $222222, 150, PR2D_FILL);
-       for i := 1 to high(units[id].auras) do
+       for i := 0 to high(units[id].auras) do
          if units[id].auras[i].exist then
             begin
               ASprite2d_Draw(tex_BIcons, x + i * 25, y - 25, 24, 24, 0,
@@ -450,19 +469,19 @@ begin
   i := uLID;
   units[i].exist:= false;
   units[i].alive:= false;
-  units[i].pos.x := 0;
-  units[i].pos.y := 0;
+  units[i].data.pos.x := 0;
+  units[i].data.pos.y := 0;
   units[i].uID := 0;
   units[i].uType := 0;
   units[i].name := '';
-  units[i].sex:=0;
+  units[i].vdata.sex:=0;
 end;
 
 function cm_InRange( x, y, rng : byte ): boolean;
 var r : single;
 begin
   result := false;
-  r := (sqrt( sqr( units[your_unit].pos.x - x ) + sqr( units[your_unit].pos.y - y ) ) );
+  r := (sqrt( sqr( units[your_unit].data.pos.x - x ) + sqr( units[your_unit].data.pos.y - y ) ) );
   if r <= rng then result := true;
 end;
 
@@ -470,15 +489,15 @@ function cm_InRangeOfMove( x, y, rng : byte) : boolean;
 var d : integer;
 begin
   result := false;
-  d := abs(x - units[your_unit].pos.x) + abs( y - units[your_unit].pos.y);
+  d := abs(x - units[your_unit].data.pos.x) + abs( y - units[your_unit].data.pos.y);
   if d <= rng then result := true;
 end;
 
 function cm_ShootLine( x, y : byte ) : boolean;
 begin
   result := false;
-  result := col2d_LineVsCircle( line( units[your_unit].pos.x * 64 + 32,
-                                      units[your_unit].pos.y * 64 + 32,
+  result := col2d_LineVsCircle( line( units[your_unit].data.pos.x * 64 + 32,
+                                      units[your_unit].data.pos.y * 64 + 32,
                                       m_x * 64 + 32, m_y * 64 + 32 ),
                               circle( x * 64 + 32, y * 64 + 32, 32 ) );
 end;

@@ -23,6 +23,7 @@ uses
 procedure LoadBaseData();
 procedure LoadMainData();
 procedure LoadCombatData();
+procedure LoadComplete();
 procedure LoadLocData();
 procedure LoadLoc(ID : word);
 
@@ -134,6 +135,9 @@ begin
       Tex_SetFrameSize( tex_IBtn[i], 16, 16);
   Tex_SetFrameSize( tex_Btn, 24, 24 );
 
+  theme1 := snd_LoadFromFile('Data\Sound\augury.ogg');
+  theme2 := snd_LoadFromFile('Data\Sound\Minstrel.ogg');
+  thID1 := snd_Play(theme1, true, 0, 0, 0, ambient_vol);
 end;
 
 procedure LoadMainData();
@@ -319,13 +323,23 @@ begin
       if pbLoading.Progress >= 100 then
          begin
             SendEnterTheWorld();
+         end;
+   if lVProgress > pbLoading.Progress then
+      pbLoading.Progress:=pbLoading.Progress + round((lVProgress - pbLoading.Progress)/3);
+   if pbloading.Progress - lVProgress < 3 then pbLoading.Progress:=lVProgress;;
+
+end;
+
+procedure LoadComplete();
+begin
+  
             Chat_Init();
             Chat_AddTab();  // ГЛОБАЛЬНЫЙ ЧАТ
             Chat_AddTab();  // ЛОКАЛЬНЫЙ ЧАТ
             Chat_AddTab();  // ПРИВАТ
             Chat_AddTab();  // КОМБАТ ЛОГ
 
-            gs := gsGame;
+            gs := gsLLoad;
             fInGame.Show;
             NonameFrame38.Visible:=true;
             NonameFrame38.Move(10, scr_h - 20);
@@ -339,11 +353,8 @@ begin
             bMail.Enabled:=true;
             bMap.Enabled:=true;
             mWins[18].visible:=true;
-         end;
-   if lVProgress > pbLoading.Progress then
-      pbLoading.Progress:=pbLoading.Progress + round((lVProgress - pbLoading.Progress)/3);
-   if pbloading.Progress - lVProgress < 3 then pbLoading.Progress:=lVProgress;;
 
+            theme_change := true;
 end;
 
 procedure LoadCombatData();

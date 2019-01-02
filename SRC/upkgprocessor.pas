@@ -181,6 +181,42 @@ type
     fail_code : byte;
   end;
 
+  TPkg100 = record
+    ID        : word;
+    ceType    : byte;
+    round     : word;
+    fail_code : byte;
+  end;
+
+  TPkg101 = record
+    list      : array [0..20] of TUnitHeader;
+    fail_code : byte;
+  end;
+
+  TPkg102 = record
+    comID           : DWORD;
+    uType, uLID     : DWORD;
+    what            : byte;
+    fail_code       : byte;
+  end;
+
+  TPkg103 = record
+    uType, uLID    : DWORD;
+    data           : TUnitData;
+    vdata          : TUnitVisualData;
+    fail_code      : byte;
+  end;
+
+  TPkg104 = record
+    ceRound : word;
+    fail_code : byte;
+  end;
+
+  TPkg105 = record
+    NextTurn : word;
+    fail_code : byte;
+  end;
+
 procedure pkg000;
 procedure pkg001(pkg: TPkg001);   // Логин
 procedure pkg002(pkg: TPkg002);   // Список персонажей
@@ -217,6 +253,13 @@ procedure pkg042(pkg: TPkg042);   // q data
 
 procedure pkg044(pkg: TPkg044);   // NEW
 
+procedure pkg100(pkg: TPkg100);   // Enter Combat
+procedure pkg101(pkg: TPkg101);   // Combat Units
+
+procedure pkg103(pkg: TPkg103);   // Unit Data
+procedure pkg104(pkg: TPkg104);   // Next round
+procedure pkg105(pkg: TPkg105);   // Next turn
+
 procedure pkgProcess(var msg: string);
 
 {procedure pkgProcess(var msg : string);
@@ -225,7 +268,7 @@ procedure pkgExecute(pack : TPackage); }
 implementation
 
 uses
-  uNetCore, u_MM_gui, uLoader, uChat, uXClick, uLocation;
+  uNetCore, u_MM_gui, uLoader, uChat, uXClick, uLocation, uCombatManager;
 
 procedure pkgProcess(var msg: string);
 var
@@ -245,10 +288,13 @@ var
 
                         _pkg041: TPkg041;   _pkg042: TPkg042;
                         _pkg044: TPkg044;
+
+    _pkg100: Tpkg100;   _pkg101: TPkg101;
+    _pkg103: TPkg103;   _pkg104: TPkg104;   _pkg105: TPkg105;
 begin
   try
        begin
-         //writeln('Pkg ##:', msg);
+        // writeln('Pkg ##:', msg);
          //writeln('Size ##:', length(msg));
          mStr := TMemoryStream.Create;
          mStr.Write(msg[1], length(msg));       // загружаем эти данные в поток
@@ -257,7 +303,7 @@ begin
          mStr.Read(head, sizeof(head));         // читаем заголовок
 
          if head._FLAG <> $f then Exit;         // если заголовок "битый" прерываем дальнейшие действия
-         Writeln('Pack ##:', head._ID);
+         if head._ID <> 10 then Writeln('Pack ##:', head._ID);
          case head._ID of
            0:
            begin
@@ -379,13 +425,38 @@ begin
              mStr.Read(_pkg044, SizeOf(_pkg044));
              pkg044(_pkg044);
            end;
+           100:
+           begin
+             mStr.Read(_pkg100, SizeOf(_pkg100));
+             pkg100(_pkg100);
+           end;
+           101:
+           begin
+             mStr.Read(_pkg101, SizeOf(_pkg101));
+             pkg101(_pkg101);
+           end;
+           103:
+           begin
+             mStr.Read(_pkg103, SizeOf(_pkg103));
+             pkg103(_pkg103);
+           end;
+           104:
+           begin
+             mStr.Read(_pkg104, SizeOf(_pkg104));
+             pkg104(_pkg104);
+           end;
+           105:
+           begin
+             mStr.Read(_pkg105, SizeOf(_pkg105));
+             pkg105(_pkg105);
+           end;
          else
            // ID пакета кривой
            Writeln('Wrong ID');
            Exit;
          end;
        end;
-       Writeln('Pos ##:', mStr.Position, ' / ', mStr.Size);
+       // Writeln('Pos ##:', mStr.Position, ' / ', mStr.Size);
        if mStr.Position < mStr.Size then
           begin
             Writeln('Divading ##');
@@ -460,6 +531,8 @@ begin
   for i := 1 to pkg.fail_code do
       if pkg.Chars[i].ID > 0 then
          CharList[i] := pkg.Chars[i];
+  for i := 1 to 4 do
+    Writeln(CharList[i].tutorial);
   cns:= csConctd;
   gs := gsCharSelect;
   CharSel_Init;
@@ -500,13 +573,28 @@ procedure pkg005(pkg: TPkg005);
 var
   _head : TPackHeader; _pkg029: TPkg029;
   mStr  : TMemoryStream;
+  hh, mm, ss, ms : word;
 begin
-  if pkg.fail_code = high(word) then
+  writeln('WORLD ENTERED!');
+  if pkg.fail_code = high(byte) then
      TCP.FCon.Disconnect(false) else
   begin
-    //ActiveChar := CharList[gSI];
-    tutorial := activechar.tutorial;
-    LoadLoc(activechar.header.loc);
+    ActiveChar.header := CharList[gSI];
+    tutorial := activechar.header.tutorial;
+    sleep(50);
+
+    LoadComplete();
+
+    wait_for_05 := 255;
+    GetTime(hh, mm, ss, ms);
+    wait_for_29 := ss;
+    Writeln('Wait for 29 = ', wait_for_29);
+
+    if tutorial < 2 then
+       begin
+         DoDlgClick(26);
+         sleep(50);
+       end;
 
     _head._FLAG := $f;
     _head._ID   := 29;
@@ -646,7 +734,7 @@ begin
   ch_tabs[1].nMem := n;
 end;
 
-procedure pkg027(pkg: TPkg027);
+procedure pkg027(pkg: TPkg027);   // who is it&
 var i, j : integer;
 begin
   Writeln(pkg.fail_code);
@@ -720,6 +808,8 @@ begin
 try
   objMan_HideAll();
 
+  wait_for_29 := 255;
+
   if pkg.fail_code < 1 then Writeln('Fail code ## ', pkg.fail_code) else
   for i := 1 to pkg.fail_code do
     begin
@@ -727,8 +817,10 @@ try
       objStore[pkg.data[i]].visible := true;
       objStore[pkg.data[i]].exist   := true;
       if objStore[pkg.data[i]].Data.tID = 0 then
-         DoRequestObj(i);
-      sleep(50);
+         begin
+           DoRequestObj(i);
+           sleep(50);
+         end;
     end;
 
   iga := igaLoc;
@@ -807,6 +899,7 @@ begin
 
   if tutorial = 0 then
      begin
+       Writeln('Tutorial >>>>>>> 1');
        tutorial := 1;
        DoSendTutorial( 1 );
        mWins[8].btns[1].enabled := false;
@@ -878,6 +971,7 @@ begin
      (activechar.header.tutorial = 4) then mWins[8].btns[1].enabled:=false;
 
   igs := igsNPC;
+  gs  := gsGame;
   mWins[8].visible:=true;
 end;
 
@@ -893,6 +987,110 @@ begin
   else
     Writeln('IDK what to add.');
   end;
+end;
+
+procedure pkg100(pkg: TPkg100);   // enter combat
+begin
+  Combat_Init;
+  sleep(50);
+  Chat_AddMessage(3, high(word), 'You joined battle #' + IntToStr(pkg.ID) );
+  combat_id  := pkg.ID;
+  curr_round := pkg.round;
+
+  NonameFrame41.Move(scr_w - 120, scr_h - 190);
+  NonameFrame41.Show;
+
+  gs  := gsCLoad;
+  iga := igaCombat;
+end;
+
+procedure pkg101(pkg: TPkg101);   // Combat Units
+var i : integer; f : boolean;
+    hh, mm, ss, ms : word;
+begin
+  for i := 0 to high(pkg.list) do
+    if pkg.list[i].exist then
+       begin
+         units[i].exist:=pkg.list[i].exist;
+         units[i].name :=pkg.list[i].Name;
+         Writeln('Unit ', units[i].name, ' added in slot ', i);
+         units[i].uType:=pkg.list[i].uType;
+         //writeln(units[i].uType);
+         units[i].uLID  :=pkg.list[i].uLID;
+         //writeln(units[i].uLID);
+         DoRequestUnit(units[i].uLID, units[i].uType, 1);
+         sleep(20);
+         f := true;
+         if units[i].uType = 1 then
+           if units[i].name = activechar.header.Name then
+              your_unit := i;
+       end;
+  if f then
+    begin
+      GetTime(hh, mm, ss, ms);
+      wait_for_103 := ss;
+    end;
+end;
+
+procedure pkg103(pkg: TPkg103);
+var I : integer;
+begin
+  wait_for_103 := 255;
+  for i := 0 to high(units) do
+    if units[i].exist then
+    if units[i].uType = pkg.uType then
+    if units[i].uLID = pkg.uLID then
+       begin
+         units[i].visible := true;
+         units[i].complex := true;
+         units[i].alive   := true;
+         units[i].ani     := 0;
+         units[i].fTargetPos := pkg.data.pos;
+         units[i].data    := pkg.data;
+         units[i].VData   := pkg.vdata;
+         Writeln('Unit ', i, ' x :', units[i].data.pos.x, ' y: ', units[i].data.pos.y);
+         exit;
+       end;
+end;
+
+procedure pkg104(pkg: TPkg104);
+begin
+  Chat_AddMessage(3, high(word), 'Round ' + IntToStr(pkg.ceRound) + ' started.');
+  curr_round := pkg.ceRound;
+end;
+
+procedure pkg105(pkg: TPkg105);
+var i : Integer;
+    hh, mm, ss, ms : word;
+begin
+  turn_mode := false;
+  range_mode := false;
+  your_turn := false;
+
+  for i := 0 to high(units) do
+    if units[i].exist then
+       if (units[i].uLID = pkg.NextTurn) then
+          begin
+            units[i].turn := true;
+            units[i].data.cAP:=units[i].data.mAP;
+            GetTime(hh, mm, ss, ms);
+            t_mm := mm;
+            t_ss := ss;
+            curr_turn_name := units[i].name;
+            if (units[i].name = ActiveChar.header.Name) and (units[i].uType = 1) then
+               begin
+                 your_turn := true;
+                 your_unit := i;
+               end;
+            Chat_AddMessage(3, high(word), Units[i].name + ' turn start.' );
+          end;
+
+  Map_CreateMask;
+  for i := 1 to high(units) do
+    if units[i].exist and units[i].alive then
+       if (pkg.NextTurn <> units[i].uLID) then
+           MapMatrix[units[i].data.pos.x, units[i].data.pos.y].cType := 1;
+
 end;
 
 end.

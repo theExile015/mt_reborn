@@ -11,7 +11,8 @@ uses
   zglHeader,
   uVar,
   uLocalization,
-  uAdd;
+  uAdd,
+  dos;
 
 procedure DoLogin();
 procedure DoCreateChar();
@@ -28,12 +29,14 @@ procedure DoStatUP(stat: byte);
 procedure DoPerkUP(sc, perk: byte);
 procedure DoMapRequest();
 procedure DoRequestLoc(id: word);
+procedure DoRequestLocObjs();
 procedure DoRequestObj(id: word);
 procedure DoTravel(id: word);
 procedure DoObjectClick(id: word);
 procedure DoDlgClick(id: word);
 procedure DoSendQuest(id, action : word);
 procedure DoSendTutorial(step : byte);
+procedure DoRequestUnit(id, uType, what: word);
 
 implementation
 
@@ -67,7 +70,7 @@ begin
        mWins[17].btns[1].visible:=false;
        mWins[17].btns[2].visible:=false;
        mWins[17].texts[1].Text:= 'Connecting...';
-       timeout := gettickcount();
+      // timeout := gettickcount();
        Nonameform1.Enabled:=false;
 
        ini_LoadFromFile('gameini.ini');
@@ -151,12 +154,19 @@ procedure SendEnterTheWorld();
 var _pkg  : TPkg005;
     _head : TPackHeader;
     mStr  : TMemoryStream;
+    hh, mm, ss, ms : word;
 begin
        _head._FLAG := $f;
        _head._ID   := 5;
        _pkg.id     := charlist[gSI].ID ;
 
+       GetTime(hh, mm, ss, ms);
+       wait_for_05 := ss;
+
        activechar.header := charlist[gSI];
+       tutorial := activechar.header.tutorial;
+
+       writeln('Tutorial ## ', tutorial);
 try
        mStr := TMemoryStream.Create;
        mStr.Position := 0;
@@ -520,6 +530,32 @@ finally
 end;
 end;
 
+procedure DoRequestLocObjs();
+var
+  _head : TPackHeader; _pkg029: TPkg029;
+  mStr  : TMemoryStream;
+  hh, mm, ss, ms : word;
+begin
+    GetTime(hh, mm, ss, ms);
+    wait_for_29 := ss;
+
+    _head._FLAG := $f;
+    _head._ID   := 29;
+  try
+    mStr := TMemoryStream.Create;
+    mStr.Position := 0;
+    mStr.Write(_head, sizeof(_head));
+    mStr.Write(_pkg029, sizeof(_pkg029));
+
+    TCP.FCon.IterReset;
+    TCP.FCon.IterNext;
+    TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+    In_Request := true;
+  finally
+    mStr.Free;
+  end;
+end;
+
 procedure DoRequestObj(id: word);
 var _pkg  : TPkg032;
     _head : TPackHeader;
@@ -689,6 +725,33 @@ begin
   _head._ID   := 45;
 
   _pkg.fail_code := step;
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure DoRequestUnit(id, uType, what: word);
+var
+  _pkg : TPkg102; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 102;
+
+  _pkg.comID := combat_id;
+  _pkg.uType := uType;
+  _pkg.uLID  := units[id].uLID;
+  _pkg.what  := 0;
 try
        mStr := TMemoryStream.Create;
        mStr.Position := 0;

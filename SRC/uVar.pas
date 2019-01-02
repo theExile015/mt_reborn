@@ -34,7 +34,7 @@ type
   end;
 
   TMPoint = record
-    x, y : word;
+    x, y : byte;
   end;
 
   TCell = packed record
@@ -252,7 +252,6 @@ type
 
   TGameChar = record
     header          : TCharHeader;
-    tutorial        : word;
     hpmp            : TCharHPMP;
     Stats           : TCharStats;
     Numbers         : TCharNumbers;
@@ -363,10 +362,6 @@ type
     data       : TItemData;
   end;
 
-  TUnitSettings = record
-    body, head, MH, OH : byte;
-  end;
-
   TAura = record
      exist : boolean;
      id, stacks, sub, left : longword;
@@ -380,23 +375,43 @@ type
     timer, spID : word;
   end;
 
+  TUnitHeader = record
+    exist    : boolean;
+    Name     : string[40];
+    uType    : byte;
+    uLID     : word;
+  end;
+
+  TUnitData = record
+    cHP, cMP, cAP, mHP, mMP, mAP : word;
+    pos      : TMPoint;
+    Direct   : byte;             // направление взгляда
+    flag: boolean;
+  end;
+
+  TUnitVisualData = record
+    sex, Race : byte;
+    name: string[40];
+    skinMH, skinOH, skinArm : byte;
+    flag : boolean;
+  end;
+
   TUnit = record
     exist    : boolean;
     alive, visible, complex : boolean;
-    gSet     : TUnitSettings;
     turn     : boolean;             // ход
     in_act   : boolean;             // идёт анимация/действие
-    pos      : TMPoint;
-    Direct   : integer;             // направление взгляда
     Way      : array of TMPoint;
     WayPos, WayProg   : integer;
     TargetPos, fTargetPos: TMPoint;
     NextPos  : TMPoint;
     uType    : word;
-    team, race, sex: byte;
-    uID      : longword;
+    team     : byte;
+    uID, uLID: longword;
     name     : UTF8String;
-    cAP, mAP, cHP, mHP, cMP, mMP, Init, Rage : longword;
+    data     : tUnitData;
+    VData    : TUnitVisualData;
+    Rage     : longword;
     to_kill  : boolean;   // удалить на следующем цикле
     ani_frame, ani_delay, ani, ani_key : word;
     ani_bkwrd: boolean;
@@ -452,6 +467,10 @@ var
 
   wholist : array [1..1000] of TWhoItem;
 
+  wait_for_05           : byte = 255;
+  wait_for_29           : byte = 255;
+  wait_for_103          : byte = 255;
+
 
   // ZEN VARS
   zglCam1, zglCam2 : zglTCamera2D;                    // камера
@@ -495,6 +514,7 @@ var
   // NET VARS
   Port1       : integer;                                  // ПОРТ
   Ip1         : PChar;                                    // IP
+  attempt     : boolean = false;
   timeout     : integer;
   login, pass : utf8string;                               // сохранённые логин и
 
@@ -552,7 +572,7 @@ var
   com_face : single;
 
    //  COMBAT
-   units                 : array [1..50] of TUnit;
+   units                 : array [0..20] of TUnit;
    MapMatrix             : array [0..20, 0..20] of TCell;
    cText                 : array [1..20] of TCombatText;
    your_turn, range_mode, turn_mode : boolean;
@@ -560,6 +580,7 @@ var
    in_action, m_omo      : boolean;
    m_x, m_y              : integer;
    combat_ID             : longword;
+   curr_round            : word;
    nATB, ATB             : array [1..200] of TATBPoint;
    sw_result             : boolean;
    n_dir                 : byte;
@@ -570,6 +591,14 @@ var
    // sound
 
    snd_gui               : array [1..10] of zglPSound;
+   theme1, theme2        : zglPSound;
+   thID1, thID2          : integer;
+
+   theme_change          : boolean;
+   theme_scale           : integer;
+
+   ambient_vol           : single = 0.1;
+   gui_vol               : single =   1;
 
 
 implementation

@@ -120,9 +120,9 @@ if iga = igaCombat then
               for j := 0 to 4 do
               if KEY_PRESS(K_1 + j) and (not ch_message_inp) then
                  begin
-                      if units[your_unit].cAP >= spells[ActionBar[1 + j].data.contain].AP_Cost then
+                      if units[your_unit].data.cAP >= spells[ActionBar[1 + j].data.contain].AP_Cost then
                          begin
-                           if units[your_unit].cMP >= spells[ActionBar[1 + j].data.contain].MP_Cost then
+                           if units[your_unit].data.cMP >= spells[ActionBar[1 + j].data.contain].MP_Cost then
                               begin
                                 spID := ActionBar[1 + j].data.contain;
                                 if (spID = 11) or (spID = 8) or (spID = 13) or (spID = 14) or (spID = 15) then
@@ -153,9 +153,9 @@ if iga = igaCombat then
                  begin
                    stt_Open(ActionBar[i].data.contain, 2);
                    if Mouse_Click(M_BLEFT) and (ActionBar[i].data.contain > 0) then
-                      if units[your_unit].cAP >= spells[ActionBar[i].data.contain].AP_Cost then
+                      if units[your_unit].data.cAP >= spells[ActionBar[i].data.contain].AP_Cost then
                          begin
-                           if units[your_unit].cMP >= spells[ActionBar[i].data.contain].MP_Cost then
+                           if units[your_unit].data.cMP >= spells[ActionBar[i].data.contain].MP_Cost then
                               begin
                                 spID := ActionBar[i].data.contain;
                                 if (spID = 1) or (spID = 5) or (spID = 4)or (spID = 12) then range_mode := true else range_mode := false;
@@ -184,7 +184,7 @@ if iga = igaCombat then
                            end;
 
                         if systembar[i].data.contain = 7 then
-                           if units[your_unit].cAP > 4 then
+                           if units[your_unit].data.cAP > 4 then
                               turn_mode := true;
                       end;
                  end;

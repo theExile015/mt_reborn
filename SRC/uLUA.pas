@@ -261,18 +261,18 @@ begin
   units[i].name:='Unit ' + IntToStr(i);
   units[i].fTargetPos.x:= 15 - i;
   units[i].fTargetPos.y:= 15 - i;
-  units[i].Direct:=i - 1;
-  units[i].sex:=1;
-  units[i].gSet.body:=1;
-  units[i].gSet.head:=1;
-  units[i].gSet.MH:=1;
-  units[i].gSet.OH:=1;
+  units[i].data.Direct:=i - 1;
+  units[i].vdata.sex:=1;
+  units[i].VData.skinArm:=1;
+  //units[i].gSet.head:=1;
+  units[i].VData.skinMH:=1;
+  units[i].VData.skinOH:=1;
   units[i].in_act:=false;
   units[i].ani:=0;
   end;
 
   for i := 1 to 8 do
-     Writeln(round(units[i].pos.x) , ' ', round(units[i].pos.y));
+     Writeln(round(units[i].data.pos.x) , ' ', round(units[i].data.pos.y));
 
   your_unit := 1;
   your_turn := true;

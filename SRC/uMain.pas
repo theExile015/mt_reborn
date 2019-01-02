@@ -206,6 +206,7 @@ end;
 
 procedure Game_Update;
 var i: integer; t: dword;
+    hh, mm, ss, ms : word;
 begin
   inc(a_p);
   if a_p/2 = a_p div 2 then inc(sc_ani);
@@ -213,24 +214,53 @@ begin
   if tut_frame > 30 then tut_frame := 1;
   if a_p > 1000 then a_p := 0;
 
+  if theme_change then
+     begin
+       inc(theme_scale);
+       if theme_Scale = 1 then thID2 := snd_Play(theme2, true, 0, 0, ambient_vol * 0.01 );
+       snd_SetVolume(theme2, thID2, ambient_vol * theme_scale / 100);
+       snd_SetVolume(theme1, thID1, ambient_vol * (100 - theme_scale) / 100);
+       if theme_scale >= 100 then
+          begin
+            snd_Stop(theme1, thID1);
+            theme_change := false;
+            theme_scale := 0;
+          end;
+     end;
+
   // пробуем подключиться
   if cns = csConcting then
      begin
+       Writeln('Attempt to connect');
        scr_flush();
+
        if not TCP.FConnect then
-          TCP.Run;
+          begin
+            TCP.Run;
+            attempt := true;
+            GetTime(hh, mm, ss, ms);
+            timeout := ss;
+          end else Writeln('Already connected.');
+
        if TCP.FConnect then
-          cns := csAuth
-          else
+          begin
+             cns := csAuth;
+             attempt := false;
+          end else
           begin
             cns := csDisc;
+            writeln('TCP.FConnect = false');
             mWins[17].texts[1].Text:='Can''t connect with server.';
           end;
-       if GetTickCount() - Timeout > 2000 then
+
+       GetTime(hh, mm, ss, ms);
+       if attempt = true then
+       if abs(ss - timeout) > 5 then
           begin
             cns := csDisc;
-            mWins[17].texts[1].Text:='Can''t connect with server.';
-            TCP.FConnect:=false;
+            attempt := false;
+            mWins[17].texts[1].Text := 'Timeout error.';
+            TCP.FConnect := false;
             TCP.FCon.Disconnect(false);
           end;
      end;
@@ -327,6 +357,19 @@ begin
                 end else igs := igsNone;
 
        Chat_Update();
+
+       if wait_for_29 <> 255 then
+          begin
+            GetTime(hh, mm, ss, ms);
+            if abs(ss - wait_for_29) > 5 then
+               DoRequestLocObjs();
+          end;
+       if wait_for_05 <> 255 then
+          begin
+            GetTime(hh, mm, ss, ms);
+            if abs(ss - wait_for_05) > 5 then
+               DoEnterTheWorld();
+          end;
      end;
 
 {$R+}

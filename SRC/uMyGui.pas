@@ -318,6 +318,17 @@ begin
   if (parent = 8) and (sender = 2) then
      begin
        DoSendQuest(StrToInt(mWins[8].Name), 0);
+       if (tutorial = 1) then
+          begin
+            tutorial := 2;
+            DoSendTutorial( 2 );
+          end;
+       if (tutorial = 4) then
+          begin
+            tutorial := 5;
+            sleep(50);
+            DoSendTutorial( 5 );
+          end;
      end;
 
  { if (parent = 8) and (sender = 2) then
@@ -857,12 +868,97 @@ begin
        if igs = igsMap then mWins[12].visible:=true else mWins[12].visible:=false;
        if igs = igsSBook then mWins[11].visible:=true else mWins[11].visible:=false;
 
+     if tutorial > 0 then
+     begin
+       case tutorial of
+         1: begin
+                 mwins[1].rect.X:= mWins[8].rect.X + mWins[8].btns[2].rect.X - 310;
+                 mwins[1].rect.Y:= mWins[8].rect.Y + mWins[8].btns[2].rect.Y + 20;
+                 mWins[1].rect.H:= 85;
+                 mwins[1].texts[1].Text:= 'Getting started';
+                 mwins[1].texts[2].Text:= 'Welcome to Re:Venture Online!' + #13#10+
+                                          'Click on this button to accept your first quest.';
+                 if mWins[8].visible then mWins[1].visible := true;
+            end;
+         2: begin
+               mwins[1].rect.X:= 300;
+               mwins[1].rect.Y:= 120;
+               mWins[1].rect.H:= 85;
+               mwins[1].texts[1].Text:= 'Interacting with objects';
+               mwins[1].texts[2].Text:= '< ! > symbol means that this object is interactive.' + #13#10+
+                                        'Click on "Guild House" to explore it.';
+               if igs = igsNone then mWins[1].visible := true else mWins[1].visible:=false;
+            end;
+         3: begin
+               mwins[1].rect.X:= mWins[7].rect.X + 310;
+               mwins[1].rect.Y:= mWins[7].rect.Y + mWins[7].dlgs[1].dy - 10;
+               mWins[1].rect.H:= 115;
+               mwins[1].texts[1].Text:= 'Dialogs';
+               mwins[1].texts[2].Text:= 'Here is the list of possible "dialogs" and actions.' + #13#10+
+                                        'Mentor wants you to explore the rack with equipment.' + #13#10 +
+                                        'Click on "Explore rack" dialog to do this".';
+               if mWins[7].visible then mWins[1].visible:=true else mWins[1].visible:=false;
+            end;
+         4: begin
+              mWins[1].rect.X := mWins[8].rect.X + mWins[8].dnds[7].x + 10;
+              mwins[1].rect.Y:= mWins[8].rect.Y + mWins[8].dnds[7].y - 100;
+              mWins[1].rect.H:= 85;
+              mwins[1].texts[1].Text:= 'Reward choice';
+              mwins[1].texts[2].Text:= 'Some quests provide optional rewards.' + #13#10+
+                                       'Choose one and click on it.' ;
+              if mWins[8].visible then mWins[1].visible:=true else mWins[1].visible:=false;
+            end;
+         5: begin
+              mWins[1].rect.X := 160;
+              mwins[1].rect.Y:= 0;
+              mWins[1].rect.H:= 85;
+              mwins[1].texts[1].Text:= 'Inventory';
+              mwins[1].texts[2].Text:= 'It''s time to equip your new items.' + #13#10+
+                                       'Click "Inventory" button to open it.' ;
+              if igs = igsNone then mWins[1].visible := true else mWins[1].visible:=false;
+            end;
+         6: begin
+              mWins[1].rect.X := mWins[5].rect.X + mWins[5].dnds[21].x + 100;
+              mwins[1].rect.Y:= mWins[5].rect.Y + mWins[5].dnds[21].y + 30;
+              mWins[1].rect.H:= 100;
+              mwins[1].texts[1].Text:= 'Equipment';
+              mwins[1].texts[2].Text:= 'You should drag-and-drop items to slot to equip item.' + #13#10 +
+                                       'Now equip chest, pants, boots and weapon to finish quest.';
+
+              if igs = igsInv then mWins[1].visible := true else mWins[1].visible:=false;
+            end;
+         7: begin
+              mWins[1].rect.X := 512 - mWins[1].rect.W / 2;
+              mwins[1].rect.Y:= 5;
+              mWins[1].rect.H:= 90;
+              mwins[1].texts[1].Text:= 'Movement';
+              mwins[1].texts[2].Text:= 'Click on battelfield cell to move. ' + #13#10 +
+                                       'Usually, character need 5 action points (AP) to move for 1 cell.';
+
+              if iga = igaCombat then mWins[1].visible := true else mWins[1].visible:=false;
+            end ;
+         8: begin
+              mWins[1].rect.X := 512 - mWins[1].rect.W / 2;
+              mwins[1].rect.Y:= 5;
+              mWins[1].rect.H:= 150;
+              mwins[1].texts[1].Text:= 'Direction';
+              mwins[1].texts[2].Text:= 'Green icon appers at your character. It means you gain "Keep moving" effect. This effect allows you to change direction once for free.' + #13#10 +
+                                       'Press F5 of click to "Change direction" button to enter turning mode.' + #13#10 +
+                                       'Now, move to phantom.';
+
+              if iga = igaCombat then mWins[1].visible := true else mWins[1].visible:=false;
+            end
+       else
+         mWins[1].visible := false;
+       end;
+     end;
+
        // tutorial switcher
        if (tutorial = 5) and (igs = igsInv) then
           begin
             tutorial := 6;
             sleep(50);
-          //  SendData(inline_PkgCompile(4, activechar.Name + '`6`'));
+            DoSendTutorial( 6 );
           end;
 
        if igs = igsMap then // селектор локаций
@@ -1027,92 +1123,6 @@ begin
     end;
 
   if mWins[5].visible = false then on_DD := false;  // обрываем, если нет окошка инвентаря
-
-  if tutorial > 0 then
-     begin
-      // mWins[1].visible := true;
-       case tutorial of
-         1: begin
-                 mwins[1].rect.X:= 400;
-                 mwins[1].rect.Y:= 480;
-                 mWins[1].rect.H:= 85;
-                 mwins[1].texts[1].Text:= 'Getting started';
-                 mwins[1].texts[2].Text:= 'Welcome to Re:Venture Online!' + #13#10+
-                                          'Click on this button to accept your first quest.';
-                 mWins[1].visible := true;
-            end;
-         2: begin
-               mwins[1].rect.X:= 300;
-               mwins[1].rect.Y:= 120;
-               mWins[1].rect.H:= 85;
-               mwins[1].texts[1].Text:= 'Interacting with objects';
-               mwins[1].texts[2].Text:= '< ! > symbol means that this object is interactive.' + #13#10+
-                                        'Click on "Guild House" to explore it.';
-               if igs = igsNone then mWins[1].visible := true else mWins[1].visible:=false;
-            end;
-         3: begin
-               mwins[1].rect.X:= 550;
-               mwins[1].rect.Y:= 370;
-               mWins[1].rect.H:= 115;
-               mwins[1].texts[1].Text:= 'Dialogs';
-               mwins[1].texts[2].Text:= 'Here is the list of possible "dialogs" and actions.' + #13#10+
-                                        'Mentor wants you to explore the rack with equipment.' + #13#10 +
-                                        'Click on "Explore rack" dialog to do this".';
-               if mWins[7].visible then mWins[1].visible:=true else mWins[1].visible:=false;
-            end;
-         4: begin
-              mWins[1].rect.X := 560;
-              mwins[1].rect.Y:= 330;
-              mWins[1].rect.H:= 85;
-              mwins[1].texts[1].Text:= 'Reward choice';
-              mwins[1].texts[2].Text:= 'Some quests provide optional rewards.' + #13#10+
-                                       'Choose one and click on it.' ;
-              if mWins[8].visible then mWins[1].visible:=true else mWins[1].visible:=false;
-            end;
-         5: begin
-              mWins[1].rect.X := 160;
-              mwins[1].rect.Y:= 0;
-              mWins[1].rect.H:= 85;
-              mwins[1].texts[1].Text:= 'Inventory';
-              mwins[1].texts[2].Text:= 'It''s time to equip your new items.' + #13#10+
-                                       'Click "Inventory" button to open it.' ;
-              if igs = igsNone then mWins[1].visible := true else mWins[1].visible:=false;
-            end;
-         6: begin
-              mWins[1].rect.X := mWins[5].rect.X + mWins[5].dnds[21].x + 100;
-              mwins[1].rect.Y:= mWins[5].rect.Y + mWins[5].dnds[21].y + 30;
-              mWins[1].rect.H:= 100;
-              mwins[1].texts[1].Text:= 'Equipment';
-              mwins[1].texts[2].Text:= 'You should drag-and-drop items to slot to equip item.' + #13#10 +
-                                       'Now equip chest, pants, boots and weapon to finish quest.';
-
-              if igs = igsInv then mWins[1].visible := true else mWins[1].visible:=false;
-            end;
-         7: begin
-              mWins[1].rect.X := 512 - mWins[1].rect.W / 2;
-              mwins[1].rect.Y:= 5;
-              mWins[1].rect.H:= 90;
-              mwins[1].texts[1].Text:= 'Movement';
-              mwins[1].texts[2].Text:= 'Click on battelfield cell to move. ' + #13#10 +
-                                       'Usually, character need 5 action points (AP) to move for 1 cell.';
-
-              if iga = igaCombat then mWins[1].visible := true else mWins[1].visible:=false;
-            end ;
-         8: begin
-              mWins[1].rect.X := 512 - mWins[1].rect.W / 2;
-              mwins[1].rect.Y:= 5;
-              mWins[1].rect.H:= 150;
-              mwins[1].texts[1].Text:= 'Direction';
-              mwins[1].texts[2].Text:= 'Green icon appers at your character. It means you gain "Keep moving" effect. This effect allows you to change direction once for free.' + #13#10 +
-                                       'Press F5 of click to "Change direction" button to enter turning mode.' + #13#10 +
-                                       'Now, move to phantom.';
-
-              if iga = igaCombat then mWins[1].visible := true else mWins[1].visible:=false;
-            end
-       else
-         mWins[1].visible := false;
-       end;
-     end;
 
   if mWins[5].visible then
      begin
@@ -1297,7 +1307,7 @@ begin
      if tutorial = 6 then
         begin
           tutorial := 7;
-          //  SendData(inline_PkgCompile(4, activechar.Name + '`7`'));
+          DoSendTutorial( 7 );
         end;
 
   if on_DD and Mouse_Up(M_BLEFT) then  // драг н дроп в инвентаре
@@ -2090,9 +2100,9 @@ begin
 
   if dType = 3 then
      begin
-       // SendData( inline_PkgCompile(23, u_IntToStr(dID) + '`2`'));   // начать драчку
        mWins[7].visible:=false;
        mWins[8].visible:=false;
+       DoDlgClick(dID);
      end;
 
   if dType = 7 then
@@ -2100,8 +2110,8 @@ begin
        if tutorial = 3 then
           begin
             tutorial := 4;
-            // sleep(50);
-            // SendData( inline_PkgCompile(4, u_IntToStr(dID) + '`1`'));
+            sleep(50);
+            DoSendTutorial( 4 );
           end;
        DoDlgClick(dID);
      end;

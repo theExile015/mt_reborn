@@ -36,15 +36,16 @@ end;
 
 procedure location_Update();
 var
-  p: ^dword;
+  p : ^dword;
 begin
-  scr_ReadPixels(p, 100, 100, 1, 1);    // читаем угловой пиксель
+ { scr_ReadPixels(p, 200, 200, 1, 1);    // читаем угловой пиксель
   if gs = gsGame then
     // если он чёрный, значит локация не прогрузилась
     if iga = igaLoc then
       // пробуем грузануть её ещё раз
-      if p^ = 1291845632 then
-        gs := gsLLoad;
+      if p^ = 0 then
+         gs := gsLLoad;    }
+ // writeln(p^);
   objMan_Update;
 end;
 
@@ -121,7 +122,7 @@ procedure objMan_Fill;
 var
   i: integer;
 begin
-  with objStore[11] do
+{  with objStore[11] do
   begin
     exist := True;
 
@@ -140,7 +141,7 @@ begin
     a_fr := 6;
     if cCircle.Radius <> 0 then
       Data.cType := 1;
-  end;
+  end;   }
 
 end;
 

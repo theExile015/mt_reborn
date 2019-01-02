@@ -52,7 +52,7 @@ begin
   cns := csOnDisc;
   iga := igaLoc;
 
-  for i := 1 to 16 do
+  for i := 1 to 18 do
       mWins[i].visible:=false;
 
   NonameForm1.Visible:=true;
@@ -63,6 +63,7 @@ begin
   NonameFrame41.Visible:=false;
   fInGame.Visible:=false;
   pbLoading.Visible:=false;
+
 
   TCP.FConnect := false;
   mWins[17].visible := true;

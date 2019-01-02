@@ -81,7 +81,7 @@ class procedure zglTGuiEventHandler.OnClick(Sender: zglTGUIObject; X, Y: integer
 var i : integer;
     s: utf8String;
 begin
-   snd_Play(snd_gui[1], false, 0, 0, 0, 0.5);
+   snd_Play(snd_gui[1], false, 0, 0, 0, gui_vol);
 // Кнопка Логин
   if sender = NonameButton6 then
      begin
