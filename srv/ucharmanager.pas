@@ -120,7 +120,12 @@ var i: integer;
     _pkg26 : TPkg026;
     mStr   : TMemoryStream;
 begin
-  result:=high(word);
+  result:=high(byte);
+
+  for i := 0 to high(chars) do
+    if chars[i].header.ID = charID then
+       chars[i].exist:=false;
+
   for i:=0 to length(chars) - 1 do
     if not chars[i].exist then
       begin
@@ -151,8 +156,8 @@ begin
            pkg026(_pkg26, chars[i].sID);
          end;
 
-  if chars[Sessions[sID].charLID].header.tutorial = 0 then
-     Obj_QuestSend(Sessions[sID].charLID, 26);
+ // if chars[Sessions[sID].charLID].header.tutorial = 1 then
+ //    Obj_QuestSend(Sessions[sID].charLID, 26);
 end;
 
 procedure Char_AddNumbers(charLID, Gold, Exp, lvl, SP, TP : DWORD);

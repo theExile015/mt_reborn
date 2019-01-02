@@ -178,6 +178,42 @@ type
     fail_code : byte;
   end;
 
+  TPkg100 = record
+    ID        : word;
+    ceType    : byte;
+    ceRound   : word;
+    fail_code : byte;
+  end;
+
+  TPkg101 = record
+    list      : array [0..20] of TUnitHeader;
+    fail_code : byte;
+  end;
+
+  TPkg102 = record
+    comID          : DWORD;
+    uType, uLID    : DWORD;
+    what           : byte;
+    fail_code      : byte;
+  end;
+
+  TPkg103 = record
+    uType, uLID    : DWORD;
+    data           : TUnitData;
+    Vdata          : TUnitVisualData;
+    fail_code      : byte;
+  end;
+
+  TPkg104 = record
+    ceRound   : word;
+    fail_code : byte;
+  end;
+
+  TPkg105 = record
+    NextTurn : word;
+    fail_code: byte;
+  end;
+
 procedure pkg001(pkg : TPkg001; sID : word);
    // 2
 procedure pkg003(pkg : TPkg003; sID : word);   // 3
@@ -218,12 +254,14 @@ procedure pkg043(pkg : TPkg043; sID : word);
 
 procedure pkg045(pkg : TPkg045; sID : word);
 
+procedure pkg102(pkg : TPkg102; sID : word);
+
 procedure pkgProcess(msg: string);
 
 implementation
 
 uses
-  vNetCore;
+  vNetCore, uCombatProcessor;
 
 procedure pkg001(pkg : TPkg001; sID : word);
 var i    : integer;
@@ -415,11 +453,12 @@ procedure pkg005(pkg : TPkg005; sID : word);
 var _pkg  : TPkg005;
     _head : TPackHeader;
     mStr  : TMemoryStream;
+    i     : word;
 begin
-  _pkg.fail_code := Char_EnterTheWorld(sID, pkg.id);
-
-  Writeln('Enter world ##:', pkg.fail_code);
-
+  i := Char_EnterTheWorld(sID, pkg.id);
+  Writeln('Enter world ##:', i);
+  if i = high(word) then _pkg.fail_code := 255 else _pkg.fail_code := 1;
+  Writeln('Debug 001');
 try
   mStr := TMemoryStream.Create;
   _head._flag := $f;
@@ -427,17 +466,19 @@ try
 
   mStr.Write(_head, sizeof(_head));
   mStr.Write(_pkg, sizeof(_pkg));
-
+  Writeln('Debug 002');
   // Отправляем пакет
   TCP.FCon.IterReset;
   while TCP.FCon.IterNext do
     if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
     if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
        begin
+         Writeln('Debug 003');
          TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
          Break;
        end;
 finally
+  Writeln('Debug 004');
   mStr.Free;
 end;
 end;
@@ -1081,6 +1122,7 @@ try
   if pkg.fail_code = 1 then
   if ObjDialogs[pkg.ID].exist then
      case ObjDialogs[pkg.ID].data.dType of
+       3     : Obj_StartQuestBattle(sessions[sID].charLID, pkg.ID);
        11, 7 : Obj_QuestSend(Sessions[sID].charLID, pkg.ID);
      else
        WriteSafeText('~~ !!! ~~', 2);
@@ -1098,7 +1140,58 @@ end;
 
 procedure pkg045(pkg : TPkg045; sID : word);
 begin
+  DB_SetCharTutor(Sessions[sID].charLID, pkg.fail_code);
+end;
 
+procedure pkg102(pkg : TPkg102; sID : word);
+var  comLID, uLID, i : DWORD;
+     _pkg   : TPkg103;
+     _head  : TPackHeader;
+     mStr   : TMemoryStream;
+begin
+  writeln(pkg.uLID, ' ', pkg.uType, ' ', pkg.comID);
+
+  comLID := CM_GetCombatLID(pkg.comID);
+  Writeln('ComLID = ', comLID);
+  if comLID = high(dword) then Exit;
+
+  uLID := high(dword);
+  for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uType = pkg.uType then
+      if combats[comLID].Units[i].uLID = pkg.uLID then
+         uLID := i;
+  Writeln('uLID = ', uLID);
+  if uLID = high(dword) then exit;
+
+  Writeln('Fine. Forming pkg');
+  _pkg.uType:= pkg.uType;
+  _pkg.uLID:= pkg.uLID;
+  _pkg.data := combats[comLID].Units[uLID].Data;
+  _pkg.Vdata:= combats[comLID].Units[uLID].VData;
+
+  _head._id:=103;
+  _head._flag:=$f;
+
+       try
+         mStr := TMemoryStream.Create;
+
+         mStr.Write(_head, sizeof(_head));
+         mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
+              begin
+                writeln('Sending... ', TCP.FCon.Iterator.PeerAddress);
+                Writeln('Bytes sended... ', TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator));
+                Break;
+              end;
+       finally
+         mStr.Free;
+       end;
 end;
 
 procedure pkgProcess(msg: string);

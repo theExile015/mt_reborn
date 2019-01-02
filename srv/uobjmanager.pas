@@ -13,10 +13,11 @@ procedure Obj_SendDialogs(sID, oID : DWORD);
 
 procedure Obj_QuestSend(charLID, dID : DWORD);
 procedure Obj_QuestProcess(sID, qID, rID, f_code : DWORD);
+procedure Obj_StartQuestBattle(charLID, dID : DWORD);
 
 implementation
 
-uses uPkgProcessor, uDB, vServerLog, uCharManager;
+uses uPkgProcessor, uDB, vServerLog, uCharManager, uCombatProcessor;
 
 procedure Obj_SendDialogs(sID, oID : DWORD);
 var _head: TPackHeader; _pkg : TPkg041;
@@ -248,6 +249,49 @@ begin
      end;
 
   DB_SetCharVar( charLID, qS + 1, QuestDB[qID].vName );
+end;
+
+procedure Obj_StartQuestBattle(charLID, dID : DWORD);
+var i, r   : integer;
+    comLID : Word;
+    _head  : TPackHeader; _pkg : TPkg100;
+    mStr   : TMemoryStream;
+begin
+  r := high(word);
+
+  if objDialogs[dID].data.dType = 3 then
+     r := CM_StartNew(charLID, 1, objDialogs[dID].qLink);
+
+  if r = high(word) then exit;
+
+  comLID := CM_GetCombatLID(r);
+
+  _head._flag := $f;
+  _head._id   := 100;
+
+  _pkg.ID := r;
+  _pkg.ceType := 1;
+  _pkg.ceround  := combats[comLID].ceround;
+
+       try
+         mStr := TMemoryStream.Create;
+
+         mStr.Write(_head, sizeof(_head));
+         mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                Break;
+              end;
+       finally
+         mStr.Free;
+         CM_SendUnits(comLID, charLID);
+       end;
 end;
 
 end.

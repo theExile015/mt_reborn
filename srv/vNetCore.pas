@@ -38,7 +38,7 @@ var
 implementation
 
 uses
-  uPkgProcessor, uChatManager;
+  uPkgProcessor, uChatManager, uCombatProcessor;
 
 procedure TLTCPTest.OnEr(const msg: string; aSocket: TLSocket);
 begin
@@ -97,12 +97,13 @@ var
 
   _pkg040 : TPkg040;
   _pkg043 : TPkg043;                        _pkg045 : TPkg045;
+  _pkg102 : TPkg102;
 begin
 try
   mStr := TMemoryStream.Create;
   if aSocket.GetMessage(msg) > 0 then
      begin
-       writeln(msg);
+      // writeln(msg);
        mStr.Write(msg[1], length(msg));
        mStr.Position:=0;
        mStr.Read(_head, SizeOf(_head));
@@ -269,6 +270,12 @@ try
            mStr.Read(_pkg045, SizeOf(_pkg045));
            pkg045(_pkg045, sID);
          end;
+         102:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg102, SizeOf(_pkg102));
+           pkg102(_pkg102, sID);
+         end;
        else
          Writeln('Wrong ID');
          Exit;
@@ -333,6 +340,7 @@ begin
           case readkey of
            #27: quit := true; // if he pressed "escape" then quit
           end;
+        CM_Process();  // главный цикл процессора боёв
         Char_Update(); // проверяем персонажа на лвл ап, ауры итд
         GetTime(hour, min, sec, hsec);
         if abs(min * 60 + sec - (lpMin * 60 + lpSec)) >= 5 then          // пробрасываем пинг

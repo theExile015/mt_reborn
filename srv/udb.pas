@@ -314,7 +314,7 @@ TRY
   //      WriteSafeText(IntToStr(VendorDB[id].goods[i].id), 1);
 
     Query.Next;
-  end;
+  end;   }
 
   WriteSafeText('Getting MobDataDB...', 2 );
   Query.Close;
@@ -328,30 +328,30 @@ TRY
     MobDataDB[id].name:=query.FieldByName('name').AsString;
 
     pr := GetItemProps(query.FieldByName('stats1').AsString);
-    MobDataDB[id].HP:= pr[1].pNum;
-    MobDataDB[id].MP:= pr[2].pNum;
-    MobDataDB[id].AP:= pr[3].pNum;
-    MobDataDB[id].Ini:=pr[4].pNum;
-    MobDataDB[id].ARM:=pr[5].pNum;
-    MobDataDB[id].Str:=pr[6].pNum;
-    MobDataDB[id].Agi:=pr[7].pNum;
-    MobDataDB[id].Con:=pr[8].pNum;
-    MobDataDB[id].Hst:= pr[9].pNum;
-    MobDataDB[id].Int:=pr[10].pNum;
-    MobDataDB[id].Spi:=pr[11].pNum;
-    MobDataDB[id].APH:=pr[12].pNum;
-    MobDataDB[id].DPAP:=pr[13].pNum;
-    MobDataDB[id].SP:=pr[14].pNum;
+    MobDataDB[id].HP:= pr[1];
+    MobDataDB[id].MP:= pr[2];
+    MobDataDB[id].AP:= pr[3];
+    MobDataDB[id].Ini:=pr[4];
+    MobDataDB[id].ARM:=pr[5];
+    MobDataDB[id].Str:=pr[6];
+    MobDataDB[id].Agi:=pr[7];
+    MobDataDB[id].Con:=pr[8];
+    MobDataDB[id].Hst:= pr[9];
+    MobDataDB[id].Int:=pr[10];
+    MobDataDB[id].Spi:=pr[11];
+    MobDataDB[id].APH:=pr[12];
+    MobDataDB[id].DPAP:=pr[13];
+    MobDataDB[id].SP:=pr[14];
 
     pr := GetItemProps(query.FieldByName('stats2').AsString);
-    MobDataDB[id].skBody:= pr[1].pNum;
-    MobDataDB[id].skMH:= pr[2].pNum;
-    MobDataDB[id].skOH:= pr[3].pNum;
-    MobDataDB[id].lvl:= pr[4].pNum;
-    MobDataDB[id].elete:= pr[5].pNum;
-    MobDataDB[id].sex:=pr[6].pNum;
-    if pr[7].pNum > 0 then
-       MobDataDB[id].race:=pr[7].pNum else MobDataDB[id].race:=0;
+    MobDataDB[id].skBody:= pr[1];
+    MobDataDB[id].skMH:= pr[2];
+    MobDataDB[id].skOH:= pr[3];
+    MobDataDB[id].lvl:= pr[4];
+    MobDataDB[id].elete:= pr[5];
+    MobDataDB[id].sex:=pr[6];
+    if pr[7] > 0 then
+       MobDataDB[id].race:=pr[7] else MobDataDB[id].race:=0;
     Query.Next;
   end;
 
@@ -369,23 +369,23 @@ TRY
     ceDB[id].resp:= query.FieldByName('resp').AsInteger;
     pr := GetItemProps(query.FieldByName('mobs').AsString);
 
-    ceDB[id].limit:= pr[1].pNum;
+    ceDB[id].limit:= pr[1];
 
     for i := 1 to 4 do
-      if pr[i + 1].pNum <> 0 then
-         ceDB[id].mobs[i] := pr[i + 1].pNum else ceDB[id].mobs[i] := 0;
-    ceDB[id].ceType:=pr[6].pNum;
+      if pr[i + 1] <> 0 then
+         ceDB[id].mobs[i] := pr[i + 1] else ceDB[id].mobs[i] := 0;
+    ceDB[id].ceType:=pr[6];
     pr := GetItemProps(query.FieldByName('ally').AsString);
     for i := 1 to 3 do
-      if pr[i + 1].pNum <> 0 then
-         ceDB[id].ally[i] := pr[i + 1].pNum else ceDB[id].ally[i] := 0;
+      if pr[i + 1] <> 0 then
+         ceDB[id].ally[i] := pr[i + 1] else ceDB[id].ally[i] := 0;
 
     ceDB[id].on_win := GetItemProps(query.FieldByName('on_win').AsString);
     ceDB[id].w_trig := GetItemProps(query.FieldByName('w_trig').AsString);
     ceDB[id].c_trig := GetItemProps(query.FieldByName('c_trig').AsString);
 
     Query.Next;
-  end;    }
+  end;
 
   WriteSafeText('Getting PerksDB...', 2 );
   Query.Close;
@@ -541,6 +541,8 @@ begin
       result.Chars[i].level:=Query.FieldByName('level').AsInteger;
       result.Chars[i].loc:=Query.FieldByName('loc').AsInteger;
       result.Chars[i].tutorial:=Query.FieldByName('tutorial').AsInteger;
+      if result.Chars[i].tutorial = 0 then result.Chars[i].tutorial:=1;
+      writeln(' ## ', i , ' == ', result.Chars[i].tutorial);
       result.Chars[i].sex:=Query.FieldByName('Sex').AsInteger;
       inc(i);
       Query.Next;
@@ -650,6 +652,7 @@ try
   Chars[charLID].header.raceID  := Query.FieldByName('race').AsInteger;
   Chars[charLID].header.level   := Query.FieldByName('level').AsInteger;
   Chars[charLID].header.sex     := Query.FieldByName('sex').AsInteger;
+  Chars[charLID].header.tutorial:= Query.FieldByName('tutorial').AsInteger;
   Query.Close;
     Query.SQL.Text:= 'SELECT * FROM char_stats WHERE chID = "' + IntToStr(Chars[CharLID].header.ID) + '"' ;
   Query.Open;

@@ -25,7 +25,7 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <Units Count="7">
+    <Units Count="8">
       <Unit0>
         <Filename Value="vServer.pas"/>
         <IsPartOfProject Value="True"/>
@@ -58,6 +58,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="uObjManager"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="ucombatprocessor.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uCombatProcessor"/>
+      </Unit7>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -168,6 +168,104 @@ type
     qType : DWORD;
   end;
 
+  TMPoint = record
+    x, y : byte;
+  end;
+
+  TCell = record
+    cType : integer;
+    Step: Integer;
+    Parent: TMPoint;
+  end;
+
+  TUnitData = record
+    cHP, cMP, cAP, mHP, mMP, mAP : word;
+    pos     : TMPoint;
+    Direct  : byte;
+    flag : boolean;
+  end;
+
+  TUnitVisualData = record
+    sex, Race : byte;
+    name : string[40];
+    skinMH, skinOH, skinArm : byte;
+    flag : boolean;
+  end;
+
+  TUnitPrivateData = record
+    rage : byte;
+    flag : boolean;
+  end;
+
+  TUnitHeader = record
+    exist   : boolean;
+    Name    : string[40];
+    uType   : byte;
+    uLID    : word;
+  end;
+
+  TUnit = record
+    exist, alive, visible : boolean;
+    uLID                  : word;
+    charLID, uID          : DWORD;
+    uType                 : byte;
+
+    Data                  : TUnitData;
+    VData                 : TUnitVisualData;
+    PData                 : TUnitPrivateData;
+
+    Ini                   : word;
+
+    ATB                   : integer;
+
+    tar_pos               : TMPoint;
+
+    rounds_in             : word;
+    turn                  : boolean;
+    skinMH, skinOH, skinAr: byte;
+  end;
+
+  TCombatEvent = record
+    exist      : boolean;
+    ID, comLID : DWORD;      // глобальный и локальный ИД
+    Units      : array [0..20] of TUnit;
+    ceUID      : word; // отличительный параметр (ИД мобов для (1))
+    ceType     : byte; // тип боя (1 - с мобами
+    pLimit     : byte; // Лимит игроков в битве
+
+    ceRound    : word; // текущий раунд
+    ATBTime    : byte; // АТБ "время"
+    uTurn      : byte; // чей ход
+    tsSec,tsMin: word; // время когда был последний пересчёт АТБ
+    NextTurn,
+    NextTurnATB: integer;  // служебные переменные для определения следующего хода
+
+    On_Recount : boolean;  // делаем пересчёт ?
+
+    MapMatrix  : array [0..20, 0..20] of TCell;
+    Way        : Array Of TMPoint;
+  end;
+
+  TMob = record
+    exist : boolean;
+    name  : string;
+    HP, MP, AP, Ini, lvl, elete : Word;
+    Str, Agi, Con, Hst, Int, Spi : word;
+    DPAP, APH, ARM, SP : Word;
+    skBody, skMH, skOH, sex, race : byte;
+  end;
+
+  TCE = record
+    exist : boolean;
+    name  : utf8string;
+    lvl, limit   : byte;
+    ceType: byte;
+    mobs  : array [1..4] of byte;
+    ally  : array [1..3] of byte;
+    on_win, w_trig, c_trig: TProps;
+    resp  : word;
+  end;
+
 Var
   CS : TCriticalSection;
 
@@ -191,6 +289,8 @@ Var
 
   sessions  : array [0..127] of TGameSession; // сессии
   chars     : array [0..127] of TCharacter;   // данные о чарах
+  combats   : array [0..255] of TCombatEvent;
+
   b_chars   : array [1..25] of TCharacter;    // базовые чары
   ItemDB    : array [1..1000] of TItem;       // База предметов
   LocObjs   : array [1..1000] of TLocObj;
@@ -198,6 +298,8 @@ Var
   LocDB     : array [1..50] of TLocation;
   ObjDialogs: array [1..1000] of TObjDialog;
   QuestDB   : array [1..1000] of TQuest;
+  MobDataDB : array [1..100] of TMob;
+  ceDB      : array [1..100] of TCE;
 
 implementation
 
