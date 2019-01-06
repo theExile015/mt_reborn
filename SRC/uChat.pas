@@ -26,7 +26,7 @@ procedure Chat_SaveToFile;
 
 implementation
 
-uses u_MM_gui, uLoader, uXClick;
+uses u_MM_gui, uLoader, uXClick, uCombatManager;
 
 procedure Chat_Init();
 var i, j, k : integer;
@@ -71,13 +71,13 @@ begin
       ActionBar[i].y:= scr_h - 186;
       ActionBar[i].ddType:= 2;
       {if i = 1 then ActionBar[i].contains:= 1 else  }
-         ActionBar[i].data.contain:=0;
+      ActionBar[i].data.contain:=0;
       ActionBar[i].visible:= true;
 
-      SystemBar[i].exist:=true;
-      SystemBar[i].x:= scr_w - 187 + (i - 1) * 36+ 2;
-      SystemBar[i].y:= scr_h - 186;
-      SystemBar[i].ddType:= 2;
+      SystemBar[i].exist  :=true;
+      SystemBar[i].x      := scr_w - 187 + (i - 1) * 36+ 2;
+      SystemBar[i].y      := scr_h - 186;
+      SystemBar[i].ddType := 2;
 
       //SystemBar[i].contains:=i;
       SystemBar[i].visible:= true;
@@ -109,7 +109,7 @@ if iga = igaCombat then
      if your_turn then
         begin
           if com_face <> 0 then com_face := com_face - com_face / 12;
-          if (not Range_mode) and (spID = 1) then spID := 0;
+          if (icm <> icmRange) and (spID = 1) then spID := 0;
           if (spID = 11) or (spID = 8) or (spID = 13) or (spID = 14) or (spID = 15) then spID := 0;
 
           for i := 1 to high(ActionBar) do
@@ -142,7 +142,7 @@ if iga = igaCombat then
                                 spR := spells[ActionBar[1 + j].data.contain].range;
                                 if (spID = 6) and (skills[42].rank > 0) then
                                     spR := spR + skills[42].xyz[skills[42].rank].X;
-                                if (spID = 1) or (spID = 5) or (spID = 4) or (spID = 6) or (spID = 12) then range_mode := true else range_mode := false;
+                                if (spID = 1) or (spID = 5) or (spID = 4) or (spID = 6) or (spID = 12) then icm := icmRange else icm := icmNone;
                               end else Chat_AddMessage(3, high(word), 'Not enough MP to cast ' + spells[ActionBar[1 + j].data.contain].name );
                          end else Chat_AddMessage(3, high(word), 'Not enough AP to cast ' + spells[ActionBar[1 + j].data.contain].name );
                  end;
@@ -158,7 +158,7 @@ if iga = igaCombat then
                            if units[your_unit].data.cMP >= spells[ActionBar[i].data.contain].MP_Cost then
                               begin
                                 spID := ActionBar[i].data.contain;
-                                if (spID = 1) or (spID = 5) or (spID = 4)or (spID = 12) then range_mode := true else range_mode := false;
+                                if (spID = 1) or (spID = 5) or (spID = 4)or (spID = 12) then icm := icmRange else icm := icmNone;
                                 spR := spells[ActionBar[i].data.contain].range;
                               end else Chat_AddMessage(3, high(word), 'Not enough MP to cast ' + spells[ActionBar[i].data.contain].name );
                          end else Chat_AddMessage(3, high(word), 'Not enough AP to cast ' + spells[ActionBar[i].data.contain].name );
@@ -171,21 +171,22 @@ if iga = igaCombat then
                       begin
                         if systembar[i].data.contain = 1 then
                             begin
-                              //SendData( inline_pkgCompile(032, u_IntToStr(combat_id) + '`'));
+                              cm_EndTurn();
                               your_turn := false;
                             end;
 
                         if systembar[i].data.contain = 4 then
                            begin
-                             range_mode := true;
+                             icm := icmRange;
                              spR := 8;
                              if skills[62].rank > 0 then
                                 spR := spR + skills[62].xyz[skills[62].rank].X;
                            end;
 
                         if systembar[i].data.contain = 7 then
+                           { TODO 1 -oVeresk -cbug : Добавить проверку на Keep Moving }
                            if units[your_unit].data.cAP > 4 then
-                              turn_mode := true;
+                              icm := icmRotate;
                       end;
                  end;
             end;
@@ -337,11 +338,14 @@ var i, j, b, k, n, m: integer;
     r: zglTRect;
     fH, sW, mW, nH, dH : single;
 begin
-  batch2d_Begin;
+  on_CGUI := false;
+  if mouse_Y >= scr_h - 150 then on_CGUI := true;
   // рисуем интерфейс управления боем
   if iga = igaCombat then
      begin
        Scissor_Begin(0, scr_h - 200, 200, 50);
+         if not on_CGUI then
+            on_CGUI := col2d_PointInRect(mouse_x(), mouse_y(), rect(0, scr_h - 200, 200, 50));
          b := round(200 / frmpak[3].h) + 1;
          pr2d_Rect( 0, scr_h - 200 + com_face, 200, 50, $1f1a16, 200, PR2D_FILL);
          for I := 0 to b do
@@ -367,6 +371,8 @@ begin
        Scissor_End();
 
        Scissor_Begin(scr_w - 200, scr_h - 200, 200, 50);
+         if not on_CGUI then
+            on_CGUI := col2d_PointInRect(mouse_x(), mouse_y(), rect(scr_w - 200, scr_h - 200, 200, 50));
          pr2d_Rect( scr_w - 200, scr_h - 200 + com_face, 200, 50, $1f1a16, 200, PR2D_FILL);
          for I := 0 to b do
              SSprite2d_draw( frmpak[3].brd, scr_w - 200 + i * frmpak[3].h, scr_h - 200 - frmpak[3].dy + com_face , frmpak[3].w, frmpak[3].h, 90);
@@ -389,6 +395,7 @@ begin
        Scissor_End();
      end;
 
+batch2d_Begin;
   // рисуем бордюр и бэкграунд чата
   b := round(scr_w / frmpak[3].h) + 1;
   pr2d_Rect( 0, scr_h - 150, scr_w, 150, chat_color.bgr, 200, PR2D_FILL);

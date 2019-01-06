@@ -29,6 +29,8 @@ begin
   Game_Render;
   SSprite2d_Draw( tex_Cursors[cur_type], mouse_x() - 2, mouse_y() - 3, 32, 32, cur_angle);
 
+//  SSprite2d_Draw( texZero, 10, 10, 20, 20, 0);
+
   Text_Draw( fntMain, scr_w - 50, scr_h - 20, u_IntToStr(zgl_Get(RENDER_FPS)) );
   Text_Draw( fntMain, scr_w - 50, scr_h - 40, u_IntToStr(zgl_Get(RENDER_BATCHES_2D)) );
   //Text_Draw( fntMain, scr_w - 80, scr_h - 60, u_IntToStr(zgl_Get(RENDER_VRAM_USED)) );

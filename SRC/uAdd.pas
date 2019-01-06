@@ -306,9 +306,8 @@ var
   Added: boolean;
   Point: TMPoint;
 begin
-   {
-   SetLength(units[uLID].Way, 0); // Обнуляем массив с путем
-   }
+  SetLength(units[uLID].Way, 0); // Обнуляем массив с путем
+
   for i := 0 to High(MapMatrix) do
     for j := 0 to High(MapMatrix[i]) do
       MapMatrix[i][j].Step := -1;
@@ -340,7 +339,7 @@ begin
               Continue;
             // Если (X, Y) уже добавлено или непроходимо, то не обрабатываем
             if (MapMatrix[X][Y].cType = 1) or (MapMatrix[X][Y].Step <> -1) then
-              Continue;
+               Continue;
             MapMatrix[X][Y].Step := Step; // Добав-
             MapMatrix[X][Y].Parent.X := i; // ля-
             MapMatrix[X][Y].Parent.Y := j; // ем
@@ -358,7 +357,7 @@ begin
 
   Point.X := StartX;
   Point.Y := StartY;
-   {
+
 // Пока не дойдем до финиша
    while MapMatrix[Point.X][Point.Y].Step <> 0 do
    begin
@@ -370,7 +369,7 @@ begin
    SetLength(units[uLID].Way, Length(units[uLID].Way) + 1); // добавляем финиш
    units[uLID].Way[High(units[uLID].Way)].X := FinishX;
    units[uLID].Way[High(units[uLID].Way)].Y := FinishY;
-   }
+
   Result := True;
 end;
 

@@ -41,9 +41,9 @@ begin
   // нулевая текстура
   texZero := tex_LoadFromFile( dirSys + 'zeroTex.png');
 
-  snd_gui[1] := snd_LoadFromFile('Data\Sound\click.wav');
-  snd_gui[2] := snd_LoadFromFile('Data\Sound\drag_onmousedown.wav');
-  snd_gui[3] := snd_LoadFromFile('Data\Sound\drag_onmouseup.wav');
+  snd_gui[1] := snd_LoadFromFile('Data\Sound\click.ogg');
+  snd_gui[2] := snd_LoadFromFile('Data\Sound\drag_onmousedown.ogg');
+  snd_gui[3] := snd_LoadFromFile('Data\Sound\drag_onmouseup.ogg');
 
   // шрифты
   if file_OpenArchive('Data\fonts.red') then
@@ -136,7 +136,7 @@ begin
   Tex_SetFrameSize( tex_Btn, 24, 24 );
 
   theme1 := snd_LoadFromFile('Data\Sound\augury.ogg');
-  theme2 := snd_LoadFromFile('Data\Sound\Minstrel.ogg');
+  theme2 := snd_LoadFromFile('Data\Sound\close_the_gates.ogg');
   thID1 := snd_Play(theme1, true, 0, 0, 0, ambient_vol);
 end;
 
@@ -352,7 +352,7 @@ begin
             bServants.Enabled:=true;
             bMail.Enabled:=true;
             bMap.Enabled:=true;
-            mWins[18].visible:=true;
+       //     mWins[18].visible:=true;
 
             theme_change := true;
 end;

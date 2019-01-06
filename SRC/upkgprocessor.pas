@@ -213,8 +213,21 @@ type
   end;
 
   TPkg105 = record
+    comID, uLID : dword;
     NextTurn : word;
     fail_code : byte;
+  end;
+
+  TPkg106 = record
+    comID, uLID   : dword;
+    X, Y, ap_left : byte;
+    fail_code     : byte;
+  end;
+
+  TPkg107 = record
+    comID, uLID : dword;
+    dir, ap_left: byte;
+    fail_code   : byte;
   end;
 
 procedure pkg000;
@@ -259,6 +272,8 @@ procedure pkg101(pkg: TPkg101);   // Combat Units
 procedure pkg103(pkg: TPkg103);   // Unit Data
 procedure pkg104(pkg: TPkg104);   // Next round
 procedure pkg105(pkg: TPkg105);   // Next turn
+procedure pkg106(pkg: TPkg106);   // Move
+procedure pkg107(pkg: TPkg107);   // Rotate
 
 procedure pkgProcess(var msg: string);
 
@@ -291,6 +306,7 @@ var
 
     _pkg100: Tpkg100;   _pkg101: TPkg101;
     _pkg103: TPkg103;   _pkg104: TPkg104;   _pkg105: TPkg105;
+    _pkg106: TPkg106;   _pkg107: TPkg107;
 begin
   try
        begin
@@ -449,6 +465,16 @@ begin
            begin
              mStr.Read(_pkg105, SizeOf(_pkg105));
              pkg105(_pkg105);
+           end;
+           106:
+           begin
+             mStr.Read(_pkg106, SizeOf(_pkg106));
+             pkg106(_pkg106);
+           end;
+           107:
+           begin
+             mStr.Read(_pkg107, SizeOf(_pkg107));
+             pkg107(_pkg107);
            end;
          else
            // ID пакета кривой
@@ -1063,8 +1089,7 @@ procedure pkg105(pkg: TPkg105);
 var i : Integer;
     hh, mm, ss, ms : word;
 begin
-  turn_mode := false;
-  range_mode := false;
+  icm       := icmNone;
   your_turn := false;
 
   for i := 0 to high(units) do
@@ -1086,11 +1111,26 @@ begin
           end;
 
   Map_CreateMask;
-  for i := 1 to high(units) do
+  for i := 0 to high(units) do
     if units[i].exist and units[i].alive then
        if (pkg.NextTurn <> units[i].uLID) then
            MapMatrix[units[i].data.pos.x, units[i].data.pos.y].cType := 1;
+end;
 
+procedure pkg106(pkg: TPkg106);
+var i : Integer;
+begin
+  if pkg.comID <> combat_id then Exit;
+  writeln('New pos: ', pkg.uLID, ' ', pkg.X, ' ', pkg.Y);
+  cm_SetWay( pkg.uLID, pkg.X, pkg.Y, pkg.ap_left);
+end;
+
+procedure pkg107(pkg: TPkg107);
+var i : Integer;
+begin
+  if pkg.comID <> combat_id then Exit;
+  writeln('New DIR: ', pkg.uLID, ' ', pkg.dir );
+  cm_SetDirP( pkg.uLID, pkg.dir, pkg.ap_left);
 end;
 
 end.

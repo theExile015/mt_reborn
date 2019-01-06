@@ -6,6 +6,7 @@ interface
 
 uses
   Classes,
+  sysutils,
   zglHeader,
   uVar,
   uLoader,
@@ -27,6 +28,13 @@ procedure cm_ClearUnit( uLID : byte);
 function  cm_InRange( x, y, rng : byte ): boolean;
 function  cm_InRangeOfMove( x, y, rng : byte) : boolean;
 function  cm_ShootLine( x, y : byte ) : boolean;
+procedure cm_SetDirP( uLID, Dir, ap_left : Longword);
+
+procedure cm_SetWay( uLID, X, Y, ap_left : Longword);
+
+procedure cm_SendMove( X, Y: byte );
+procedure cm_SendDir( dir : byte );
+procedure cm_EndTurn();
 
 type
   TUnitQ = record
@@ -36,7 +44,7 @@ type
 implementation
 
 uses
-  uXClick;
+  uXClick, uChat, uPkgProcessor, uNetCore;
 
 procedure Combat_Init;
 var i : integer;
@@ -44,8 +52,7 @@ begin
   Writeln('Combat Init.');
   in_action  := false;
   your_turn  := false;
-  range_mode := false;
-  turn_mode  := false;
+  icm        := icmNone;
   your_unit  := 0;
   for i := 1 to high(cText) do
       cText[i].exist:=false;
@@ -86,29 +93,34 @@ begin
   step_ap  := 5;
   m_omo := false;
   batch2d_Begin();
+  for i := 0 to 20 do
+  for j := 0 to 20 do
+    text_Draw(fntMain, j * 64 + (19 - i) * 64 + 40,
+                       j * 32 - (19 - i) * 32 + 430,
+                       IntToStr(mapmatrix[i][j].cType));
   for i := 1 to 19 do
       for j := 1 to 19 do
           begin
             x := j * 64 + (19 - i) * 64 ;
             y := j * 32 - (19 - i) * 32  + 400;
-            // отрисовка поля
+// отрисовка поля
             fx2d_SetColor($222222);
             alpha := 100;
             FX := FX_BLEND or FX_COLOR;
-            if your_turn and (not in_action) and (not Range_mode) and (not turn_mode) then
+            if your_turn and (not in_action) and (icm = icmNone) then
                if cm_InRangeOfMove(i, j, units[your_unit].data.cAP div step_ap) then alpha := 175;
 
-            if your_turn and range_mode then
+            if your_turn and (icm = icmRange) then
                if cm_InRange(i, j, spR) and InSector(units[your_unit].data.Direct, m_Angle(units[your_unit].data.pos.x, units[your_unit].data.pos.y, i, j))
                   then FX := FX_BLEND or FX_COLOR
                   else FX := FX_BLEND;
 
-            if your_turn and range_mode then
+            if your_turn and (icm = icmRange) then
                 if cm_InRange(i, j, 8) and InSector(units[your_unit].data.Direct, m_Angle(units[your_unit].data.pos.x, units[your_unit].data.pos.y, i, j)) then
                     if cm_shootline(i, j) then fx2d_setcolor($cc0000);
 
 
-            if your_turn and turn_mode then
+            if your_turn and (icm = icmRotate) then
                if InSector(n_dir, m_Angle(units[your_unit].data.pos.x, units[your_unit].data.pos.y, i, j)) then
                   FX := FX_BLEND or FX_COLOR
                else FX := FX_BLEND;
@@ -116,7 +128,7 @@ begin
              fx2d_SetColor($111111);
              ssprite2d_Draw(tex_node, x, y, 128, 64, 0, alpha, FX);
 
-             // отрисовка положения курсора
+// отрисовка положения курсора
              if (not in_action) then
                 begin
                   if  cm_InRangeOfMove(m_x, m_y, trunc(units[your_unit].data.cAP / step_ap)) then
@@ -132,14 +144,25 @@ begin
                            end ;
                end;
           end;
+// отрисовка найденого пути
+   if your_turn and (not in_action) and (icm = icmNone) then
+   if sw_result then
+      for k := 0 to high(units[your_unit].Way) - 1 do
+          begin
+            if cm_InRangeOfMove(units[your_unit].Way[k].x, units[your_unit].Way[k].y, trunc(units[your_unit].data.cAP / step_ap)) then
+               fx2d_setcolor($44FF44) else fx2d_SetColor($ff4444);
+            x := units[your_unit].Way[k].y * 64 + (19 - units[your_unit].Way[k].x) * 64 ;
+            y := units[your_unit].Way[k].y * 32 - (19 - units[your_unit].Way[k].x) * 32  + 400;
+            ssprite2d_Draw(tex_node, x, y, 128, 64, 0, 175, FX_BLEND or FX_COLOR);
+          end;
   Batch2d_End();
 
   for i := 0 to high(units) do
       if units[i].exist then
-         Unit_Draw(i);
-        { begin
-           draw_q[i].id:=i;
-           draw_q[i].y:= units[i].data.pos.y * 32 - (19 - units[i].data.pos.x) * 32  + 400 - 112;;
+      //   Unit_Draw(i);
+         begin
+           draw_q[i].id := i;
+           draw_q[i].y  := units[i].data.pos.y * 32 - (19 - units[i].data.pos.x) * 32  + 400;
          end else draw_q[i].id := high(units);
 
   for i := 0 to 20 do
@@ -152,7 +175,7 @@ begin
             end;
 
   for i := 0 to high(draw_q) do
-      Unit_Draw(draw_q[i].id);   }
+      Unit_Draw(draw_q[i].id);
 //Scissor_End();
 end;
 
@@ -185,9 +208,7 @@ begin
       end;
 
       GetTime(hh, mm, ss, ms);
-
       T := 20 - abs(mm * 60 + ss - t_mm * 60 - t_ss);
-
       if T > 20 then T := 20; if T < 0 then T := 0;
 
       Text_DrawInRectEx(fntCombat, rect(0, 0, 70, 40), 0.4, 2, u_IntToStr(T), 255, $FFFFFF, TEXT_HALIGN_CENTER or TEXT_VALIGN_CENTER);
@@ -237,8 +258,9 @@ begin
 end;
 
 procedure Combat_Update;
-var i : integer;
+var i, l, k, n, step_ap : integer;
     hh, mm, ss, ms : word;
+    da : integer;
 begin
   if iga <> igaCombat then Exit;
   if gs  <> gsGame    then Exit;
@@ -254,6 +276,9 @@ begin
           end;
      end;
 
+  if your_turn and (not in_action) and (icm = icmNone) then
+     sw_result := SearchWay(your_unit, units[your_unit].data.pos.x, units[your_unit].data.pos.y, m_x, m_y );
+
    // движение камеры
   if mouse_x() < 0 then fCam_X := fCam_X + mouse_x() / 10 - 1;
   if mouse_X() > scr_w then fCam_X := fCam_X + (mouse_x() - scr_w) / 10 + 1;
@@ -264,9 +289,122 @@ begin
   if fCam_Y < -200 then fCam_Y := -200;
   if fCam_X > scr_w + 200 then fCam_X := scr_w + 200;
   if fCam_Y > scr_h then fCam_Y := scr_h;
+// переключение статуса боя
+  k := 0; n := 0;
+  if in_action then
+  for i := 1 to high(units) do
+      if units[i].exist and units[i].alive then
+         begin
+            inc(n);
+            if not units[i].in_act then inc(k);
+         end;
+  if k = n then in_action := false;
+// Если не ваш ход, отключаем "режимы
+  if not your_turn then
+  begin
+     icm  := icmNone;
+     spID := 0;
+  end;
+  if icm = icmNone then
+     begin
+       spID := 0;
+       mWins[13].visible := false;
+       cur_type  := 1;
+       cur_angle := 0;
+     end;
+// отлетающий текст
+  for i := 1 to high(cText) do
+      if cText[i].exist then
+         begin
+            cText[i].y := cText[i].y - 1.5;
+            inc(cText[i].Timer);
+            if cText[i].Timer > 100 then cText[i].exist:=false;
+         end;
+// Если ход игрока
+  if (not in_action) and (icm = icmNone) then
+     begin
+       if m_omo then
+       if Mouse_Click(M_BLEFT){ and  (cm_CheckEnemyOMO = high(byte))} then
+          begin
+            if sw_result then
+               begin
+                 step_ap := 5;
+           {      if not units[your_unit].visible then
+                   begin
+                       //step_ap := 9;
+                       if skills[71].rank > 0 then
+                          step_ap := step_ap + skills[71].xyz[skills[71].rank].X;
+                   end; }
+
+                 l := length(units[your_unit].way) - 1;
+                 if l < 0 then
+                    begin
+                       Log_Add(u_IntToStr( l ));
+                       exit;
+                    end;
+                 if MapMatrix[units[your_unit].way[l].x, units[your_unit].way[l].y].cType = 1 then dec(l, 1);
+                 if l < 1 then exit;
+
+                 if l * step_ap > units[your_unit].data.cAP then
+                    l := units[your_unit].data.cAP div step_ap;
+                 if l > 0 then
+                    begin
+                      if tutorial = 7 then
+                         begin
+                           tutorial := 8;
+                        //   SendData(inline_PkgCompile(4, activechar.Name + '`8`'));
+                           sleep(50);
+                         end;
+                      cm_SendMove(units[your_unit].way[l].x, units[your_unit].way[l].y);
+                  end;
+                end;
+           end;
+//  передача хода
+       if Key_Press( K_SPACE ) and not ch_message_inp then
+          begin
+            cm_EndTurn();
+            your_turn := false;
+          end;
+     end;
+//  Отключаем все режимы
+  if your_turn then
+  if Key_Press( K_ESCAPE ) and not ch_message_inp then
+     begin
+       icm  := icmNone;
+       spID := 0;
+     end;
+// Режим разворота
+  if (icm = icmRotate) then
+     begin
+       mWins[13].visible:=true;
+       mWins[13].dnds[1].data.contain := spID;
+       da := round(m_Angle(units[your_unit].data.pos.x,
+                           units[your_unit].data.pos.y, m_x, m_y));
+       n_dir := round( (360 - da) / 45 ) + 3;
+       if n_dir > 7 then n_dir := n_dir - 8;
+       if on_CGUI then
+          begin
+            cur_type  := 1;
+            cur_angle := 0;
+          end else
+          begin
+            cur_type  := 5;
+            cur_angle := (n_dir - 2) * 45;
+          end;
+       if mouse_click(M_BLEFT) and (units[your_unit].data.Direct <> n_dir) and (not on_CGUI) then
+          begin
+            icm := icmNone;
+            { TODO 1 -oVeresk -cbug : Добавить проверку на Keep Moving }
+            if units[your_unit].data.cAP >= 5 then
+               begin
+                 cm_SendDir( n_dir );
+                 exit;
+               end else chat_addmessage(3, high(word), 'Not enough AP to turn.');
+          end;
+     end;
 
   for i := 0 to high(units) do
-    Unit_Update(i);
+      Unit_Update(i);
 end;
 
 procedure Unit_Update(id : integer);
@@ -282,7 +420,7 @@ begin
        exit;
      end;
 
-   // перемещение
+// перемещение
   if units[id].in_act and (units[id].ani = 1) then
      begin
        inc(units[id].WayProg);
@@ -300,7 +438,7 @@ begin
                  units[id].data.pos := units[id].Way[units[id].waypos];
                  units[id].TargetPos := units[id].Way[units[id].waypos + 1];
                  units[id].data.Direct:=cm_SetDir(units[id].data.pos.x, units[id].data.pos.y,
-                                             units[id].TargetPos.x, units[id].TargetPos.y );
+                                                  units[id].TargetPos.x, units[id].TargetPos.y );
                end;
           end;
      end;
@@ -310,7 +448,7 @@ begin
      if units[id].fTargetPos.y <> units[id].data.pos.y then
         units[id].data.pos := units[id].fTargetPos;
 
-  // выставляем параметры аницмации
+// выставляем параметры аницмации
   if units[id].complex then
   begin
   case units[id].ani of
@@ -323,7 +461,7 @@ begin
     6: begin f1 := 25; f2 := 28; asp := 5; end;   // каст 4
     7: begin f1 := 29; f2 := 32; asp := 6; end;   // стрельба 4
   end;
-    // коррекция на направление
+// коррекция на направление
     f1 := f1 + units[id].data.Direct * 32;
     f2 := f2 + units[id].data.Direct * 32;
   end else
@@ -335,12 +473,12 @@ begin
     3: begin f1 := 17; f2 := 18; asp := 6; end;   // урон 2
     5: begin f1 := 19; f2 := 24; asp := 4; end;   // смерть 6
   end;
-    // коррекция на направление
+// коррекция на направление
     f1 := f1 + units[id].data.Direct * 24;
     f2 := f2 + units[id].data.Direct * 24;
   end;
 
-  // кадры
+// кадры
   inc(units[id].ani_delay);
   if units[id].ani_delay > asp then
      begin
@@ -375,11 +513,11 @@ begin
                    units[id].ani_frame:=f2;
                    units[id].alive:=false;
                    units[id].in_act:=false;
-                  { Map_CreateMask;
-                   for i := 1 to high(units) do
+                   Map_CreateMask;
+                   for i := 0 to high(units) do
                        if units[i].exist and units[i].alive then
-                          if i <> your_unit then
-                             MapMatrix[units[i].pos.x, units[id].pos.y].cType := 1;  }
+                          if units[i].uLID <> your_unit then
+                             MapMatrix[units[i].data.pos.x, units[i].data.pos.y].cType := 1;
                  end;
             end;
          if units[id].ani_frame < f1 then units[id].ani_frame:=f1;
@@ -395,6 +533,7 @@ var f1, f2, i : integer;
     alpha: byte;
 begin
   if id > high(units) then Exit;
+  if id < 0 then Exit;
   if not units[id].exist then Exit;
   if not (gs = gsGame) then Exit;
 
@@ -500,6 +639,134 @@ begin
                                       units[your_unit].data.pos.y * 64 + 32,
                                       m_x * 64 + 32, m_y * 64 + 32 ),
                               circle( x * 64 + 32, y * 64 + 32, 32 ) );
+end;
+
+procedure cm_SetWay( uLID, X, Y, ap_left : Longword);
+var i, j: integer;
+begin
+  Map_CreateMask;
+  for i := 0 to high(units) do
+    if units[i].exist and units[i].alive then
+       if (uLID <> units[i].uLID) then
+           MapMatrix[units[i].data.pos.x, units[i].data.pos.y].cType := 1;
+
+  for i := 1 to high(units) do
+    if units[i].exist then
+    if (units[i].uLID = uLID) then
+       begin
+         units[i].TargetPos.X := X;
+         units[i].TargetPos.y := Y;
+         units[i].fTargetPos := units[i].TargetPos;
+         units[i].data.cAP := ap_left;
+         sw_result := SearchWay(i, units[i].data.pos.x, units[i].data.pos.y,
+                                   units[i].TargetPos.x, units[i].TargetPos.y);
+
+         if not sw_result then exit;
+
+         units[i].in_act := true;
+         units[i].WayPos := 0;
+         units[i].ani:= 1;
+         units[i].WayProg:=0;
+         units[i].data.pos := units[i].Way[0];
+         units[i].TargetPos := units[i].Way[1];
+
+         in_action := true;
+         if units[i].visible then
+            Chat_AddMessage(3, high(word), Units[i].name + ' moves to node x: ' + u_IntToStr(x) + ', y: ' + u_IntToStr(Y) + '.' );
+       end;
+end;
+
+procedure cm_SetDirP( uLID, Dir, ap_left : Longword );
+var i : integer;
+begin
+  for i := 1 to high(units) do
+    if units[i].exist and units[i].alive and units[i].visible then
+    if (units[i].uLID = uLID) then
+       begin
+         units[i].data.Direct := Dir;
+         units[i].data.cAP := ap_left;
+         Chat_AddMessage(3, high(word), Units[i].name + ' changes direction.' );
+         break;
+       end;
+end;
+
+procedure cm_SendMove( X, Y: byte );
+var
+  _pkg : TPkg106; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 106;
+
+  _pkg.comID := combat_id;
+  _pkg.uLID  := your_unit;
+  _pkg.X     := X;
+  _pkg.Y     := Y;
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure cm_EndTurn();
+var
+  _pkg : TPkg105; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 105;
+
+  _pkg.comID := combat_id;
+  _pkg.uLID  := your_unit;
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure cm_SendDir( dir : byte );
+var
+  _pkg : TPkg107; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 107;
+
+  _pkg.comID := combat_id;
+  _pkg.uLID  := your_unit;
+  _pkg.dir   := dir;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
 end;
 
 end.

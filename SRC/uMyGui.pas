@@ -245,7 +245,7 @@ procedure mGui_OnMouseClick( Parent, Sender : integer );
 var i, j, k: integer; p: TProps;
 begin
   if not mWins[parent].btns[sender].enabled then exit;
-  snd_Play(snd_gui[1], false, 0, 0, 0, 0.5);
+  snd_Play(snd_gui[1], false, 0, 0, 0, gui_Vol);
       // Кнопка Cancel (Ok) при статусе подключения
   if (parent = 17) and (sender = 3) then
      begin
@@ -935,7 +935,7 @@ begin
               mwins[1].texts[2].Text:= 'Click on battelfield cell to move. ' + #13#10 +
                                        'Usually, character need 5 action points (AP) to move for 1 cell.';
 
-              if iga = igaCombat then mWins[1].visible := true else mWins[1].visible:=false;
+            //  if iga = igaCombat then mWins[1].visible := true else mWins[1].visible:=false;
             end ;
          8: begin
               mWins[1].rect.X := 512 - mWins[1].rect.W / 2;
@@ -946,7 +946,7 @@ begin
                                        'Press F5 of click to "Change direction" button to enter turning mode.' + #13#10 +
                                        'Now, move to phantom.';
 
-              if iga = igaCombat then mWins[1].visible := true else mWins[1].visible:=false;
+            //  if iga = igaCombat then mWins[1].visible := true else mWins[1].visible:=false;
             end
        else
          mWins[1].visible := false;
@@ -1111,7 +1111,7 @@ begin
                (on_DD = false) then                         // ещё нет днд
                if (i = 5) then                              // таскаем, только если открыт инвентарь
                begin
-                  snd_play(snd_gui[3], false, 0, 0, 0, 0.3);
+                  snd_play(snd_gui[3], false, 0, 0, 0, gui_vol);
                   on_DD := true;
                   ddIndex := j;
                   ddWin   := i;
@@ -1321,7 +1321,7 @@ begin
                ddIndex := 0;
                ddWin := 0;
                on_DD := false;
-               snd_play(snd_gui[2], false, 0, 0, 0, 0.5);
+               snd_play(snd_gui[2], false, 0, 0, 0, gui_vol);
              end;
 
        for i := 1 to high(mwins[5].dnds) do
@@ -1335,13 +1335,13 @@ begin
                         ddIndex := 0;
                         ddWin := 0;
                         on_DD := false;
-                        snd_play(snd_gui[2], false, 0, 0, 0, 0.3);
+                        snd_play(snd_gui[2], false, 0, 0, 0, gui_vol);
                       end else
                       begin
                         ddItem.exist:=false;
                         ddItem.data.contain:=0;
                         on_DD := false;
-                        snd_play(snd_gui[2], false, 0, 0, 0, 0.3);
+                        snd_play(snd_gui[2], false, 0, 0, 0, gui_vol);
                       end;
                       break;
                  end else                            // попытка свапа предметов
@@ -1362,13 +1362,13 @@ begin
                         ddIndex := 0;
                         ddWin := 0;
                         on_DD := false;
-                        snd_play(snd_gui[2]);
+                        snd_play(snd_gui[2], false, 0, 0, 0, gui_vol);
                       end else
                       begin
                         ddItem.exist:=false;
                         ddItem.data.contain:=0;
                         on_DD := false;
-                        snd_play(snd_gui[2], false, 0, 0, 0, 0.3);
+                        snd_play(snd_gui[2], false, 0, 0, 0, gui_vol);
                       end;
                       break;
                  end;

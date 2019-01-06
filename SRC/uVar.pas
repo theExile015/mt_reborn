@@ -26,6 +26,8 @@ type
   TInGameStatus = (igsNone, igsInv, igsChar, igsNPC, igsQLog, igsMap, igsSBook);
   //
   TInGameAction = (igaLoc, igaCombat, igaTravel);
+  // in combat mode
+  TInCombatMode = (icmNone, icmRange, icmSpell, icmRotate);
 
   // пакет данных
   TPackage = record
@@ -379,14 +381,15 @@ type
     exist    : boolean;
     Name     : string[40];
     uType    : byte;
+    uTeam    : byte;
     uLID     : word;
   end;
 
   TUnitData = record
-    cHP, cMP, cAP, mHP, mMP, mAP : word;
+    cHP, cMP, cAP, mHP, mMP, mAP : integer;
     pos      : TMPoint;
     Direct   : byte;             // направление взгляда
-    flag: boolean;
+    flag     : boolean;
   end;
 
   TUnitVisualData = record
@@ -452,6 +455,7 @@ var
   igs            : TInGameStatus = igsNone;   // переключатель состояний в игре
   cns            : TConnectionStatus = csDisc;// состояние подключения к серверу
   iga            : TInGameAction = igaLoc;    // локация/комбат/добыча итд.
+  icm            : TInCombatMode = icmNone;
 
   DelCharMode, CreateCharMode, DestinyMode  : boolean;   // Режимы в меню персонажа
 
@@ -575,9 +579,10 @@ var
    units                 : array [0..20] of TUnit;
    MapMatrix             : array [0..20, 0..20] of TCell;
    cText                 : array [1..20] of TCombatText;
-   your_turn, range_mode, turn_mode : boolean;
+   your_turn             : boolean;
    your_unit             : integer;
    in_action, m_omo      : boolean;
+   on_CGUI               : boolean;
    m_x, m_y              : integer;
    combat_ID             : longword;
    curr_round            : word;
@@ -597,8 +602,8 @@ var
    theme_change          : boolean;
    theme_scale           : integer;
 
-   ambient_vol           : single = 0.1;
-   gui_vol               : single =   1;
+   ambient_vol           : single = 0.15;
+   gui_vol               : single =    1;
 
 
 implementation
