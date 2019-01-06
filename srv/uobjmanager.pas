@@ -14,6 +14,7 @@ procedure Obj_SendDialogs(sID, oID : DWORD);
 procedure Obj_QuestSend(charLID, dID : DWORD);
 procedure Obj_QuestProcess(sID, qID, rID, f_code : DWORD);
 procedure Obj_StartQuestBattle(charLID, dID : DWORD);
+procedure Obj_StartBattle(charLID, ceUID : DWORD);
 
 implementation
 
@@ -271,7 +272,55 @@ begin
 
   _pkg.ID := r;
   _pkg.ceType := 1;
-  _pkg.ceround  := combats[comLID].ceround;
+  _pkg.ceround  := combats[comLID].ceRound;
+
+       try
+         mStr := TMemoryStream.Create;
+
+         mStr.Write(_head, sizeof(_head));
+         mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                Break;
+              end;
+       finally
+         mStr.Free;
+         CM_SendUnits(comLID, charLID);
+       end;
+end;
+
+procedure Obj_StartBattle(charLID, ceUID : DWORD);
+var i, r   : integer;
+    comLID : Word;
+    _head  : TPackHeader; _pkg : TPkg100;
+    mStr   : TMemoryStream;
+begin
+  r := high(word);
+                     // не может существовать более 1 экземпляра
+                     // (в отличие от квестовых боёв)
+                     // поэтому делаем проверочку
+  for i := 0 to high(combats) do
+    if combats[i].ceUID = ceUID then
+       r := i;
+  if r = high(word) then
+     r := CM_StartNew(charLID, 1, ceUID) else exit; // затычка
+
+  if r = high(word) then exit;
+
+  comLID := CM_GetCombatLID(r);
+
+  _head._flag := $f;
+  _head._id   := 100;
+
+  _pkg.ID := r;
+  _pkg.ceType := 1;
+  _pkg.ceround  := combats[comLID].ceRound;
 
        try
          mStr := TMemoryStream.Create;

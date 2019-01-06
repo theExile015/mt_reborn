@@ -9,7 +9,8 @@ uses
   SysUtils,
   vVar,
   vNetCore,
-  DOS;
+  DOS,
+  uAI;
 
 
 function CM_StartNew(initiator, ceType, ceUID : DWORD): word;
@@ -26,6 +27,9 @@ function CM_SetUnitDirection( sX, sY, fX, fY : DWORD) : DWORD;
 function CM_CheckMelee(comLID, u1, u2: dword) : boolean;
 
 function CM_CheckCol(x, y, x2, y2 : DWORD): boolean; inline;
+function CM_AddAura(comLID, charLID, ID, stacks : DWord): byte;
+function CM_DelAura(comLID, charLID, ID : DWord): byte;
+function CM_FindAura(comLID, charLID, ID : DWord): byte;
 
 procedure CM_Process();
 
@@ -141,7 +145,8 @@ for i := 0 to high(combats) do
               WriteSafeText(' Combat #' + IntToStr(combats[i].ID) + ' next turn uUID =' + IntToStr( combats[i].NextTurn ) );
             end;
        end;
-
+// Обрабатываем работу ИИ
+    AI_Process( i );
   end;
 end;
 
@@ -226,6 +231,7 @@ begin
         combats[comLID].Units[i].exist   := true;
         combats[comLID].Units[i].uLID    := i;
         combats[comLID].Units[i].uType   := 1;
+        combats[comLID].Units[i].uTeam   := uTeam;
         combats[comLID].Units[i].charLID := charLID;
         combats[comLID].Units[i].rounds_in:= 0;
 
@@ -276,8 +282,10 @@ begin
     if not combats[comLID].Units[i].exist then
       begin
         combats[comLID].Units[i].exist   := true;
+        combats[comLID].Units[i].alive   := true;
         combats[comLID].Units[i].uLID    := i;
         combats[comLID].Units[i].uType   := 2;
+        combats[comLID].Units[i].uTeam   := uTeam;
         combats[comLID].Units[i].uID     := uID;
         combats[comLID].Units[i].Data.pos:= CM_SetStartPos(comLID, uTeam);
         if uTeam = 1 then combats[comLID].units[i].Data.Direct:=0 else combats[comLID].units[i].Data.Direct:= 4;
@@ -437,6 +445,67 @@ begin
         result := true;
 end;
 
+function CM_AddAura(comLID, charLID, ID, stacks : DWord): byte;
+var i: integer;
+begin
+  result := high(byte);
+  for i := 1 to high(combats[comLID].units[charLID].auras) do
+      if combats[comLID].units[charLID].auras[i].exist then
+         if combats[comLID].units[charLID].auras[i].id = ID then
+            begin
+              result := high(byte) - 1;
+              exit;
+            end;
+
+  for i := 1 to high(combats[comLID].units[charLID].auras) do
+      if not combats[comLID].units[charLID].auras[i].exist then
+         begin
+           result := i;
+           combats[comLID].units[charLID].auras[i].exist := true;
+           combats[comLID].units[charLID].auras[i].id := ID;
+           combats[comLID].units[charLID].auras[i].sub := 1;
+           combats[comLID].units[charLID].auras[i].left:= 1;
+           if stacks > 0 then combats[comLID].units[charLID].auras[i]._st:=true;
+           inc(combats[comLID].units[charLID].auras[i].stacks, stacks);
+           if combats[comLID].units[charLID].auras[i]._st then
+              if combats[comLID].units[charLID].auras[i].stacks < 1 then
+                 combats[comLID].units[charLID].auras[i].exist:= false;
+           break;
+         end;
+
+//  CM_SendAuras(comLID);
+end;
+
+function CM_DelAura(comLID, charLID, ID : DWord): byte;
+var i: integer;
+begin
+  result := high(byte) ;
+  for i := 1 to high(combats[comLID].units[charLID].auras) do
+      if combats[comLID].units[charLID].auras[i].exist then
+         if combats[comLID].units[charLID].auras[i].id = ID then
+            begin
+              combats[comLID].units[charLID].auras[i].exist := false;
+              combats[comLID].units[charLID].auras[i]._st:=false;
+              combats[comLID].units[charLID].auras[i].stacks:=0;
+              WriteSafeText('Aura ' + IntToStr(combats[comLID].units[charLID].auras[i].id) + ' deleted.', 1);
+              break;
+            end;
+ // CM_SendAuras(comLID);
+end;
+
+function CM_FindAura(comLID, charLID, ID : DWord): byte;
+var i: integer;
+begin
+  result := high(byte) ;
+  for i := 1 to high(combats[comLID].units[charLID].auras) do
+      if combats[comLID].units[charLID].auras[i].exist then
+         if combats[comLID].units[charLID].auras[i].id = ID then
+            begin
+              result := i;
+              exit;
+            end;
+end;
+
 procedure CM_SendUnits(comLID, charLID : word);
 var _head  : TPackHeader; _pkg : TPkg101;
     mStr   : TMemoryStream;
@@ -449,6 +518,7 @@ begin
          _pkg.list[i].Name   := combats[comLID].Units[i].VData.name;
          _pkg.list[i].uType  := combats[comLID].Units[i].uType;
          _pkg.list[i].uLID   := combats[comLID].Units[i].uLID;
+         _pkg.list[i].uTeam  := combats[comLID].Units[i].uTeam;
        end else _pkg.list[i].exist := false;
 
    _head._flag := $f;

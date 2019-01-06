@@ -178,8 +178,16 @@ type
     Parent: TMPoint;
   end;
 
+  TAura = record
+    exist, _st : boolean;
+    id    : word;
+    stacks: word;
+    sub   : byte;
+    left  : dword;
+  end;
+
   TUnitData = record
-    cHP, cMP, cAP, mHP, mMP, mAP : word;
+    cHP, cMP, cAP, mHP, mMP, mAP : integer;
     pos     : TMPoint;
     Direct  : byte;
     flag : boolean;
@@ -201,6 +209,7 @@ type
     exist   : boolean;
     Name    : string[40];
     uType   : byte;
+    uTeam   : byte;
     uLID    : word;
   end;
 
@@ -208,13 +217,14 @@ type
     exist, alive, visible : boolean;
     uLID                  : word;
     charLID, uID          : DWORD;
-    uType                 : byte;
+    uType, uTeam          : byte;
 
     Data                  : TUnitData;
     VData                 : TUnitVisualData;
     PData                 : TUnitPrivateData;
 
     Ini                   : word;
+    sDist                 : integer;
 
     ATB                   : integer;
 
@@ -223,6 +233,14 @@ type
     rounds_in             : word;
     turn                  : boolean;
     skinMH, skinOH, skinAr: byte;
+    auras                 : array [1..16] of TAura;
+  end;
+
+  TAI = record
+    build_turn   : boolean;
+    attempt      : integer;
+    delay, sAP   : word;
+    locUID       : byte;
   end;
 
   TCombatEvent = record
@@ -241,6 +259,8 @@ type
     NextTurnATB: integer;  // служебные переменные для определения следующего хода
 
     On_Recount : boolean;  // делаем пересчёт ?
+
+    AI         : TAI;      // ИИ
 
     MapMatrix  : array [0..20, 0..20] of TCell;
     Way        : Array Of TMPoint;

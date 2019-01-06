@@ -97,7 +97,8 @@ var
 
   _pkg040 : TPkg040;
   _pkg043 : TPkg043;                        _pkg045 : TPkg045;
-  _pkg102 : TPkg102;
+  _pkg102 : TPkg102;                        _pkg105 : TPkg105;
+  _pkg106 : TPkg106;   _pkg107 : TPkg107;
 begin
 try
   mStr := TMemoryStream.Create;
@@ -275,6 +276,24 @@ try
            mStr.Position:=SizeOf(_head);
            mStr.Read(_pkg102, SizeOf(_pkg102));
            pkg102(_pkg102, sID);
+         end;
+         105:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg105, SizeOf(_pkg105));
+           pkg105(_pkg105, sID);
+         end;
+         106:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg106, SizeOf(_pkg106));
+           pkg106(_pkg106, sID);
+         end;
+         107:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg107, SizeOf(_pkg107));
+           pkg107(_pkg107, sID);
          end;
        else
          Writeln('Wrong ID');

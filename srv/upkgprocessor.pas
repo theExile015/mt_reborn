@@ -9,6 +9,8 @@ uses
   Classes,
   vVar,
   uDB,
+  uAdd,
+  uai,
   vServerLog,
   sysutils,
   uCharManager,
@@ -210,8 +212,21 @@ type
   end;
 
   TPkg105 = record
+    comID, uLID : DWORD;
     NextTurn : word;
     fail_code: byte;
+  end;
+
+  TPkg106 = record
+    comID, uLID   : dword;
+    X, Y, ap_left : byte;
+    fail_code     : byte;
+  end;
+
+  TPkg107 = record
+    comID, uLID  : dword;
+    dir, ap_left : byte;
+    fail_code    : byte;
   end;
 
 procedure pkg001(pkg : TPkg001; sID : word);
@@ -255,6 +270,10 @@ procedure pkg043(pkg : TPkg043; sID : word);
 procedure pkg045(pkg : TPkg045; sID : word);
 
 procedure pkg102(pkg : TPkg102; sID : word);
+
+procedure pkg105(pkg : TPkg105; sID : word);
+procedure pkg106(pkg : TPkg106; sID : word);
+procedure pkg107(pkg : TPkg107; sID : word);
 
 procedure pkgProcess(msg: string);
 
@@ -1115,6 +1134,7 @@ try
      case LocObjs[pkg.ID].oType of
        1 : Obj_SendDialogs(sID, pkg.ID);
       // 2 : Obj_SendVerndor(sId, pkg.ID);
+       5 : Obj_StartBattle(sessions[sID].charLID, LocObjs[pkg.ID].props[1]);
      else
        WriteSafeText('DUMMY!!!', 1);
      end;
@@ -1192,6 +1212,169 @@ begin
        finally
          mStr.Free;
        end;
+end;
+
+procedure pkg105(pkg : TPkg105; sID : word);
+var comLID : dword;
+begin
+  comLID := CM_GetCombatLID(pkg.comID);
+  if comlid <> high(dword) then
+     if combats[comlid].NextTurn = pkg.uLID then
+        combats[comlid].On_Recount := true;
+end;
+
+procedure pkg106(pkg : TPkg106; sID : word);
+var  comLID, uLID, charLID, i : DWORD;
+     _pkg   : TPkg106;
+     _head  : TPackHeader;
+     mStr   : TMemoryStream;
+     step_ap, DIR   : byte;
+     SW     : boolean;
+begin
+  uLID   := high(DWORD);
+  comLID := CM_GetCombatLID(pkg.comID);
+  if comLID = high(dword) then Exit;
+  for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uLID = pkg.uLID then
+         uLID := i;
+  if uLID = high(dword) then exit;
+// заполняем маску карты "препядствиями"
+  Map_CreateMask( comLID );
+  for i := 0 to length(combats[comLID].units) - 1 do
+    if combats[comLID].units[i].exist and combats[comLID].units[i].alive then
+    if (i <> uLID) then
+       combats[comLID].MapMatrix[combats[comLID].units[i].Data.pos.x, combats[comLID].units[i].Data.pos.Y].cType:= 1;
+// устанавливаем цену шага
+  step_ap := 5;
+// проверяем, хватает ли АП на ход. Если нет - аборт
+  SW := AI_PointInRange( combats[comLID].Units[uLID].Data.pos.x,
+                         combats[comLID].Units[uLID].Data.pos.y, pkg.X, pkg.Y,
+                         trunc(combats[comLID].Units[uLID].Data.cAP/step_ap));
+  if not SW then exit;
+// ищем путь
+  SW := SearchWay( comLID, combats[comLID].units[uLID].Data.pos.x,
+                   combats[comLID].units[uLID].Data.pos.y, pkg.X, pkg.Y);
+  if not SW then exit;
+// Если нашли - устанавливаем координаты, убавляем АП
+  combats[comLID].units[uLID].Data.pos.x:=pkg.X;
+  combats[comLID].units[uLID].Data.pos.y:=pkg.y;
+  if length(combats[comLID].Way) < 2 then exit;
+  combats[comLID].units[uLID].Data.cAP:=combats[comLID].units[uLID].Data.cAP - (length(combats[comLID].Way) - 1) * Step_AP;
+  Writeln('AP LEFT : ',  combats[comLID].units[uLID].Data.cAP);
+  DIR := CM_SetUnitDirection(combats[comLID].Way[length(combats[comLID].Way) - 2].x,
+                             combats[comLID].Way[length(combats[comLID].Way) - 2].y,
+                             pkg.X, pkg.Y);
+  combats[comLID].units[uLID].Data.Direct := DIR;
+
+  if combats[comLID].units[uLID].Data.cAP < 0 then
+     combats[comLID].units[uLID].Data.cAP := 0;
+
+// теперь рассылаем данные
+       try
+         mStr := TMemoryStream.Create;
+
+         _head._flag:=$f;
+         _head._id:=106;
+
+         _pkg.X:=pkg.X;
+         _pkg.Y:=pkg.y;
+         _pkg.comID:=combats[comLID].ID;
+         _pkg.uLID:= combats[comLID].Units[uLID].uLID;
+         _pkg.ap_left:= combats[comLID].Units[uLID].Data.cAP;
+
+         mStr.Write(_head, sizeof(_head));
+         mStr.Write(_pkg, sizeof(_pkg));
+
+           // Отправляем пакет всем игрока в бою
+    for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uType = 1 then
+         begin
+         TCP.FCon.IterReset;
+         charLID := combats[comLID].Units[i].charLID;
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                writeln('Sending... ', TCP.FCon.Iterator.PeerAddress);
+                Writeln('Bytes sended... ', TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator));
+                Break;
+              end;
+         end;
+       finally
+         mStr.Free;
+       end;
+end;
+
+procedure pkg107(pkg : TPkg107; sID : word);
+var  comLID, uLID, charLID, i : DWORD;
+     _pkg   : TPkg107;
+     _head  : TPackHeader;
+     mStr   : TMemoryStream;
+begin
+  uLID   := high(DWORD);
+  comLID := CM_GetCombatLID(pkg.comID);
+  if comLID = high(dword) then Exit;
+  for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uLID = pkg.uLID then
+         uLID := i;
+  if uLID = high(dword) then exit;
+
+// проверяем ауру Keep Moving
+  if (combats[comLID].units[uLID].Data.cAP > 4) or (CM_FindAura(comLID, uLID, 1) <> high(byte)) then
+     begin
+       Writeln('Inside ', pkg.dir);
+       i := high(DWORD);
+       combats[comLID].units[uLID].Data.Direct := pkg.dir;
+       if CM_FindAura(comLID, uLID, 1) <> high(byte) then
+          CM_DelAura(comLID, uLID, 1)
+       else
+       begin
+         dec(combats[comLID].units[uLID].Data.cAP, 5 );
+         CM_DelAura(comLID, uLID, 2);
+       end;
+       if combats[comLID].units[uLID].Data.cAP < 0 then combats[comLID].units[uLID].Data.cAP := 0;
+     end;
+  Writeln('Result : ', i);
+  if i <> high(DWORD) then Exit;
+// теперь рассылаем данные
+try
+  mStr := TMemoryStream.Create;
+
+  _head._flag:=$f;
+  _head._id:=107;
+
+  _pkg.comID   := combats[comLID].ID;
+  _pkg.uLID    := combats[comLID].Units[uLID].uLID;
+  _pkg.dir     := combats[comLID].Units[uLID].Data.Direct;
+  _pkg.ap_left := combats[comLID].Units[uLID].Data.cAP;
+
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+           // Отправляем пакет всем игрока в бою
+  for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uType = 1 then
+         begin
+         TCP.FCon.IterReset;
+         charLID := combats[comLID].Units[i].charLID;
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                writeln('Sending... ', TCP.FCon.Iterator.PeerAddress);
+                Writeln('Bytes sended... ', TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator));
+                Break;
+              end;
+         end;
+finally
+  mStr.Free;
+end;
 end;
 
 procedure pkgProcess(msg: string);
