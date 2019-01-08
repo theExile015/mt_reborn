@@ -236,17 +236,17 @@ TRY
   while not Query.EOF do
   begin
     id := query.FieldByName('ID').AsInteger;
- {   pr := GetItemProps(Query.FieldByName('loot').AsString);
+    pr := GetItemProps(Query.FieldByName('loot').AsString);
     LootDB[id].exist:=true;
-    LootDB[id].gold:= pr[1].pNum;
+    LootDB[id].gold:= pr[1];
     for i := 1 to 12 do
-      if pr[i * 2].pNum <> 0 then
+      if pr[i * 2] <> 0 then
          begin
             LootDB[id].LItems[i].exist:=true;
-            LootDB[id].LItems[i].chance:=pr[i * 2 + 1].pNum;
-       //     WriteSafeText(IntToStr(id) + ' ' + IntToStr(i) + ' ' + IntToStr(LootDB[id].LItems[i].chance));
-            LootDB[id].LItems[i].iID:=pr[i * 2].pNum;
-         end;     }
+            LootDB[id].LItems[i].chance:=pr[i * 2 + 1];
+     //       WriteSafeText(IntToStr(id) + ' ' + IntToStr(i) + ' ' + IntToStr(LootDB[id].LItems[i].chance));
+            LootDB[id].LItems[i].iID:=pr[i * 2];
+         end;
     Query.Next;
   end;
 

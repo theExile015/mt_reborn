@@ -229,6 +229,24 @@ type
     fail_code    : byte;
   end;
 
+  TPkg108 = record
+    comID, uLID   : dword;
+    tLID, skillID : dword;
+    ap_left       : byte;
+    victims       : array [1..8] of TVictim;
+    fail_code     : byte;
+  end;
+
+  TPkg109 = record
+    comID, uLID : dword;
+    cHP, cMP, cAP, Rage : dword;
+  end;
+
+  TPkg110 = record
+    comID, uLID : dword;
+    WinTeam : byte;
+  end;
+
 procedure pkg001(pkg : TPkg001; sID : word);
    // 2
 procedure pkg003(pkg : TPkg003; sID : word);   // 3
@@ -274,6 +292,7 @@ procedure pkg102(pkg : TPkg102; sID : word);
 procedure pkg105(pkg : TPkg105; sID : word);
 procedure pkg106(pkg : TPkg106; sID : word);
 procedure pkg107(pkg : TPkg107; sID : word);
+procedure pkg108(pkg : TPkg108; sID : word);
 
 procedure pkgProcess(msg: string);
 
@@ -1375,6 +1394,17 @@ try
 finally
   mStr.Free;
 end;
+end;
+
+procedure pkg108(pkg : TPkg108; sID : word);
+var i: integer;
+    comLID : DWORD;
+begin
+  comLID := CM_GetCombatLID(pkg.comID);
+  if comLID = high(DWORD) then exit;
+
+  CM_MeleeAttack( comLID, pkg.uLID, pkg.tLID, pkg.skillID);
+
 end;
 
 procedure pkgProcess(msg: string);

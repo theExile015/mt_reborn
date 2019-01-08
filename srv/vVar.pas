@@ -194,7 +194,7 @@ type
   end;
 
   TUnitVisualData = record
-    sex, Race : byte;
+    sex, Race, lvl : byte;
     name : string[40];
     skinMH, skinOH, skinArm : byte;
     flag : boolean;
@@ -223,7 +223,9 @@ type
     VData                 : TUnitVisualData;
     PData                 : TUnitPrivateData;
 
-    Ini                   : word;
+    lvl                   : byte;
+    minD, maxD, armor     : word;
+    Ini, APH              : word;
     sDist                 : integer;
 
     ATB                   : integer;
@@ -257,6 +259,7 @@ type
     tsSec,tsMin: word; // время когда был последний пересчёт АТБ
     NextTurn,
     NextTurnATB: integer;  // служебные переменные для определения следующего хода
+    xpPool     : DWORD;    // пул опыта
 
     On_Recount : boolean;  // делаем пересчёт ?
 
@@ -284,6 +287,30 @@ type
     ally  : array [1..3] of byte;
     on_win, w_trig, c_trig: TProps;
     resp  : word;
+  end;
+
+  TVictim = record
+    result : byte;
+    uLID   : dword;
+    dmg    : dword;
+    deadly : dword;
+    hp_left: dword;
+  end;
+
+  TLTItem = record
+    exist : boolean;
+    group : byte;
+    iID, chance : word;
+  end;
+
+  TLTCache = record
+    iID, min, max : word;
+  end;
+
+  TLootTable = record
+    exist : boolean;
+    gold  : word;
+    LItems: array [1..12] of TLTItem;
   end;
 
 Var
@@ -320,6 +347,7 @@ Var
   QuestDB   : array [1..1000] of TQuest;
   MobDataDB : array [1..100] of TMob;
   ceDB      : array [1..100] of TCE;
+  LootDB    : array [1..50] of TLootTable;
 
 implementation
 

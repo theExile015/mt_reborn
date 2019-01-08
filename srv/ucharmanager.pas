@@ -412,7 +412,7 @@ begin
   // формируем список локациий
   if not LocDB[locLID].exist then
      begin
-       Writeln('Illegal request [52] from : ' + IntToStr(1));
+       Writeln('Illegal request [29] from : ' + IntToStr(locLID));
        exit;
      end;
   for i := 6 to 15 do
