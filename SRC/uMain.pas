@@ -215,6 +215,7 @@ begin
   if a_p > 1000 then a_p := 0;
 
   if theme_change then
+  if not theme_two then
      begin
        inc(theme_scale);
        if theme_Scale = 1 then thID2 := snd_Play(theme2, true, 0, 0, ambient_vol * 0.01 );
@@ -224,7 +225,21 @@ begin
           begin
             snd_Stop(theme1, thID1);
             theme_change := false;
-            theme_scale := 0;
+            theme_scale  := 0;
+            theme_two    := true
+          end;
+     end else
+     begin
+       inc(theme_scale);
+       if theme_Scale = 1 then thID1 := snd_Play(theme1, true, 0, 0, ambient_vol * 0.01 );
+       snd_SetVolume(theme1, thID1, ambient_vol * theme_scale / 100);
+       snd_SetVolume(theme2, thID2, ambient_vol * (100 - theme_scale) / 100);
+       if theme_scale >= 100 then
+          begin
+            snd_Stop(theme2, thID2);
+            theme_change := false;
+            theme_scale  := 0;
+            theme_two    := false
           end;
      end;
 
@@ -361,12 +376,16 @@ begin
        if wait_for_29 <> 255 then
           begin
             GetTime(hh, mm, ss, ms);
+            if wait_for_29 > 54 then
+               if ss < 10 then ss := ss + 54;
             if abs(ss - wait_for_29) > 5 then
                DoRequestLocObjs();
           end;
        if wait_for_05 <> 255 then
           begin
             GetTime(hh, mm, ss, ms);
+            if wait_for_05 > 54 then
+               if ss < 10 then ss := ss + 54;
             if abs(ss - wait_for_05) > 5 then
                DoEnterTheWorld();
           end;

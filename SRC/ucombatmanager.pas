@@ -30,11 +30,20 @@ function  cm_InRangeOfMove( x, y, rng : byte) : boolean;
 function  cm_ShootLine( x, y : byte ) : boolean;
 procedure cm_SetDirP( uLID, Dir, ap_left : Longword);
 
+function  cm_CheckEnemyOMO(): byte;
+function  cm_CheckFriendOMO(): byte;
+function  cm_CheckEnemyInMelee(): byte;
+
+procedure cm_MeleeAtk( uLID, tLID, dmg, die, _spID, i3: longword);
+
 procedure cm_SetWay( uLID, X, Y, ap_left : Longword);
 
 procedure cm_SendMove( X, Y: byte );
 procedure cm_SendDir( dir : byte );
 procedure cm_EndTurn();
+procedure cm_SendMelee(tLID, skillID : dword);
+
+procedure cm_AddCombatText( x, y : single; text : utf8string; color, _spID : longword);
 
 type
   TUnitQ = record
@@ -73,6 +82,18 @@ begin
   fCam_X := (1920 - scr_w) / 2;
   fCam_Y := (1080 - scr_h) / 2;
   fInGame.Hide;
+
+  if theme_two then
+     begin
+       snd_Del(theme1);
+       theme1 := snd_LoadFromFile('Data\Sound\close_the_gates.ogg');
+       theme_change := true;
+     end else
+     begin
+       snd_Del(theme2);
+       theme2 := snd_LoadFromFile('Data\Sound\close_the_gates.ogg');
+       theme_change := true;
+     end;
 end;
 
 procedure Combat_Draw;
@@ -176,6 +197,15 @@ begin
 
   for i := 0 to high(draw_q) do
       Unit_Draw(draw_q[i].id);
+
+   // отрисовка комбат текстов
+  for i:=1 to high(cText) do
+      if cText[i].exist then
+         begin
+           Text_DrawEx( fntCombat, cText[i].x, cText[i].y, 0.3 / ScaleXY, 1, cText[i].text, trunc(255 - 200 * cText[i].timer/100), cText[i].color);
+           if cText[i].spID <> 0 then
+              SSprite2d_Draw( GetTex('i33,' + u_IntToStr(Spells[cText[i].spID].iID)), cText[i].x + text_GetWidth(fntCombat, cText[i].text) + 3, cText[i].y - 4, 24, 24, 0, trunc(255 - 200 * cText[i].timer/100));
+         end;
 //Scissor_End();
 end;
 
@@ -268,6 +298,8 @@ begin
   if wait_for_103 <> 255 then
      begin
        GetTime(hh, mm, ss, ms);
+       if wait_for_103 > 54 then
+          if ss < 10 then ss := ss + 54;
        if abs(ss - wait_for_103) > 5 then
           begin
             for i := 0 to high(units) do
@@ -304,14 +336,10 @@ begin
   begin
      icm  := icmNone;
      spID := 0;
+     mWins[13].visible := false;
+     cur_type  := 1;
+     cur_angle := 0;
   end;
-  if icm = icmNone then
-     begin
-       spID := 0;
-       mWins[13].visible := false;
-       cur_type  := 1;
-       cur_angle := 0;
-     end;
 // отлетающий текст
   for i := 1 to high(cText) do
       if cText[i].exist then
@@ -320,11 +348,64 @@ begin
             inc(cText[i].Timer);
             if cText[i].Timer > 100 then cText[i].exist:=false;
          end;
+// показываем окошко с хинтом
+  if (spID <> 0) or (icm <> icmNone) then
+     begin
+       mWins[13].visible:=true;
+       mWins[13].dnds[1].data.contain := spID;
+       if Key_Press(k_escape) then
+          begin
+            spID := 0;
+            mWins[13].visible := false;
+            cur_type  := 1;
+            cur_angle := 0;
+          end;
+       cur_type := 4;
+     end;
+// Наводим мышку на игрока
+  if m_omo then
+  if mouse_click(M_BLEFT) and (icm = icmNone) then
+     begin
+       if m_X = units[your_unit].data.pos.x then
+       if m_Y = units[your_unit].data.pos.y then exit;
+
+       da := cm_CheckEnemyInMelee();
+       Chat_AddMessage(3, high(word), 'Tar = ' + u_IntToStr(da));
+       if da <> high(byte) then
+       if InSector( units[your_unit].data.Direct, m_Angle( units[your_unit].data.pos.x,
+                    units[your_unit].data.pos.y, m_X, m_Y ) ) then
+          begin
+ // мили атака
+            if spID = 0 then
+               begin
+                 if (units[da].alive) then
+                 if (units[your_unit].data.cAP >= activechar.Stats.APH) then
+                    begin
+                      writeln('YES');
+                      cm_SendMelee(da, 0);
+                      exit;
+                    end else Chat_AddMessage(3, high(word), 'Can''t attack in melee. Not enough AP for attack.' );
+               end else
+               begin
+                 if (units[da].alive) then
+                    begin
+                      cm_SendMelee(da, spID);
+                      spID := 0;
+                      mWins[13].visible := false;
+                      cur_type  := 1;
+                      cur_angle := 0;
+                      exit;
+                    end else Chat_AddMessage(3, high(word), 'Can''t attack in melee. Not enough AP for attack.' );
+                  end;
+          end else
+       Chat_AddMessage(3, high(word), 'Can''t attack in melee. Wrong direction.' );
+     end;
+
 // Если ход игрока
   if (not in_action) and (icm = icmNone) then
      begin
        if m_omo then
-       if Mouse_Click(M_BLEFT){ and  (cm_CheckEnemyOMO = high(byte))} then
+       if Mouse_Click(M_BLEFT) and (cm_CheckEnemyOMO = high(byte)) then
           begin
             if sw_result then
                begin
@@ -352,7 +433,7 @@ begin
                       if tutorial = 7 then
                          begin
                            tutorial := 8;
-                        //   SendData(inline_PkgCompile(4, activechar.Name + '`8`'));
+                           DoSendTutorial( 8 );
                            sleep(50);
                          end;
                       cm_SendMove(units[your_unit].way[l].x, units[your_unit].way[l].y);
@@ -576,7 +657,7 @@ begin
              // Text_DrawInRectEx(fntCombat, rect(x + i * 25, y - 25, 24, 24), 0.2 / scaleXY, 1, u_IntToStr(units[id].auras[i].stacks), 200, $ff0000);
 
             end;
-
+       s := IntToStr(units[id].team);
        Text_DrawInRectEx( fntCombat, rect(x + 256/2 - w/2, y, w, h), 0.3 / scaleXY, 0, units[id].name + ' ' + s, 255, color, TEXT_HALIGN_CENTER );
 end;
 
@@ -641,6 +722,46 @@ begin
                               circle( x * 64 + 32, y * 64 + 32, 32 ) );
 end;
 
+function cm_CheckEnemyOMO(): byte;
+var i: integer;
+begin
+  result := high(byte);
+  // Log_add( 'Check enemy ' + u_intToStr(result));
+  for i := 0 to high(units) do
+  if units[i].exist and (units[i].team <> units[your_unit].team) and units[i].alive then
+    if units[i].data.pos.x = m_x then
+      if units[i].data.pos.y = m_y then
+        result := i;
+end;
+
+function cm_CheckFriendOMO(): byte;
+var i: integer;
+begin
+  result := high(byte);
+  // Log_add( 'Check enemy ' + u_intToStr(result));
+  for i := 0 to high(units) do
+  if units[i].exist and (units[i].team = units[your_unit].team) and units[i].alive then
+    if units[i].data.pos.x = m_x then
+      if units[i].data.pos.y = m_y then
+        result := i;
+end;
+
+function cm_CheckEnemyInMelee(): byte;
+var i: integer;
+begin
+  result := high(byte);
+  // Log_add( 'Check enemy ' + u_intToStr(result));
+  Writeln(your_unit);
+  for i := 0 to high(units) do
+  if units[i].exist and (units[i].team <> units[your_unit].team) then
+    if units[i].data.pos.x = m_x then
+      if units[i].data.pos.y = m_y then
+        if cm_InRange(m_x, m_y, 1) then result := i else
+           if (abs(units[i].data.pos.x - units[your_unit].data.pos.x) = 1) and
+              (abs(units[i].data.pos.y - units[your_unit].data.pos.y) = 1) then result := i;
+
+end;
+
 procedure cm_SetWay( uLID, X, Y, ap_left : Longword);
 var i, j: integer;
 begin
@@ -650,7 +771,7 @@ begin
        if (uLID <> units[i].uLID) then
            MapMatrix[units[i].data.pos.x, units[i].data.pos.y].cType := 1;
 
-  for i := 1 to high(units) do
+  for i := 0 to high(units) do
     if units[i].exist then
     if (units[i].uLID = uLID) then
        begin
@@ -679,7 +800,7 @@ end;
 procedure cm_SetDirP( uLID, Dir, ap_left : Longword );
 var i : integer;
 begin
-  for i := 1 to high(units) do
+  for i := 0 to high(units) do
     if units[i].exist and units[i].alive and units[i].visible then
     if (units[i].uLID = uLID) then
        begin
@@ -688,6 +809,61 @@ begin
          Chat_AddMessage(3, high(word), Units[i].name + ' changes direction.' );
          break;
        end;
+end;
+
+procedure cm_MeleeAtk( uLID, tLID, dmg, die, _spID, i3: longword);
+var i: integer; n1, n2, spN, _mod : String;   x, y : single;
+begin
+  if not units[uLID].exist then exit;
+  if not units[tLID].exist then exit;
+
+  in_action := true;
+  units[uLID].ani := 2;
+  units[uLID].ani_frame:= 13 + units[uLID].data.Direct * 32;
+  units[uLID].ani_delay := 0;
+  units[uLID].in_act := true;
+  n1 := units[uLID].name;
+
+  n2 := units[tLID].name;
+  units[tLID].ani := 4;
+  units[tLID].in_act:=true;
+  units[tLID].ani_frame:= 19 + units[tLID].data.Direct * 32;
+
+  if i3 = 0 then _mod := '';
+  if i3 = 1 then _mod := ' * MISS * ';
+  if i3 = 2 then _mod := ' * DODGE *';
+  if i3 = 3 then _mod := ' * BLOCK *';
+  if i3 = 10 then _mod := ' * CRIT *';
+  if i3 / 10 > 1 then _mod := ' * CRIT * * BLOCK *';
+
+  x := units[uLID].data.pos.y * 64 + (19 - units[uLID].data.pos.x) * 64 - 32 ;
+  y := units[uLID].data.pos.y * 32 - (19 - units[uLID].data.pos.x) * 32  + 400;
+  cm_AddCombatText(x - 10, y + 100, '-' + u_IntToStr(dmg) + _mod, $CC0000, _spID);
+
+            if _spID = 0 then spN := '' else
+               spN := '''s ' + spells[_spID].name;
+
+            if i3 = 0 then
+               Chat_AddMessage(3, high(word), n1 + spN + ' hits ' + n2 + ' for ' + u_IntToStr(dmg) + ' damage.' );
+            if i3 = 1 then
+               Chat_AddMessage(3, high(word), n1 + ' miss' + spN + '.');
+            if i3 = 2 then
+               Chat_AddMessage(3, high(word), n2 + ' dodge ' + n1 + spN + '.');
+            if i3 = 10 then
+               Chat_AddMessage(3, high(word), n1 + spN + ' crits ' + n2 + ' for ' + u_IntToStr(dmg) + ' damage.' );
+            if i3 / 10 > 1.1 then
+               Chat_AddMessage(3, high(word), n2 + ' block ' + n1 + spN + ' crit and got ' + u_IntToStr(dmg) + ' damage.');
+            if i3 = 3 then
+               Chat_AddMessage(3, high(word), n2 + ' block ' + n1 + spN + ' and got ' + u_IntToStr(dmg) + ' damage.');
+
+            if die = 1 then
+               begin
+                 Chat_AddMessage(3, high(word), n2 + ' dies.' );
+                 units[tLID].ani := 5;
+                 units[tLID].ani_frame:= 21 + units[tLID].data.Direct * 32;
+                 units[tLID].ani_delay := 0;
+                 units[tLID].in_act:=true;
+               end;
 end;
 
 procedure cm_SendMove( X, Y: byte );
@@ -767,6 +943,51 @@ try
 finally
        mStr.Free;
 end;
+end;
+
+procedure cm_SendMelee(tLID, skillID : dword);
+var
+  _pkg : TPkg108; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 108;
+
+  _pkg.comID   := combat_id;
+  _pkg.uLID    := your_unit;
+  _pkg.skillID := skillID;
+  _pkg.tLID    := tLID;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure cm_AddCombatText( x, y : single; text : utf8string; color, _spID : longword);
+var i: integer;
+begin
+  for i := 1 to high(cText) do
+    if not cText[i].exist then
+       begin
+         cText[i].exist:=true;
+         cText[i].x:=x;
+         cText[i].y:=y;
+         cText[i].text:=text;
+         cText[i].color:=color;
+         cText[i].timer:=0;
+         cText[i].spID:=_spID;
+         exit;
+       end;
 end;
 
 end.

@@ -44,6 +44,8 @@ begin
   snd_gui[1] := snd_LoadFromFile('Data\Sound\click.ogg');
   snd_gui[2] := snd_LoadFromFile('Data\Sound\drag_onmousedown.ogg');
   snd_gui[3] := snd_LoadFromFile('Data\Sound\drag_onmouseup.ogg');
+  snd_gui[4] := snd_LoadFromFile('Data\Sound\snare.ogg');
+  snd_gui[5] := snd_LoadFromFile('Data\Sound\glassbell.ogg');
 
   // шрифты
   if file_OpenArchive('Data\fonts.red') then
@@ -136,7 +138,6 @@ begin
   Tex_SetFrameSize( tex_Btn, 24, 24 );
 
   theme1 := snd_LoadFromFile('Data\Sound\augury.ogg');
-  theme2 := snd_LoadFromFile('Data\Sound\close_the_gates.ogg');
   thID1 := snd_Play(theme1, true, 0, 0, 0, ambient_vol);
 end;
 
@@ -313,6 +314,8 @@ begin
          begin
            lProgress := 100;
            tex_UnkItem := tex_LoadFromFile('Data\Items\unknown.png');
+
+           theme2 := snd_LoadFromFile('Data\Sound\minstrel.ogg');
          // for i:= 1 to 33 do
          //     for j:= 1 to 50 do
          //         if file_exists('Data\Items\' + u_IntToStr(i) + '\i' + u_IntToStr(j) + '.png') then

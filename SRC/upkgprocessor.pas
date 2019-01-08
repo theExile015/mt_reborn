@@ -230,6 +230,24 @@ type
     fail_code   : byte;
   end;
 
+  TPkg108 = record
+    comID, uLID   : dword;
+    tLID, skillID : dword;
+    ap_left       : byte;
+    victims       : array [1..8] of TVictim;
+    fail_code     : byte;
+  end;
+
+  TPkg109 = record
+    comID, uLID : dword;
+    cHP, cMP, cAP, Rage : dword;
+  end;
+
+  TPkg110 = record
+    comID, uLID : dword;
+    WinTeam : byte;
+  end;
+
 procedure pkg000;
 procedure pkg001(pkg: TPkg001);   // Логин
 procedure pkg002(pkg: TPkg002);   // Список персонажей
@@ -274,6 +292,9 @@ procedure pkg104(pkg: TPkg104);   // Next round
 procedure pkg105(pkg: TPkg105);   // Next turn
 procedure pkg106(pkg: TPkg106);   // Move
 procedure pkg107(pkg: TPkg107);   // Rotate
+procedure pkg108(pkg: TPkg108);   // Melee
+procedure pkg109(pkg: TPkg109);   // Base Info
+procedure pkg110(pkg: TPkg110);   // Combat Die
 
 procedure pkgProcess(var msg: string);
 
@@ -306,7 +327,8 @@ var
 
     _pkg100: Tpkg100;   _pkg101: TPkg101;
     _pkg103: TPkg103;   _pkg104: TPkg104;   _pkg105: TPkg105;
-    _pkg106: TPkg106;   _pkg107: TPkg107;
+    _pkg106: TPkg106;   _pkg107: TPkg107;   _pkg108: TPkg108;
+    _pkg109: TPkg109;   _pkg110: TPkg110;
 begin
   try
        begin
@@ -475,6 +497,21 @@ begin
            begin
              mStr.Read(_pkg107, SizeOf(_pkg107));
              pkg107(_pkg107);
+           end;
+           108:
+           begin
+             mStr.Read(_pkg108, SizeOf(_pkg108));
+             pkg108(_pkg108);
+           end;
+           109:
+           begin
+             mStr.Read(_pkg109, SizeOf(_pkg109));
+             pkg109(_pkg109);
+           end;
+           110:
+           begin
+             mStr.Read(_pkg110, SizeOf(_pkg110));
+             pkg110(_pkg110);
            end;
          else
            // ID пакета кривой
@@ -1006,7 +1043,11 @@ begin
   case pkg._what of
     0: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' experience.');
     1: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' gold.');
-    2: Chat_AddMessage(ch_tab_curr, high(word), 'You have reached ' + IntToStr(pkg._num) + ' level.');
+    2:
+    begin
+      Snd_Play(snd_gui[5], false, 0, 0, 0, gui_vol);
+      Chat_AddMessage(ch_tab_curr, high(word), 'You have reached ' + IntToStr(pkg._num) + ' level.');
+    end;
     3: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' stat points.');
     4: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' perk points.');
     5: Chat_AddMessage(ch_tab_curr, high(word), 'You recieved ' + '{!:' + IntToStr(pkg._num) + ':0:0:' + Items[pkg._num].data.name + '}{ ' );
@@ -1037,12 +1078,13 @@ begin
   for i := 0 to high(pkg.list) do
     if pkg.list[i].exist then
        begin
-         units[i].exist:=pkg.list[i].exist;
-         units[i].name :=pkg.list[i].Name;
+         units[i].exist:= pkg.list[i].exist;
+         units[i].name := pkg.list[i].Name;
          Writeln('Unit ', units[i].name, ' added in slot ', i);
-         units[i].uType:=pkg.list[i].uType;
+         units[i].uType:= pkg.list[i].uType;
          //writeln(units[i].uType);
-         units[i].uLID  :=pkg.list[i].uLID;
+         units[i].uLID  := pkg.list[i].uLID;
+         units[i].team  := pkg.list[i].uTeam;
          //writeln(units[i].uLID);
          DoRequestUnit(units[i].uLID, units[i].uType, 1);
          sleep(20);
@@ -1118,7 +1160,6 @@ begin
 end;
 
 procedure pkg106(pkg: TPkg106);
-var i : Integer;
 begin
   if pkg.comID <> combat_id then Exit;
   writeln('New pos: ', pkg.uLID, ' ', pkg.X, ' ', pkg.Y);
@@ -1126,11 +1167,57 @@ begin
 end;
 
 procedure pkg107(pkg: TPkg107);
-var i : Integer;
 begin
   if pkg.comID <> combat_id then Exit;
   writeln('New DIR: ', pkg.uLID, ' ', pkg.dir );
   cm_SetDirP( pkg.uLID, pkg.dir, pkg.ap_left);
+end;
+
+procedure pkg108(pkg: TPkg108);   // Melee
+begin
+  if pkg.comID <> combat_id then Exit;
+  { TODO 2 -oVeresk -cImprove : Добавить проверку на количество виктимов, и код их обработки }
+  cm_MeleeAtk( pkg.uLID, pkg.victims[1].uLID, pkg.victims[1].dmg,
+               pkg.victims[1].die, pkg.skillID, pkg.victims[1].result);
+  units[pkg.uLID].data.cAP := pkg.ap_left;
+  units[pkg.victims[1].uLID].data.cHP := pkg.victims[1].hp_left;
+end;
+
+procedure pkg109(pkg: TPkg109);   // Base Info
+begin
+  if pkg.comID <> combat_id then exit;
+  if pkg.uLID <> your_unit then exit;
+
+  units[your_unit].data.cHP := pkg.cHP;
+  units[your_unit].data.cMP := pkg.cMP;
+  units[your_unit].data.cAP := pkg.cAP;
+  units[your_unit].Rage     := pkg.Rage;
+end;
+
+procedure pkg110(pkg: TPkg110);   // Combat Die
+begin
+  com_face := 50;
+  Chat_AddMessage(3, high(word), 'Team ' + IntToStr(pkg.WinTeam) + ' win.' );
+  Snd_Play(snd_gui[4], false, 0, 0, 0, gui_vol);
+  Nonameframe41.Hide;
+  fInGame.Show;
+  zglCam1.X := (1920 - scr_w) / 2;
+  zglCam1.Y := (1080 - scr_h) / 2;
+ // cam_x := 0; cam_y := 0;
+  gs  := gsLLoad;
+  iga := igaLoc;
+  igs := igsNone;
+  if theme_two then
+     begin
+       snd_Del(theme1);
+       theme1 := snd_LoadFromFile('Data\Sound\minstrel.ogg');
+       theme_change := true;
+     end else
+     begin
+       snd_Del(theme2);
+       theme2 := snd_LoadFromFile('Data\Sound\minstrel.ogg');
+       theme_change := true;
+     end;
 end;
 
 end.

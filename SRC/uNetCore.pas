@@ -64,6 +64,13 @@ begin
   fInGame.Visible:=false;
   pbLoading.Visible:=false;
 
+  snd_Stop(theme2, thID2);
+  snd_Stop(theme1, thID1);
+  snd_del(theme1);
+  snd_del(theme2);
+  theme_two := false;
+  theme1 := snd_LoadFromFile('Data\Sound\augury.ogg');
+  thID1 := snd_Play(theme1, true, 0, 0, 0, ambient_vol);
 
   TCP.FConnect := false;
   mWins[17].visible := true;

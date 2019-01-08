@@ -158,7 +158,7 @@ if iga = igaCombat then
                            if units[your_unit].data.cMP >= spells[ActionBar[i].data.contain].MP_Cost then
                               begin
                                 spID := ActionBar[i].data.contain;
-                                if (spID = 1) or (spID = 5) or (spID = 4)or (spID = 12) then icm := icmRange else icm := icmNone;
+                                if (spID = 1) or (spID = 5) or (spID = 4) or (spID = 12) then icm := icmRange else icm := icmNone;
                                 spR := spells[ActionBar[i].data.contain].range;
                               end else Chat_AddMessage(3, high(word), 'Not enough MP to cast ' + spells[ActionBar[i].data.contain].name );
                          end else Chat_AddMessage(3, high(word), 'Not enough AP to cast ' + spells[ActionBar[i].data.contain].name );

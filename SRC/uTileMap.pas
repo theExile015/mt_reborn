@@ -162,19 +162,19 @@ begin
             y := y + 150 + 110;
 
             if layer[i3].tile[c].index <= 672 then
-              asprite2d_Draw(texTiles2, x, y, 128 + 1, 64 + 1,
+              asprite2d_Draw(texTiles2, x, y, 128, 64,
                 0, layer[i3].tile[c].index);
             if (layer[i3].tile[c].index > 672) and
               (layer[i3].tile[c].index <= 1184) then
-              asprite2d_Draw(texTiles, x, y, 128 + 1, 64 + 1,
+              asprite2d_Draw(texTiles, x, y, 128, 64,
                 0, layer[i3].tile[c].index - 672);
             if (layer[i3].tile[c].index > 1376) and
               (layer[i3].tile[c].index <= 2000) then
-              asprite2d_Draw(texTiles3, x, y, 128 + 1, 64 + 1,
+              asprite2d_Draw(texTiles3, x, y, 128, 64,
                 0, layer[i3].tile[c].index - 1376);
             if (layer[i3].tile[c].index > 1184) and
               (layer[i3].tile[c].index <= 1376) then
-              asprite2d_Draw(texTiles4, x, y, 128 + 1, 64 + 1,
+              asprite2d_Draw(texTiles4, x, y, 128, 64,
                 0, layer[i3].tile[c].index - 1184);
 
             Inc(c2);

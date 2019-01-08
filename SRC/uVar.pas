@@ -393,7 +393,7 @@ type
   end;
 
   TUnitVisualData = record
-    sex, Race : byte;
+    sex, Race, lvl : byte;
     name: string[40];
     skinMH, skinOH, skinArm : byte;
     flag : boolean;
@@ -433,6 +433,14 @@ type
   TWhoItem  = record
     id   : word;
     name : string[50];
+  end;
+
+  TVictim = record
+    result : byte;
+    uLID   : dword;
+    dmg    : dword;
+    die    : dword;
+    hp_left: dword;
   end;
 
 
@@ -598,6 +606,7 @@ var
    snd_gui               : array [1..10] of zglPSound;
    theme1, theme2        : zglPSound;
    thID1, thID2          : integer;
+   theme_two             : boolean;
 
    theme_change          : boolean;
    theme_scale           : integer;
