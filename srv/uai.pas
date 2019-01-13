@@ -24,7 +24,7 @@ procedure AI_Process(comLID : DWORD);
 
 implementation
 
-uses uCombatProcessor, vServerLog, vNetCore, uAdd;
+uses uCombatProcessor, vServerLog, vNetCore, uAdd, uPkgProcessor;
 
 procedure AI_Process(comLID : DWORD);
 var j: integer;
@@ -343,11 +343,13 @@ begin
 end;
 
 function AI_TurnTo( comLID, aiUID, tLID: DWORD ) : byte;
-var i, j, rs: integer;
-    DIR: integer;
-    cID : DWORD;
-    angle : single;
-    s, s2: string;
+var
+    charLID : DWORD;
+    i, DIR  : integer;
+    angle   : single;
+    _head   : TPackHeader;
+    _pkg    : TPkg107;
+    mStr    : TMemoryStream;
 begin
   result := high(byte);
 
@@ -369,36 +371,48 @@ begin
        exit;
      end;
 
-  {if CM_FindAura(comLID, aiUID, 1) <> high(byte) then
+  if CM_FindAura(comLID, aiUID, 1) <> high(byte) then
      begin
        CM_DelAura(comLID, aiUID, 1);
      end else
-       dec(combats[comLID].units[aiUID].curAP, 5);  }
+       dec(combats[comLID].units[aiUID].Data.cAP, 5);
+
   combats[comLID].units[aiUID].Data.Direct:= DIR;
   result := dir;
 
-    {   s := IntToStr(combats[comLID].units[aiUID].uType) + '`' + IntToStr(combats[comLID].units[aiUID].charID) +  '`' + IntToStr(DIR) + '`';
-       for i := 0 to length(combats[comLID].units) - 1 do
-         if combats[comLID].units[i].exist then
-           if combats[comLID].units[i].uType = 1 then
-              begin
-                cID := Char_GetCharCID( combats[comLID].units[i].charID );
-                s2 := IntToStr(connections[cID].id) + '`039`' + s;
-                WriteSafeText(' > ' + s2, 0);
-                TCP.FCon.IterReset;
-                while TCP.FCon.IterNext do
-                  if (TCP.FCon.Iterator.PeerAddress = connections[cid].ip) and
-                     (TCP.FCon.Iterator.LocalPort = connections[cid].lport) then
-                rs := TCP.FCon.SendMessage(s2, TCP.FCon.Iterator);
-                if rs < 0 then WriteSafeText(IntToStr(rs));
-                if rs = 0 then Con_Clear(cid);
-              end;
-       combats[comLID].units[aiUID].uDirect:= DIR;
-       combats[comLID].AI.delay:=0;
-       WriteSafeText(' Combat ID = ' + intToStr(combats[comLID].ID) );
-       WriteSafeText( 'DIR : ' + inttostr(DIR));  }
+try
+  mStr := TMemoryStream.Create;
 
-//  CM_SendUnitsCurData( comLID );
+  _head._flag := $f;
+  _head._id   := 107;
+
+  _pkg.comID   := combats[comLID].ID;
+  _pkg.uLID    := combats[comLID].Units[aiUID].uLID;
+  _pkg.dir     := combats[comLID].Units[aiUID].Data.Direct;
+  _pkg.ap_left := combats[comLID].Units[aiUID].Data.cAP;
+
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+           // Отправляем пакет всем игрока в бою
+  for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uType = 1 then
+         begin
+         TCP.FCon.IterReset;
+         charLID := combats[comLID].Units[i].charLID;
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                break;
+              end;
+         end;
+finally
+  mStr.Free;
+end;
 end;
 
 

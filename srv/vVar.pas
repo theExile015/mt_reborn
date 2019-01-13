@@ -223,9 +223,10 @@ type
     VData                 : TUnitVisualData;
     PData                 : TUnitPrivateData;
 
-    lvl                   : byte;
+     range                : byte;
     minD, maxD, armor     : word;
-    Ini, APH              : word;
+    Ini, APH, bVal, spi   : word;
+    str, spow             : word;
     sDist                 : integer;
 
     ATB                   : integer;
@@ -234,7 +235,6 @@ type
 
     rounds_in             : word;
     turn                  : boolean;
-    skinMH, skinOH, skinAr: byte;
     auras                 : array [1..16] of TAura;
   end;
 

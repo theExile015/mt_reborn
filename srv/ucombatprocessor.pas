@@ -20,6 +20,7 @@ function CM_AddPUnit(comID, charLID: DWORD; uTeam : byte) : byte;
 function CM_AddAIUnit(comID, uID : DWORD; uTeam : byte) : byte;
 
 function CM_MeleeAttack( comLID, uLID, tLID, spID : dword) : byte;
+function CM_RangeAttack( comLID, uLID, tLID, spID : dword) : byte;
 
 function CM_CombatEnd( comLID, WinTeam : dword) : byte;
 function CM_Loot(charLID, lootID: dword) : byte;
@@ -65,11 +66,17 @@ for i := 0 to high(combats) do
     for j := 0 to high(combats[i].Units) do
       if combats[i].Units[j].exist then
          if combats[i].Units[j].uType = 1 then
-            if chars[combats[i].Units[j].charLID].exist then inc(k) // если плеер - игрок, то тогда прибавляем счётчик
+         if chars[combats[i].Units[j].charLID].exist then inc(k) // если плеер - игрок, то тогда прибавляем счётчик
             else  // Если же игров офнулся, то ---- ???
             begin
               { TODO 1 -oVeresk -cImprove : Проверка на офнутого игрока }
             end;
+
+    if k = 0 then
+       begin
+         CM_CombatFreeAndNil( i );
+         WriteSafeText('Combat LID ## ' + IntToStr(i) + ' closed.');
+       end;
 
     // смотрим, может в одной из команд уже все умерли...
     k := 0; n := 0;
@@ -134,7 +141,7 @@ for i := 0 to high(combats) do
                    if combats[i].units[j].alive then
                       begin
                         inc( combats[i].units[j].ATB, combats[i].units[j].Ini ); // делаем шаг вперёд
-                        writeln(combats[i].Units[j].VData.name, ' ATB : ', combats[i].Units[j].ATB);
+                        // writeln(combats[i].Units[j].VData.name, ' ATB : ', combats[i].Units[j].ATB);
                         if combats[i].units[j].ATB >= 1000 then // если пришли в конец...
                         if combats[i].units[j].ATB > combats[i].NextTurnATB then
                            begin
@@ -234,6 +241,7 @@ begin
   result := high(byte);
   comLID := CM_GetCombatLID( comID );
 
+  Writeln(chars[charLID].header.Name);
   if chars[charLID].in_combat then
      begin
        WriteSafeText('Already in combat! Abort.', 3);
@@ -255,6 +263,8 @@ begin
   for i := 0 to high(combats[comLID].Units) do
     if not combats[comLID].Units[i].exist then
       begin
+        Char_CalculateStats( charLID );
+
         combats[comLID].Units[i].exist   := true;
         combats[comLID].Units[i].alive   := true;
         combats[comLID].Units[i].uLID    := i;
@@ -264,15 +274,25 @@ begin
         combats[comLID].Units[i].rounds_in:= 0;
 
         combats[comLID].Units[i].Data.pos:= CM_SetStartPos(comLID, uTeam);
-        Writeln(combats[comLID].Units[i].Data.pos.x, ' - ', combats[comLID].Units[i].Data.pos.y);
-
         combats[comLID].Units[i].VData.name:=Chars[charLID].header.Name;
         if uTeam = 1 then combats[comLID].units[i].Data.Direct:=0 else combats[comLID].units[i].Data.Direct:= 4;
 
-        combats[comLID].Units[i].VData.Race:=chars[charLID].header.raceID;
-        combats[comLID].Units[i].VData.skinArm := 1;
-        combats[comLID].Units[i].VData.skinMH  := 1;
-        combats[comLID].Units[i].VData.skinOH  := 1;
+        combats[comLID].Units[i].VData.Race    := chars[charLID].header.raceID;
+        combats[comLID].Units[i].VData.sex     := chars[charLID].header.sex;
+
+        combats[comLID].units[i].VData.skinMH := 0;
+        if ItemDB[chars[charLID].Inventory[4].iID].data.iType = 5 then combats[comLID].units[i].VData.skinMH:= 4;
+        if ItemDB[chars[charLID].Inventory[4].iID].data.iType = 4 then combats[comLID].units[i].VData.skinMH:= 2;
+        if ItemDB[chars[charLID].Inventory[4].iID].data.iType = 2 then combats[comLID].units[i].VData.skinMH:= 3;
+        if ItemDB[chars[charLID].Inventory[4].iID].data.iType = 10 then combats[comLID].units[i].VData.skinMH:= 1;
+        if ItemDB[chars[charLID].Inventory[4].iID].data.iType = 8 then combats[comLID].units[i].VData.skinMH:= 5;
+
+        combats[comLID].units[i].VData.skinArm:=1;
+
+        if chars[charLID].Inventory[6].iID <> 0 then combats[comLID].units[i].VData.skinOH:= 1 else
+           combats[comLID].units[i].VData.skinOH:= 0;
+
+        combats[comLID].Units[i].VData.lvl     := chars[charLID].header.level;
 
          // приписываем юниту свойства
         combats[comLID].Units[i].Data.mHP := chars[charLID].hpmp.mHP;
@@ -281,12 +301,22 @@ begin
         combats[comLID].Units[i].Data.cMP := chars[charLID].hpmp.cMP;
         combats[comLID].Units[i].Data.mAP := chars[charLID].hpmp.mAP;
         combats[comLID].Units[i].Data.cAP := chars[charLID].hpmp.mAP;
+        // Блок, если есть щит
+        if chars[charLID].Inventory[6].iID > 0 then
+           combats[comLID].units[i].bVal := trunc( itemdb[chars[charLID].Inventory[6].iID].data.props[5] * 0.35 )
+        else
+           combats[comLID].units[i].bVal := 0;
+        // прописываем рейнж оружия
+        if ItemDB[chars[charLID].Inventory[4].iID].data.iType in [5..6] then
+           combats[comLID].units[i].range:= 8 else
+           combats[comLID].units[i].range:= 0;
 
-        combats[comLID].Units[i].Ini := chars[charLID].Stats.Ini;
-        combats[comLID].Units[i].APH := 15;
-        combats[comLID].Units[i].minD:= 20;
-        combats[comLID].Units[i].maxD:= 30;
-        combats[comLID].Units[i].armor:=0;
+        combats[comLID].Units[i].Ini   := chars[charLID].Stats.Ini;
+        combats[comLID].Units[i].APH   := chars[charLID].Stats.APH;
+        combats[comLID].Units[i].minD  := trunc(chars[charLID].Stats.DMG * chars[charLID].Stats.APH * 0.95 / 10);
+        combats[comLID].Units[i].maxD  := trunc(chars[charLID].Stats.DMG * chars[charLID].Stats.APH * 1.05 / 10);
+        Writeln(chars[charLID].header.Name, ' DMG : ', combats[comLID].Units[i].minD, ' - ', combats[comLID].Units[i].maxD);
+        combats[comLID].Units[i].armor := chars[charLID].Stats.Armor;
 
         chars[charLID].in_combat := true;
         k := i;
@@ -324,7 +354,12 @@ begin
         Writeln(combats[comLID].Units[i].Data.pos.x, ' - ', combats[comLID].Units[i].Data.pos.y);
 
         combats[comLID].Units[i].VData.name    := MobDataDB[uID].name;
-        combats[comLID].Units[i].VData.Race    := MobDataDB[uID].race;
+        if MobDataDB[uID].race > 0 then combats[comLID].units[i].VData.Race := MobDataDB[uID].race;
+        if MobDataDB[uID].race = 0 then combats[comLID].units[i].VData.Race := 1 + random(4);
+         if MobDataDB[uID].sex = 2 then
+           combats[comLID].units[i].VData.sex:= trunc(random(99) / 50)
+        else
+           combats[comLID].units[i].VData.sex:= MobDataDB[uID].sex;
         combats[comLID].units[i].VData.skinMH  := MobDataDB[uID].skMH;
         combats[comLID].units[i].VData.skinArm := MobDataDB[uID].skBody;
         combats[comLID].units[i].VData.skinOH  := MobDataDB[uID].skOH;
@@ -337,12 +372,12 @@ begin
         combats[comLID].Units[i].Data.mAP := MobDataDB[uID].AP;
         combats[comLID].Units[i].Data.cAP := MobDataDB[uID].AP;
 
-        combats[comLID].Units[i].lvl  := MobDataDB[uID].lvl;
-        combats[comLID].Units[i].Ini  := MobDataDB[uID].Ini;
-        combats[comLID].Units[i].APH  := MobDataDB[uID].APH;
-        combats[comLID].Units[i].minD := trunc(MobDataDB[uID].DPAP * MobDataDB[uID].APH * 0.95);
-        combats[comLID].Units[i].maxD := trunc(MobDataDB[uID].DPAP * MobDataDB[uID].APH * 1.05);
-        combats[comLID].Units[i].armor:= MobDataDB[uID].ARM;
+        combats[comLID].Units[i].VData.lvl  := MobDataDB[uID].lvl;
+        combats[comLID].Units[i].Ini        := MobDataDB[uID].Ini;
+        combats[comLID].Units[i].APH        := MobDataDB[uID].APH;
+        combats[comLID].Units[i].minD       := trunc(MobDataDB[uID].DPAP * MobDataDB[uID].APH * 0.95 / 10);
+        combats[comLID].Units[i].maxD       := trunc(MobDataDB[uID].DPAP * MobDataDB[uID].APH * 1.05 / 10);
+        combats[comLID].Units[i].armor      := MobDataDB[uID].ARM;
 
         k := i;
         writesafetext('AI Unit ## ' + IntToStr(uID) + ' has been added in slot ' + IntToStr(i));
@@ -354,7 +389,7 @@ end;
 
 function CM_MeleeAttack( comLID, uLID, tLID, spID : dword) : byte;
 var i, rs : integer;
-    charLID, uType, AP_DEC, auID, c_ID, c_V: DWORD;
+    charLID, AP_DEC, auID, c_ID, c_V: DWORD;
     dam, bdam, deadly, add_dam, block_val, block_val2, armor : integer;
     dr, dr2 : single;
     hit_table : array [1..10000] of byte;
@@ -376,10 +411,10 @@ begin
      behind := true;
 
   AP_DEC := combats[comLID].units[uLID].APH;
-  if spID = 2 then AP_DEC := AP_DEC + 5;
-  if spID = 3 then AP_DEC := AP_DEC + 0;
-  if spID = 9 then AP_DEC := 15;
-  if spID = 7 then AP_DEC := 15;
+  if spID = 2  then AP_DEC := AP_DEC + 5;
+  if spID = 3  then AP_DEC := AP_DEC + 0;
+  if spID = 9  then AP_DEC := 15;
+  if spID = 7  then AP_DEC := 15;
   if spID = 10 then AP_DEC := Round(combats[comLID].units[uLID].APH * 0.75);
 
   if combats[comLID].units[uLID].Data.cAP < AP_DEC then
@@ -405,7 +440,7 @@ begin
   if (spID = 9) then    // если абилка связана со щитом, то
      begin
        block_val := -1;
-   //    block_val := combats[comLID].units[uLID].bVal;
+       block_val := combats[comLID].units[uLID].bVal;
        if block_val < 1 then exit;
      end;
 
@@ -422,7 +457,7 @@ begin
   // сначала миссы (вытесняются хитом
   i1 := 500; // вставить код мисса сюда
   for i := 1 to i1 do
-    hit_table[i] := 1;
+      hit_table[i] := 1;
   i2 := i1 + 1;
 
   if not behind then i1 := 500 else i1 := 0; // вставить код доджа сюда
@@ -433,8 +468,7 @@ begin
        i2 := i2 + i1 + 1;
      end;
 
-
-  // вставить код блок сюда
+// вставить код блок сюда
   block_val2 := 0; i1 := 0;
 //  block_val2 := combats[comLID].units[tLID].bVal;
   if block_val2 > 0 then
@@ -549,8 +583,8 @@ begin
           CM_DelAura(comLID, tLID, 5);
      end;
 
-  dr := CM_DR(armor, combats[comLID].units[tLID].VData.lvl );
-
+  dr := CM_DR(armor, combats[comLID].units[uLID].VData.lvl );
+  Writeln(bdam, ' ', add_dam, ' ', armor, ' ', dr );
   dam := trunc( (bdam + add_dam) * (1 - dr ) );
 
   WriteSafeText(' Dam Before = ' + IntToStr(dam), 2);
@@ -576,7 +610,7 @@ begin
        deadly := 1;
        if combats[comLID].units[tLID].uTeam = 2 then
           if combats[comLID].units[tLID].uType = 2 then
-             combats[comLID].xpPool := combats[comLID].xpPool + exp_mob[combats[comlid].units[tLID].lvl];
+             combats[comLID].xpPool := combats[comLID].xpPool + exp_mob[combats[comlid].units[tLID].VData.lvl];
    {    //**** ПРОВЕРЯЕМ ЮНИТА ПО СЧЁТЧИКАМ...
                if combats[comLID].units[tarLID].uType = 2 then // это моб
                   for i := 0 to high(combats[comLID].units) do
@@ -632,13 +666,13 @@ end else {блок попадания закончен}
 {  if not combats[comLID].units[charLID].visible then
      CM_TurnVisible(comLID, charLID);         }
 
-{  if (combats[comLID].units[tarLID].Rage = 100) and (combats[comLID].units[tarLID].alive)  then
+  if (combats[comLID].units[tLID].PData.Rage = 100) and (combats[comLID].units[tLID].alive)  then
      begin
-       combats[comLID].units[tarLID].curAP:=combats[comLID].units[tarLID].maxAP;
-       AI_TurnTo(comLID, tarLID, charLID);
-       combats[comLID].units[tarLID].Rage := 0;
-       CM_MeleeAttack(comLID, tarUID, charUID, spID);
-     end;     }
+       combats[comLID].units[tLID].Data.cAP:=combats[comLID].units[tLID].Data.mAP;
+       AI_TurnTo(comLID, tLID, uLID);
+       combats[comLID].units[tLID].PData.Rage := 0;
+       CM_MeleeAttack(comLID, tLID, uLID, spID);
+     end;
 try
   mStr := TMemoryStream.Create;
 
@@ -672,16 +706,524 @@ try
            if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
               begin
                 TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
-                Break;
+                break;
               end;
          end;
 finally
   mStr.Free;
 end;
-
   CM_SendBaseInfo( comLID, uLID );  // отправляем обновлённые данные о хп
   CM_SendBaseInfo( comLID, tLID );
 end;
+
+
+function CM_RangeAttack( comLID, uLID, tLID, spID : dword) : byte;
+var i, j, k, rs: integer;
+    r, c_ID, c_V, charLID: DWORD;
+  //  charLID, tarLID, _charLID, _tarLID : DWORD;
+    dam, bdam, deadly, armor : integer;
+    dr, ds, dr2 : single;
+    sX, sY, tX, tY : dword;
+    targets : array [0..50] of TMPoint;
+    trueApCost, trueMpCost, trueRange : integer;
+    hit_table : array [1..10000] of byte;
+    i1, i2, i3, spi1, spi2 : integer;
+    behind : boolean;
+    block_val, block_val2 : integer;
+    _pkg : TPkg111; _head : TPackHeader;
+    mStr : TMemoryStream;
+begin
+  if not combats[comLID].exist then exit;
+  if not combats[comLID].Units[uLID].exist then exit;
+  if not combats[comLID].Units[tLID].exist then exit;
+
+  if (spID = 2) or (spID = 3) or (spID = 5) or (spID = 8) or (spID = 11) or (spID = 7) then exit;
+  dam := 0; behind := false;
+  deadly := 0; // На всякий
+
+  if (combats[comLID].units[uLID].range = 0) and ((spID = 0) or (spID = 4)) then exit; // если юнит не может стрелять, тогда прикрываемся
+
+  sX := combats[comLID].units[uLID].Data.pos.X;
+  sY := combats[comLID].units[uLID].Data.pos.Y;
+  tX := combats[comLID].units[tLID].Data.pos.X;
+  tY := combats[comLID].units[tLID].Data.pos.Y;
+
+  for i := 0 to high(targets) do
+    begin
+      targets[i].x := 0;
+      targets[i].y := 0;
+    end;
+
+  case spID of
+    0: // выстрел
+      begin
+        trueApCost := combats[comLID].units[uLID].APH;
+        trueMpCost := 0;
+        trueRange  := combats[comLID].units[uLID].range;
+        if combats[comLID].Units[uLID].uType = 1 then
+        if chars[combats[comLID].Units[uLID].charLID].perks[5][3] > 0 then  // роуз оф виндс
+           trueRange := trueRange + PerksDB[13].xyz[chars[combats[comLID].Units[uLID].uLID].perks[5][3]].x;
+      end;
+    1: // magic missile
+      begin
+        trueApCost := 25;
+        trueMpCost := 27;
+        trueRange  := 8;
+      end;
+    4: // trample shot
+      begin
+        trueApCost := combats[comLID].units[uLID].APH + 3;
+        trueMpCost := 0;
+        trueRange  := combats[comLID].units[uLID].range;
+      end;
+    6: // Frostbolt
+      begin
+        trueApCost := 20;
+        trueMpCost := 34;
+        trueRange  := 6;
+        if combats[comLID].Units[uLID].uType = 1 then
+        if chars[combats[comLID].Units[uLID].charLID].perks[3][3] > 0 then  // элементал рич
+           trueRange := trueRange + PerksDB[12].xyz[chars[combats[comLID].Units[uLID].charLID].perks[3][3]].x;
+      end;
+    12:  // poison wave
+      begin
+        trueApCost := 25;
+        trueMpCost := 34;
+        trueRange := 4;
+      end
+  else
+    WriteSafeText('Unknown spID = ' + IntToStr(spID), 3);
+    exit;
+  end;
+
+  if not InSector( combats[comLID].units[uLID].Data.Direct, m_Angle( sX, sY, tX, tY ) ) then
+     begin
+       WriteSafeText( ' Not in sector for range attack !! ', 3 );
+       exit;
+     end;
+
+  if combats[comLID].units[uLID].Data.cAP < trueApCost then
+     begin
+       WriteSafeText( ' Not enough AP for range attack !! ', 3 );
+       exit;
+     end;
+
+  CM_DelAura(comLID, uLID, 1); // Keep moving
+  sleep(10);
+  CM_DelAura(comLID, uLID, 2); // INERTIA
+
+// теперь рассчитываем простреливаемость
+// построили маску карты
+// заполняем маску карты "препядствиями"
+  Map_CreateMask( comLID );
+  for i := 0 to length(combats[comLID].units) - 1 do
+      if combats[comLID].units[i].exist and combats[comLID].units[i].alive then
+      if (i <> uLID) then
+         combats[comLID].MapMatrix[combats[comLID].units[i].Data.pos.x, combats[comLID].units[i].Data.pos.Y].cType:= 1;
+
+  k := 0;
+  for i:=1 to 19 do
+    for j:=1 to 19 do
+      if col2d_LineVSCircle( line( sX * 64 + 32, sY * 64 + 32  ,
+                                   tX * 64 + 32, tY * 63 + 32 ),
+                             circle( i * 64 + 32, j * 64 + 32, 32 ) ) then
+         if combats[comLID].MapMatrix[i, j].cType = 1 then
+         if distance( i, j, sX, sY ) <= trueRange then
+            begin
+              targets[k].x:= i;
+              targets[k].y:= j;
+              inc(k);
+            end;
+  Writeln('k = ', k);
+  if k = 0 then
+     begin
+       WriteSafeText( ' Shooting line is empty! ', 3 );
+       exit;
+     end;
+// построили линию обстрела, теперь её нужно отсортировать на основании дистанции
+  if k > 1 then
+  begin
+    dr := distance( sX, sY, targets[0].x, targets[0].y );
+    j  := 0; // заносим нулевую ячейку как самую ближнюю
+    for i := 1 to k do
+      if dr > distance( sX, sY, targets[i].x, targets[i].y ) then
+         begin  // если кто-то ещё ближе, то запоминаем.
+           j := i;
+           dr := distance( sX, sY, targets[i].x, targets[i].y ) ;
+         end;
+  end else j := 0;
+// обнаружили самую ближнюю цель, теперь проверяем, игрок ли это или нет...
+  k := 10000; // флаг того, что цель не юнит
+  for i := 0 to length(combats[comLID].units) - 1 do
+    if combats[comLID].units[i].exist then
+    if combats[comLID].units[i].alive then
+       if combats[comLID].units[i].Data.pos.x = targets[j].x then
+       if combats[comLID].units[i].Data.pos.y = targets[j].y then
+          begin
+            k := i; // флагаем юнита, в которого попали...
+            Writeln(combats[comLID].Units[i].VData.name);
+            break;
+          end;
+  // вычитаем АП
+  combats[comLID].units[uLID].Data.cAP:=combats[comLID].units[uLID].Data.cAP - trueApCost;
+  if combats[comLID].units[uLID].Data.cAP < 0 then combats[comLID].units[uLID].Data.cAP := 0;
+
+{  // отменяем инвиз, если есть
+  if not combats[comLID].units[charLID].visible then
+     CM_TurnVisible(comLID, charLID);         }
+
+  rs := combats[comLID].units[k].Data.Direct;
+  rs := rs + 4;
+  if rs > 7 then rs := rs - 8;
+  if insector(rs, m_Angle(combats[comLID].units[k].Data.pos.x,
+                          combats[k].units[k].Data.pos.y,
+                          combats[comLID].units[uLID].Data.pos.x,
+                          combats[comLID].units[uLID].Data.pos.y)) then
+     behind := true;
+
+  if k <> 10000 then
+     begin
+       // строим таблицу ударов
+       // сначала миссы (вытесняются хитом
+       i1 := 500; // вставить код мисса сюда
+       for i := 1 to i1 do
+           hit_table[i] := 1;
+       i2 := i1 + 1;
+
+       if not behind then i1 := 500 else i1 := 0; // вставить код доджа сюда
+          if i1 > 0 then
+             begin
+               for i := i2 to i2 + i1 do
+                   hit_table[i] := 2;
+               i2 := i2 + i1 + 1;
+             end;
+
+       // вставить код блок сюда
+       block_val2 := 0; i1 := 0;
+       block_val2 := combats[comLID].units[k].bVal;
+       if block_val2 > 0 then i1 := 500;
+       // ЧЕКАЕМ ПЕРК DEF ВЕТКИ
+       if combats[comLID].units[k].uType = 1 then
+          if chars[combats[comLID].units[k].charLID].perks[1][3] > 0 then  // block mastery
+             i1 := i1 + PerksDB[15].xyz[chars[combats[comLID].units[k].charLID].perks[1][3]].x * 100;
+       // чекаем деф стойку
+       if CM_FindAura(comLID, k, 9) <> high(byte) then
+          i1 := i1 + 2500;
+
+       if behind then i1 := 0;
+       if i1 > 0 then
+          begin
+            for i := i2 to i2 + i1 do
+                hit_table[i] := 3;
+            i2 := i2 + i1 + 1;
+          end;
+
+       for i := i2 to high(hit_table) do      // остаток заполняем белыми атаками
+           hit_table[i] := 0;
+
+       i1 := random(9999) + 1;
+       i3 := hit_table[i1];
+
+     if (i3 <> 1) and (i3 <> 2) then
+        begin
+          i2 := 300;    // базовый шанс крита
+          // ЧЕКАЕМ ПЕРК САБТ ВЕТКИ
+          if combats[comLID].units[uLID].uType = 1 then
+             if chars[combats[comLID].units[uLID].charLID].perks[6][1] > 0 then  // бэсик сабт
+                i2 := i2 + PerksDB[14].xyz[chars[combats[comLID].units[uLID].charLID].perks[6][1]].x * 100;
+          // проверка на крит
+          i1 := random(10000);
+          if i1 < 5000 then i3 := i3 + 10;
+          // нашли локальные номера юнитов, теперь рассчитываем дамаг
+          bdam := combats[comLID].units[uLID].minD + random(combats[comLID].units[uLID].maxD -
+                                                            combats[comLID].units[uLID].minD);
+
+          armor := combats[comLID].units[k].armor;
+          // поправка на фрост армор...
+          r  := CM_FindAura(comLID, k, 5);
+          if (spID = 4) or (spID = 6) or (spID = 0) then
+          if r <> high(byte) then
+             begin
+               armor := armor + 75;
+               dec(combats[comLID].units[k].auras[r].stacks);
+               if combats[comLID].units[k].auras[r].stacks <= 0 then
+                  CM_DelAura(comLID, k, 5);
+             end;
+
+          // расчитали базовый, теперь броню
+          if spID = 4 then   // если трампл-шот
+             armor := combats[comLID].units[k].armor - 50 - combats[comLID].units[uLID].Str;
+
+
+          if spID = 6 then   // если фростболт
+             begin
+               if combats[comLID].Units[uLID].uType = 1 then
+                  if chars[combats[comLID].Units[uLID].charLID].perks[3][2] > 0 then  // Ice Blades Perk
+                     begin
+                       WriteSafeText('Armor_before = ' + IntToStr(combats[comLID].units[k].armor), 1);
+                       armor := round(combats[comLID].units[k].armor * (1 - PerksDB[11].xyz[chars[combats[comLID].Units[uLID].charLID].perks[3][2]].x / 100));
+                       WriteSafeText('Armor_after = ' + IntToStr(armor), 1);
+                     end;
+             end;
+
+          if armor < 0 then armor := 0;
+
+          dr := CM_DR( armor, combats[comLID].units[uLID].VData.lvl );
+                                          // dr2 = коэфициент дистанции
+                                          // если цель на 3 клетки или ближе, то идёт штраф
+          if (spID = 0) or (spID = 4) then
+             begin
+               ds := Distance(combats[comLID].units[k].Data.pos.x,
+                              combats[comLID].units[k].Data.pos.y,
+                              combats[comLID].units[uLID].Data.pos.x,
+                              combats[comLID].units[uLID].Data.pos.y) ;
+      // скалирование урона от дистанции TO DO
+         {   if ds <= 3 then dr2 := 0.66 else dr2 := 1;
+            if ds <= 1.5 then dr2 := 0.66;  }
+     // !!!!!!!!
+                dr2 := 1;
+                if (i3/10 >= 1)  then bdam := trunc( bdam * 1.5) ;  // crit
+                dam := trunc( bdam * (1 - dr ) * dr2 );
+             end;
+
+          if spID = 1 then
+             begin
+               if combats[comLID].units[uLID].Data.cMP < trueMpCost then exit;
+
+               spi1 := trunc(combats[comLID].units[k].Spi);
+               spi2 := trunc(combats[comLID].units[uLID].Spi);
+                                   // SUPRESSION EFFECT
+               r := CM_FindAura(comLID, k, 11);
+               if r <> high(byte) then
+                  spi1 := trunc(combats[comLID].units[k].Spi * (1 + combats[comLID].units[k].auras[r].sub / 100));
+               r := CM_FindAura(comLID, uLID, 11);
+               if r <> high(byte) then
+                  spi2 := trunc(combats[comLID].units[uLID].Spi * (1 + combats[comLID].units[uLID].auras[r].sub / 100));
+
+               dr := spi2 - spi1;
+               if dr < 0 then dr := 0;
+
+               dam := 15 + trunc(dr) + combats[comLID].units[uLID].spow;
+               if (i3 = 10)  then dam := trunc( dam * 1.5) ;  // crit
+
+               // поправка на фрост армор...
+               r  := CM_FindAura(comLID, k, 5);
+               if r <> high(byte) then
+                  begin
+                    dec(dam, 10);
+                    dec(combats[comLID].units[k].auras[r].stacks);
+                    if combats[comLID].units[k].auras[r].stacks <= 0 then
+                       CM_DelAura(comLID, k, 5);
+                  end;
+
+               {if _charLID <> high(dword) then
+               if chars[_charLID].perks[4][3] > 0 then  // SUPPRESION
+                  begin
+                    r := CM_FindAura(comLID, k, 11);
+                    if r <> high(byte) then
+                       begin
+                         if combats[comLID].units[k].auras[r].stacks >= 3 then
+                            begin
+                              combats[comLID].units[k].auras[r].stacks:=3;
+                              combats[comLID].units[k].auras[r].left:= 2;
+                            end else
+                            begin
+                              inc(combats[comLID].units[k].auras[r].stacks);
+                              combats[comLID].units[k].auras[r].left:=2;
+                              inc(combats[comLID].units[k].auras[r].sub,
+                                  PerksDB[21].xyz[chars[_charLID].perks[4][3]].x);
+                            end;
+                       end else
+                       begin
+                         r := CM_AddAura(comLID, k, 11, PerksDB[21].xyz[chars[combats[comLID].Units[uLID].charLID].perks[4][3]].x);
+                         Combats[comLID].units[k].auras[r].left:=2;
+                       end;
+                  end;   }
+
+               if dam < 1 then dam := 1;
+               combats[comLID].units[uLID].Data.cMP:=combats[comLID].units[uLID].Data.cMP - trueMpCost;
+             end;
+
+          if spID = 6 then
+             begin
+               if combats[comLID].units[uLID].Data.cMP < trueMpCost then exit;
+               dam :=  trunc((20 + combats[comLID].units[uLID].spow * 20 / 25 ));
+               if (i3 = 10)  then dam := trunc( dam * 1.5) ;  // crit
+               dam := trunc(dam *(1 - dr)); // armor effect
+               combats[comLID].units[uLID].Data.cMP:=combats[comLID].units[uLID].Data.cMP - trueMpCost;
+             end;
+
+          if spID = 12 then
+             begin
+               if combats[comLID].units[uLID].Data.cMP < trueMpCost then exit;
+               dr := combats[comLID].units[uLID].Spi - combats[comLID].units[k].Spi;
+               if dr < 0 then dr := 0;
+
+               dam := 60 + trunc(dr) + combats[comLID].units[uLID].spow;
+
+               if CM_FindAura(comLID, uLID, 6) <> high(byte) then
+                  CM_DelAura(comLID, uLID, 6);
+
+               r := CM_AddAura(comLID, k, 6, dam div 4);
+               combats[comLID].units[k].auras[r].left:=4;
+
+               combats[comLID].units[uLID].Data.cMP:=combats[comLID].units[uLID].Data.cMP - trueMpCost;
+             end;
+
+   {       dr2 := 0;
+          if _tarLID <> high(dword) then
+             if chars[_tarLID].perks[5][2].pNum > 0 then  // Сурвайвал инстинкт
+                dr2 := PerksDB[8].xyz[chars[_tarLID].perks[5][2].pNum].x / 100;
+          dam := trunc( dam * (1 - dr2) );     }
+
+          {
+            Редакшн элементы расчитали, добавляем блок
+          }
+
+          if i3 / 10 > 1 then dam := dam - block_val2;
+          if i3 = 3 then dam := dam - block_val2;
+
+   {       if spID = 1 then
+             if _charLID <> high(dword) then
+             if chars[_charLID].perks[4][2].pNum > 0 then  // VAMPIRISM
+             begin
+                dr2 := PerksDB[20].xyz[chars[_charLID].perks[4][2].pNum].x / 100;
+                CM_AddAura(comLID, charLID, 10, trunc(dam * dr2));
+                CM_Effect2(comLID, charLID, 10);
+             end;   }
+
+          if dam < 1 then dam := 1;
+          if spID = 12 then dam := 0;
+
+          inc(combats[comLID].units[k].PData.Rage, trueApCost);
+          if combats[comLID].units[k].VData.Race = 2 then
+             inc(combats[comLID].units[k].PData.Rage, 3);
+          if combats[comLID].units[k].PData.Rage > 100 then
+             combats[comLID].units[k].PData.Rage:=100;
+
+          combats[comLID].units[k].Data.cHP:= combats[comLID].units[k].Data.cHP - dam;
+          if (combats[comLID].units[k].Data.cHP <= 0 ) then
+             begin
+               // отменяем инвиз цели, если есть
+          {     if not combats[comLID].units[k].visible then
+               CM_TurnVisible(comLID, k);        }
+
+               combats[comLID].units[k].Data.cHP := 0;
+               combats[comLID].units[k].alive:=false;
+               deadly := 1;
+               if combats[comLID].units[k].uTeam = 2 then
+               if combats[comLID].units[k].uType = 2 then
+                  combats[comLID].xpPool := combats[comLID].xpPool + exp_mob[combats[comLID].units[k].VData.lvl];
+
+               //**** ПРОВЕРЯЕМ ЮНИТА ПО СЧЁТЧИКАМ...
+             {  if combats[comLID].units[k].uType = 2 then // это моб
+                  for i := 0 to high(combats[comLID].units) do
+                    if combats[comLID].units[i].exist then
+                       if combats[comLID].units[i].uType = 1 then
+                          begin
+                            c_ID := high(DWORD);
+                            c_ID := DB_GetCharCounter2(Char_GetCharLID2(combats[comLID].units[i].charID),
+                                                        combats[comLID].units[k].prototype);
+                            if c_ID <> high(DWORD) then
+                               begin
+                                 c_V := DB_GetCharCounter(Char_GetCharLID2(combats[comLID].units[i].charID),
+                                                           c_ID);
+                                 inc(c_V);
+                                 DB_SetCharCounter(Char_GetCharLID2(combats[comLID].units[i].charID),
+                                                   c_ID, c_V);
+                               end;
+                          end;   }
+             end;
+        end else
+            begin{ конец блока попадания }
+              dam := 0;
+              deadly := 0;
+            end;
+     end;
+
+{
+  // пакет готов, рассылаем всем юнитам-игрокам
+  for i := 0 to length(combats[comLID].units) - 1 do
+    if combats[comLID].units[i].exist then
+      if combats[comLID].units[i].uType = 1 then
+         begin
+           cID := Char_GetCharCID( combats[comLID].units[i].charID );
+           s2 := IntToStr(connections[cID].id) + s;
+           WriteSafeText(' > ' + s2, 0);
+           TCP.FCon.IterReset;
+           while TCP.FCon.IterNext do
+             if (TCP.FCon.Iterator.PeerAddress = connections[cid].ip) and
+                (TCP.FCon.Iterator.LocalPort = connections[cid].lport) then
+           rs := TCP.FCon.SendMessage(s2, TCP.FCon.Iterator);
+           if rs < 0 then WriteSafeText(IntToStr(rs));
+           if rs = 0 then Con_Clear(cid);
+         end;     }
+
+ // CM_SendBaseInfo( comLID );  // отправляем обновлённые данные о хп
+
+{  if (combats[comLID].units[tarLID].Rage = 100) and (combats[comLID].units[tarLID].alive) then
+     begin
+       combats[comLID].units[tarLID].curAP:=combats[comLID].units[tarLID].maxAP;
+       AI_TurnTo(comLID, tarLID, charLID);
+
+       if combats[comLID].units[tarLID].range > 0 then
+          begin
+            combats[comLID].units[tarLID].Rage := 0;
+            CM_RangeAttack(comLID, tarUID, charUID, 0);
+          end else
+          if cm_checkMelee(comlid, charLID, tarLID) then
+             begin
+               combats[comLID].units[tarLID].Rage:=0;
+               cm_meleeattack(comLID, tarUID, charUID, 0);
+             end;
+     end;  }
+     try
+       writeln(combats[comLID].Units[uLID].VData.name);
+       writeln(combats[comLID].Units[k].VData.name);
+       mStr := TMemoryStream.Create;
+
+       _head._flag := $f;
+       _head._id   := 111;
+
+       _pkg.comID   := combats[comLID].ID;
+       _pkg.x       := sX;
+       _pkg.y       := sY;
+       _pkg.tLID    := k;
+       _pkg.uLID    := uLID;
+       _pkg.skillID := spID;
+       _pkg.ap_left := combats[comLID].Units[uLID].Data.cAP;
+
+       _pkg.victims[1].uLID   := k;
+       _pkg.victims[1].result := i3;
+       _pkg.victims[1].dmg    := dam;
+       _pkg.victims[1].deadly := deadly;
+       _pkg.victims[1].hp_left:= combats[comLID].Units[k].Data.cHP;
+
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет всем игрока в бою
+       for i := 0 to high(combats[comLID].Units) do
+           if combats[comLID].Units[i].exist then
+           if combats[comLID].Units[i].uType = 1 then
+              begin
+                TCP.FCon.IterReset;
+                charLID := combats[comLID].Units[i].charLID;
+                while TCP.FCon.IterNext do
+                if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+                if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+                   begin
+                     TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                     break;
+                   end;
+              end;
+     finally
+       mStr.Free;
+     end;
+       CM_SendBaseInfo( comLID, uLID );  // отправляем обновлённые данные о хп
+       CM_SendBaseInfo( comLID, tLID );
+end;
+
 
 
 function CM_CombatEnd( comLID, WinTeam : dword) : byte;

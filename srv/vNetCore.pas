@@ -99,6 +99,7 @@ var
   _pkg043 : TPkg043;                        _pkg045 : TPkg045;
   _pkg102 : TPkg102;                        _pkg105 : TPkg105;
   _pkg106 : TPkg106;   _pkg107 : TPkg107;   _pkg108 : TPkg108;
+  _pkg111 : TPkg111;
 begin
 try
   mStr := TMemoryStream.Create;
@@ -301,6 +302,12 @@ try
            mStr.Read(_pkg108, SizeOf(_pkg108));
            pkg108(_pkg108, sID);
          end;
+         111:
+         begin
+           mStr.Position:=SizeOf(_head);
+           mStr.Read(_pkg111, SizeOf(_pkg111));
+           pkg111(_pkg111, sID);
+         end;
        else
          Writeln('Wrong ID');
          Exit;
@@ -320,10 +327,11 @@ begin
       if aSocket.LocalPort = sessions[i].lport then
          begin
            chars[sessions[i].charLID].exist := false; // отрубаем персонажа
-           sessions[i].exist:=false;
-           sessions[i].aID:=0;
-           sessions[i].lport:=0;
-           sessions[i].ip:='';
+           Writeln( chars[sessions[i].charLID].header.Name, ' went offline.');
+           sessions[i].exist := false;
+           sessions[i].aID := 0;
+           sessions[i].lport := 0;
+           sessions[i].ip := '';
            break;
          end;
   WriteSafeText('Lost connection ' + aSocket.PeerAddress, 2); // write info if connection was lost

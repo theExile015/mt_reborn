@@ -296,7 +296,7 @@ begin
 end;
 
 procedure Obj_StartBattle(charLID, ceUID : DWORD);
-var i, r   : integer;
+var i, r, rs: integer;
     comLID : Word;
     _head  : TPackHeader; _pkg : TPkg100;
     mStr   : TMemoryStream;
@@ -306,19 +306,24 @@ begin
                      // (в отличие от квестовых боёв)
                      // поэтому делаем проверочку
   for i := 0 to high(combats) do
+    if combats[i].exist then
     if combats[i].ceUID = ceUID then
        r := i;
   if r = high(word) then
-     r := CM_StartNew(charLID, 1, ceUID) else exit; // затычка
-
-  if r = high(word) then exit;
-
-  comLID := CM_GetCombatLID(r);
-
+    begin
+      r := CM_StartNew(charLID, 1, ceUID); // затычка
+      if r = high(word) then exit;
+      comLID := CM_GetCombatLID(r);
+    end else
+    begin
+      comLID := r;
+      rs := CM_AddPUnit(combats[r].ID, charLID, 1);
+      if rs = high(byte) then Exit;
+    end;
   _head._flag := $f;
   _head._id   := 100;
 
-  _pkg.ID := r;
+  _pkg.ID := combats[comLID].ID;
   _pkg.ceType := 1;
   _pkg.ceround  := combats[comLID].ceRound;
 
@@ -337,9 +342,13 @@ begin
                 TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
                 Break;
               end;
+         Writeln('Debug 5');
+         for i := 0 to high(combats[comLID].Units) do
+             if combats[comLID].Units[i].exist then
+             if combats[comLID].Units[i].uType = 1 then
+                CM_SendUnits(comLID, combats[comLID].Units[i].charLID);
        finally
          mStr.Free;
-         CM_SendUnits(comLID, charLID);
        end;
 end;
 

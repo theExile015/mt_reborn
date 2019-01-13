@@ -345,6 +345,7 @@ begin
               if chars[i].perks[6][3] > 0 then
                  chars[i].Stats.DMG := 1 + trunc(chars[i].Stats.DMG * (1 + PerksDB[17].xyz[chars[i].perks[6][3]].x / 100));
 
+          Writeln(chars[i].header.Name, ' DMG : ', chars[i].Stats.DMG * chars[i].Stats.APH / 10);
 
           chars[i].hpmp.mHP:=hpmp_counter(chars[i].bHP, chars[i].Stats.Con) + base_hp[chars[i].header.level] - 40;
           chars[i].hpmp.mMP:=hpmp_counter(chars[i].bMP, chars[i].Stats.Int) + base_mp[chars[i].header.level] - 20;
@@ -415,6 +416,7 @@ begin
        Writeln('Illegal request [29] from : ' + IntToStr(locLID));
        exit;
      end;
+
   for i := 6 to 15 do
       if locDB[locLID].props[i] > 0 then
          begin
@@ -422,10 +424,6 @@ begin
            for j := 10 to 22 do
              if (j - 10) / 3 = (j - 10) div 3 then
                 begin
-                  Writeln('Obj ## ' , locDb[loclid].props[i]);
-                  Writeln(LocObjs[locDB[locLID].props[i]].props2[j], ' ',
-                          LocObjs[locDB[locLID].props[i]].props2[j + 1], ' ',
-                          LocObjs[locDB[locLID].props[i]].props2[j + 2]);
                   if LocObjs[locDB[locLID].props[i]].props2[j] = 1 then
                      begin
                        inc(rs1);

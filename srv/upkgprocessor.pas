@@ -247,6 +247,14 @@ type
     WinTeam : byte;
   end;
 
+  TPkg111 = record
+    comID, uLID   : dword;
+    tLID, skillID : dword;
+    x, y, ap_left : byte;
+    victims       : array [1..8] of TVictim;
+    fail_code     : byte;
+  end;
+
 procedure pkg001(pkg : TPkg001; sID : word);
    // 2
 procedure pkg003(pkg : TPkg003; sID : word);   // 3
@@ -293,6 +301,8 @@ procedure pkg105(pkg : TPkg105; sID : word);
 procedure pkg106(pkg : TPkg106; sID : word);
 procedure pkg107(pkg : TPkg107; sID : word);
 procedure pkg108(pkg : TPkg108; sID : word);
+
+procedure pkg111(pkg : TPkg111; sID : word);
 
 procedure pkgProcess(msg: string);
 
@@ -565,7 +575,7 @@ try
   _pkg.fail_code := 0;
 
   mStr.Write(_head, sizeof(_head));
-  mStr.Write(_pkg, sizeof(_pkg));
+  mStr.Write(_pkg , sizeof(_pkg));
 
   // Отправляем пакет
   TCP.FCon.IterReset;
@@ -1110,6 +1120,7 @@ var _pkg  : TPkg032;
     mStr  : TMemoryStream;
 begin
 if not LocObjs[pkg.id].exist then exit;
+writeln('Request obj.id = ', pkg.id);
    _pkg.data.x:=LocObjs[pkg.id].props2[1];
    _pkg.data.y:=LocObjs[pkg.id].props2[2];
    _pkg.data.w:=LocObjs[pkg.id].props2[3];
@@ -1148,12 +1159,14 @@ end;
 procedure pkg040(pkg : TPkg040; sID : word);
 begin
 try
+  writeln(pkg.fail_code);
+  writeln(pkg.ID);
   if pkg.fail_code <> 1 then
   if LocObjs[pkg.ID].exist then
      case LocObjs[pkg.ID].oType of
        1 : Obj_SendDialogs(sID, pkg.ID);
       // 2 : Obj_SendVerndor(sId, pkg.ID);
-       5 : Obj_StartBattle(sessions[sID].charLID, LocObjs[pkg.ID].props[1]);
+       5 :  Obj_StartBattle(sessions[sID].charLID, LocObjs[pkg.ID].props[1]);
      else
        WriteSafeText('DUMMY!!!', 1);
      end;
@@ -1404,6 +1417,17 @@ begin
   if comLID = high(DWORD) then exit;
 
   CM_MeleeAttack( comLID, pkg.uLID, pkg.tLID, pkg.skillID);
+
+end;
+
+procedure pkg111(pkg : TPkg111; sID : word);
+var i: integer;
+    comLID : DWORD;
+begin
+  comLID := CM_GetCombatLID(pkg.comID);
+  if comLID = high(DWORD) then exit;
+
+  CM_RangeAttack( comLID, pkg.uLID, pkg.tLID, pkg.skillID);
 
 end;
 
