@@ -155,7 +155,7 @@ begin
 
       // video_Del(video);
 
-   {   //  ЧАСТИЦЫ ДЛЯ ЗАКЛИНАНИЙ ИТП
+      // ЧАСТИЦЫ ДЛЯ ЗАКЛИНАНИЙ ИТП
       em_Test := emitter2d_LoadFromFile('Data\fx\em_recovery.zei');
       em_test.Params.Position.X:=0;
       em_test.Params.Position.Y:=0;
@@ -191,7 +191,7 @@ begin
       fx_pr[6].Params.Position.Y:=0;
       fx_pr[6].Params.Loop:=false;
 
-      pengine2d_Set( @particles );}
+      pengine2d_Set( @particles );
     end;
 // блок второй - загрузка элементов локаций
   if lVProgress = 20 then

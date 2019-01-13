@@ -37,6 +37,7 @@ procedure DoDlgClick(id: word);
 procedure DoSendQuest(id, action : word);
 procedure DoSendTutorial(step : byte);
 procedure DoRequestUnit(id, uType, what: word);
+procedure DoRequestMembers();
 
 implementation
 
@@ -753,18 +754,44 @@ begin
   _pkg.uLID  := units[id].uLID;
   _pkg.what  := 0;
 try
-       mStr := TMemoryStream.Create;
-       mStr.Position := 0;
-       mStr.Write(_head, sizeof(_head));
-       mStr.Write(_pkg, sizeof(_pkg));
+  mStr := TMemoryStream.Create;
+  mStr.Position := 0;
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
 
-       TCP.FCon.IterReset;
-       TCP.FCon.IterNext;
-       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
-       In_Request := true;
+  TCP.FCon.IterReset;
+  TCP.FCon.IterNext;
+  TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+  In_Request := true;
 finally
-       mStr.Free;
+  mStr.Free;
 end;
+end;
+
+procedure DoRequestMembers();
+var
+  _pkg : TPkg026; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 26;
+
+  _pkg.channel := ch_tab_curr;
+try
+  mStr := TMemoryStream.Create;
+  mStr.Position := 0;
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+  TCP.FCon.IterReset;
+  TCP.FCon.IterNext;
+  TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+
+  Sleep(100);
+finally
+  mStr.Free;
+end;
+
 end;
 
 end.

@@ -443,6 +443,13 @@ type
     hp_left: dword;
   end;
 
+  TSpFx = record
+     exist : boolean;
+     id    : byte;
+     x, y  : single;
+     sx, sy, tx, ty: single;
+     speed : single;
+  end;
 
 var
   // CORE VARS
@@ -518,6 +525,7 @@ var
   tex_Skills  : zglPTexture;
   tex_belt, tex_chest, tex_glow : zglPTexture;
 
+  fx             : array [1..10] of TSpFx;
   fx_pr          : array [1..10] of zglPEmitter2D;
   particles      : zglTPEngine2D;
   em_Test        : zglPEmitter2D;
@@ -565,7 +573,7 @@ var
   chat_color: TChatColorPack;
   Tutorial  : word = 0;                                   // Стадия обучения
   tut_frame : word = 1;
-  block_btn : boolean = false; // блокировка обработки действий
+  block_btn : boolean = false;                            // блокировка обработки действий
 
   Inv                : array [1..100] of TDragAndDropObj; // элементы драг-н-дроп
   ddItem             : TDragAndDropObj;
@@ -582,6 +590,7 @@ var
   omo_ch_tabs : array [0..7] of boolean;
   ch_message_inp : boolean;
   com_face : single;
+  chat_last_request : word;
 
    //  COMBAT
    units                 : array [0..20] of TUnit;

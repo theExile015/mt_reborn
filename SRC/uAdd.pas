@@ -282,7 +282,6 @@ procedure Map_CreateMask;
 var
   i, j: integer;
 begin
-
   for I := 0 to 20 do
     for j := 0 to 20 do
       MapMatrix[i, j].cType := 0; // заполняем карту

@@ -156,8 +156,8 @@ begin
     begin
       if stat_tab = 0 then
          begin
-           d1 := 1 + round(activechar.Stats.DMG/10 * activechar.Stats.APH);
-           d2 := 2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1);
+           d1 := 1 + trunc(activechar.Stats.DMG / 10 * activechar.Stats.APH * 0.95);
+           d2 := 2 + trunc(activechar.Stats.DMG / 10 * activechar.Stats.APH * 1.05);
            mWins[2].texts[1].Text := AnsiToUTF8(format(STT[17], [d1, d2]));
            mWins[2].texts[2].Text := STD[17];
          end;

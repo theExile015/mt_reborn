@@ -248,6 +248,14 @@ type
     WinTeam : byte;
   end;
 
+  TPkg111 = record
+    comID, uLID   : dword;
+    tLID, skillID : dword;
+    x, y, ap_left : byte;
+    victims       : array [1..8] of TVictim;
+    fail_code     : byte;
+  end;
+
 procedure pkg000;
 procedure pkg001(pkg: TPkg001);   // Логин
 procedure pkg002(pkg: TPkg002);   // Список персонажей
@@ -294,7 +302,8 @@ procedure pkg106(pkg: TPkg106);   // Move
 procedure pkg107(pkg: TPkg107);   // Rotate
 procedure pkg108(pkg: TPkg108);   // Melee
 procedure pkg109(pkg: TPkg109);   // Base Info
-procedure pkg110(pkg: TPkg110);   // Combat Die
+procedure pkg110(pkg: TPkg110);   // Combat End
+procedure pkg111(pkg: TPkg111);   // Range
 
 procedure pkgProcess(var msg: string);
 
@@ -328,7 +337,7 @@ var
     _pkg100: Tpkg100;   _pkg101: TPkg101;
     _pkg103: TPkg103;   _pkg104: TPkg104;   _pkg105: TPkg105;
     _pkg106: TPkg106;   _pkg107: TPkg107;   _pkg108: TPkg108;
-    _pkg109: TPkg109;   _pkg110: TPkg110;
+    _pkg109: TPkg109;   _pkg110: TPkg110;   _pkg111: TPkg111;
 begin
   try
        begin
@@ -512,6 +521,11 @@ begin
            begin
              mStr.Read(_pkg110, SizeOf(_pkg110));
              pkg110(_pkg110);
+           end;
+           111:
+           begin
+             mStr.Read(_pkg111, SizeOf(_pkg111));
+             pkg111(_pkg111);
            end;
          else
            // ID пакета кривой
@@ -815,8 +829,14 @@ begin
   for i := 0 to high(ch_tabs) do
     for j := 0 to high(ch_tabs[i].msgs) do
       if ch_tabs[i].msgs[j].exist then
+      if ch_tabs[i].msgs[j].sendID = pkg._who then
+         ch_tabs[i].msgs[j].sender := pkg.name;
+
+  for i := 0 to high(ch_tabs) do
+    for j := 0 to high(ch_tabs[i].msgs) do
+      if ch_tabs[i].msgs[j].exist then
         if ch_tabs[i].msgs[j].sender = '' then
-           ch_tabs[i].msgs[j].sender:= DoWho(ch_tabs[i].msgs[j].sendID);
+           ch_tabs[i].msgs[j].sender := DoWho(ch_tabs[i].msgs[j].sendID);
 end;
 
 procedure pkg028(pkg: TPkg028);
@@ -993,8 +1013,9 @@ begin
        mWins[8].flag := pkg.fail_code;
      end;
 
-  if pkg.fail_code = 11 then
+  if (pkg.fail_code = 11) or (pkg.fail_code = 7) then
      begin
+       writeln('QP', pkg.spic);
        mWins[8].imgs[1].texID:='qp'+u_IntToStr(pkg.spic);
        mWins[8].imgs[1].maskID:=pkg.smask;
      end;
@@ -1194,7 +1215,7 @@ begin
   units[your_unit].Rage     := pkg.Rage;
 end;
 
-procedure pkg110(pkg: TPkg110);   // Combat Die
+procedure pkg110(pkg: TPkg110);   // Combat End
 begin
   com_face := 50;
   Chat_AddMessage(3, high(word), 'Team ' + IntToStr(pkg.WinTeam) + ' win.' );
@@ -1207,6 +1228,10 @@ begin
   gs  := gsLLoad;
   iga := igaLoc;
   igs := igsNone;
+
+  cur_type  := 1;
+  cur_angle := 0;
+
   if theme_two then
      begin
        snd_Del(theme1);
@@ -1218,6 +1243,20 @@ begin
        theme2 := snd_LoadFromFile('Data\Sound\minstrel.ogg');
        theme_change := true;
      end;
+end;
+
+procedure pkg111(pkg: TPkg111);   // Range
+begin
+  if pkg.comID <> combat_id then Exit;
+  { TODO 2 -oVeresk -cImprove : Добавить проверку на количество виктимов, и код их обработки }
+  if pkg.skillID = 0 then
+     cm_RangeAtk( pkg.uLID, pkg.victims[1].uLID, pkg.victims[1].dmg,
+                  pkg.victims[1].die, pkg.victims[1].result)
+  else
+     cm_TargetSpell( pkg.uLID, pkg.victims[1].uLID, pkg.victims[1].dmg,
+                     pkg.victims[1].die, pkg.skillID, pkg.victims[1].result);
+  units[pkg.uLID].data.cAP := pkg.ap_left;
+  units[pkg.victims[1].uLID].data.cHP := pkg.victims[1].hp_left;
 end;
 
 end.

@@ -208,6 +208,8 @@ procedure Game_Update;
 var i: integer; t: dword;
     hh, mm, ss, ms : word;
 begin
+  pengine2d_Proc( 20 );
+
   inc(a_p);
   if a_p/2 = a_p div 2 then inc(sc_ani);
   if a_p/2 = a_p div 2 then inc(tut_frame);

@@ -6,7 +6,7 @@ unit uChat;
 interface
 
 uses
-  sysutils, classes, uVar, zglHeader, uAdd, uMyGui;
+  sysutils, classes, uVar, zglHeader, uAdd, uMyGui, DOS;
 
 procedure Chat_Init();
 procedure Chat_Update();
@@ -100,9 +100,19 @@ end;
 
 procedure Chat_Update();
 var i, j: integer; dy : single;
+    hh, mm, ss, ms : word;
 begin
+  if ch_tab_curr in [0..1] then
+     begin
+       j := 0;
+       for i := 1 to high(ch_tabs[ch_tab_curr].Members) do
+         if ch_tabs[ch_tab_curr].Members[i].exist then
+            inc(j);
+       if j = 0 then DoRequestMembers();
+     end;
 if iga = igaCombat then
    begin
+    //  Writeln(activechar.Inv[4].iID, ' ', items[activechar.Inv[4].iID].data.iType );
      for i := 1 to 5 do
          ActionBar[i].data.contain:=mWins[11].dnds[i].data.contain;
 
@@ -147,8 +157,6 @@ if iga = igaCombat then
                          end else Chat_AddMessage(3, high(word), 'Not enough AP to cast ' + spells[ActionBar[1 + j].data.contain].name );
                  end;
 
-
-
               if ActionBar[i].omo then
                  begin
                    stt_Open(ActionBar[i].data.contain, 2);
@@ -176,6 +184,8 @@ if iga = igaCombat then
                             end;
 
                         if systembar[i].data.contain = 4 then
+                     {   if activechar.Inv[4].iID <> 0 then
+                        if items[activechar.Inv[4].iID].data.iType = 5 then   }
                            begin
                              icm := icmRange;
                              spR := 8;

@@ -427,8 +427,7 @@ var i, j, k  : integer;
     s : utf8string;
     hh, mm, ss, ms : word;
 begin
-
- // отрисовка портрета инфы на локации
+// отрисовка портрета инфы на локации
  if (gs = gsGame) and (iga = igaLoc) then
      begin
        mWins[15].visible:=true;
@@ -1150,7 +1149,7 @@ begin
        mWins[5].texts[32].Text:=u_IntToStr(activechar.Stats.Int);  // инт
        mWins[5].texts[33].Text:=u_IntToStr(activechar.Stats.Spi);  // спи
 
-       mWins[5].texts[34].Text:=u_IntToStr(1 + round(activechar.Stats.DMG/10 * activechar.Stats.APH)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
+       mWins[5].texts[34].Text:=u_IntToStr(1 + trunc(activechar.Stats.DMG / 10 * activechar.Stats.APH * 0.95)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG / 10 * activechar.Stats.APH * 1.05));  // дмг
        mWins[5].texts[35].Text:=u_IntToStr(activechar.Stats.APH);  // апх
        mWins[5].texts[36].Text:=u_FloatToStr(15/9) + '%';  // хит
        mWins[5].texts[37].Text:=u_FloatToStr(16/10) + '%';  // крит
@@ -1200,7 +1199,7 @@ begin
             mWins[6].texts[20].Text := 'Hit rate';
             mWins[6].texts[21].Text := 'Crit rate';
 
-            mWins[6].texts[34].Text:=u_IntToStr(round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
+            mWins[6].texts[34].Text:=u_IntToStr(trunc(activechar.Stats.DMG * 0.95 / 10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + trunc(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.05));  // дмг
             mWins[6].texts[35].Text:=u_IntToStr(activechar.Stats.APH);  // апх
             mWins[6].texts[36].Text:=u_FloatToStr(15/9) + '%';    // крит
             mWins[6].texts[37].Text:=u_FloatToStr(16/13) + '%';   // хит
@@ -1216,7 +1215,7 @@ begin
             mWins[5].texts[20].Text := 'Hit rate';
             mWins[5].texts[21].Text := 'Crit rate';
 
-            mWins[5].texts[34].Text:=u_IntToStr(round(activechar.Stats.DMG/10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + round(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.1));  // дмг
+            mWins[5].texts[34].Text:=u_IntToStr(trunc(activechar.Stats.DMG * 0.95 /10 * activechar.Stats.APH + 1)) + '-' + u_IntToStr(2 + trunc(activechar.Stats.DMG/10 * activechar.Stats.APH * 1.05));  // дмг
             mWins[5].texts[35].Text:=u_IntToStr(activechar.Stats.APH);  // апх
             mWins[5].texts[36].Text:=u_FloatToStr(15/9) + '%';    // крит
             mWins[5].texts[37].Text:=u_FloatToStr(16/13) + '%';   // хит

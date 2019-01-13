@@ -35,6 +35,10 @@ function  cm_CheckFriendOMO(): byte;
 function  cm_CheckEnemyInMelee(): byte;
 
 procedure cm_MeleeAtk( uLID, tLID, dmg, die, _spID, i3: longword);
+procedure cm_RangeAtk( uLID, tLID, dmg, die, i3 : longword);
+procedure cm_TargetSpell( uLID, tLID, dmg, die, _spID, i3 : longword);
+procedure cm_RangeMiss( uLID, x,  y : longword);
+
 
 procedure cm_SetWay( uLID, X, Y, ap_left : Longword);
 
@@ -42,12 +46,13 @@ procedure cm_SendMove( X, Y: byte );
 procedure cm_SendDir( dir : byte );
 procedure cm_EndTurn();
 procedure cm_SendMelee(tLID, skillID : dword);
+procedure cm_SendRange(tLID, skillID : dword);
 
 procedure cm_AddCombatText( x, y : single; text : utf8string; color, _spID : longword);
 
 type
   TUnitQ = record
-    id, y : dword;
+    id, y : integer;
   end;
 
 implementation
@@ -62,7 +67,7 @@ begin
   in_action  := false;
   your_turn  := false;
   icm        := icmNone;
-  your_unit  := 0;
+  your_unit  := high(byte);
   for i := 1 to high(cText) do
       cText[i].exist:=false;
 
@@ -114,11 +119,11 @@ begin
   step_ap  := 5;
   m_omo := false;
   batch2d_Begin();
-  for i := 0 to 20 do
+{  for i := 0 to 20 do
   for j := 0 to 20 do
     text_Draw(fntMain, j * 64 + (19 - i) * 64 + 40,
                        j * 32 - (19 - i) * 32 + 430,
-                       IntToStr(mapmatrix[i][j].cType));
+                       IntToStr(mapmatrix[i][j].cType));    }
   for i := 1 to 19 do
       for j := 1 to 19 do
           begin
@@ -295,6 +300,12 @@ begin
   if iga <> igaCombat then Exit;
   if gs  <> gsGame    then Exit;
 
+  if your_unit = high(byte) then
+     for i := 0 to high(units) do
+       if units[i].exist then
+       if units[i].name = activechar.header.Name then
+       your_unit := i;
+
   if wait_for_103 <> 255 then
      begin
        GetTime(hh, mm, ss, ms);
@@ -362,13 +373,22 @@ begin
           end;
        cur_type := 4;
      end;
+
+ // if m_omo then
+  if icm = icmNone then
+  begin
+    da := cm_CheckEnemyOMO();
+  //  writeln(da);
+    if spID = 0 then
+    if da <> high(byte) then cur_type := 2 else cur_type := 1;
+  end;
+
 // Наводим мышку на игрока
   if m_omo then
   if mouse_click(M_BLEFT) and (icm = icmNone) then
      begin
        if m_X = units[your_unit].data.pos.x then
        if m_Y = units[your_unit].data.pos.y then exit;
-
        da := cm_CheckEnemyInMelee();
        Chat_AddMessage(3, high(word), 'Tar = ' + u_IntToStr(da));
        if da <> high(byte) then
@@ -381,7 +401,7 @@ begin
                  if (units[da].alive) then
                  if (units[your_unit].data.cAP >= activechar.Stats.APH) then
                     begin
-                      writeln('YES');
+                      //writeln('YES');
                       cm_SendMelee(da, 0);
                       exit;
                     end else Chat_AddMessage(3, high(word), 'Can''t attack in melee. Not enough AP for attack.' );
@@ -483,7 +503,83 @@ begin
                end else chat_addmessage(3, high(word), 'Not enough AP to turn.');
           end;
      end;
+// Режим выстрела
+  if icm = icmRange then
+     begin
+       mWins[13].visible:=true;
+       mWins[13].dnds[1].data.contain:=spID;
+       if spID = 0 then cur_type := 3 else cur_type := 4;
+       if mouse_click(M_BLEFT) then
+          begin
+            da := cm_CheckEnemyOMO();
+            //chat_addMessage(3, 's', u_IntToStr(da));
+            if da <> high(byte) then
+            if cm_inrange(m_X, m_Y, spR) and InSector( units[your_unit].data.Direct,
+                                                       m_Angle( units[your_unit].data.pos.x,
+                                                       units[your_unit].data.pos.y,
+                                                       m_X, m_Y ) ) then
+               if spID = 0 then
+                  begin
+                    if units[your_unit].data.cAP >= activechar.Stats.APH then
+                       begin
+                         cm_SendRange(da, 0);
+                         spID := 0;
+                         mWins[13].visible := false;
+                         cur_type  := 1;
+                         icm := icmNone;
+                         cur_angle := 0;
+                         exit;
+                       end else
+                         chat_addMessage(3, high(word), 'Not enough AP for range attack.');
+                  end else
+                  begin
+                    cm_SendRange(da, spID);
+                    spID := 0;
+                    mWins[13].visible := false;
+                    cur_type  := 1;
+                    icm := icmNone;
+                    cur_angle := 0;
+                    exit;
+                  end;
 
+            da := cm_CheckFriendOMO();
+            chat_addMessage(3, high(word), u_IntToStr(da));
+            if da <> high(byte) then
+               if cm_inrange(m_X, m_Y, spR) and (InSector( units[your_unit].data.Direct,
+                                                           m_Angle( units[your_unit].data.pos.x,
+                                                           units[your_unit].data.pos.y,
+                                                           m_X, m_Y )) or (da = your_unit) )   then
+                  if spID = 5 then
+                     begin
+                       if units[your_unit].data.cAP >= 24 then
+                          begin
+                            cm_SendRange(da, spID);
+                            spID := 0;
+                            mWins[13].visible := false;
+                            cur_type  := 1;
+                            icm := icmNone;
+                            cur_angle := 0;
+                            exit;
+                          end else
+                            chat_addMessage(3, high(word), 'Not enough AP for spell cast.');
+                     end
+          end;
+     end;
+// обработка спецэффектов
+  for i := 1 to high(fx) do
+     if fx[i].exist then
+        begin
+          da := round(m_angle(fx[i].x, fx[i].y, fx[i].tx, fx[i].ty));
+          fx[i].x:= fx[i].x - fx[i].speed * m_cos(da);
+          fx[i].y:= fx[i].y - fx[i].speed * m_sin(da);
+          if fx[i].id <> 1 then
+          begin
+            if not col2d_pointInCircle(fx[i].x, fx[i].y, circle(fx[i].sx, fx[i].sy, 32)) then
+                   pengine2d_AddEmitter(fx_pr[fx[i].id], nil, fx[i].x, fx[i].y);
+          end else pengine2d_AddEmitter(fx_pr[fx[i].id], nil, fx[i].x, fx[i].y);
+          if col2d_pointInCircle(fx[i].x, fx[i].y, circle(fx[i].tx, fx[i].ty, 16)) then fx[i].exist:=false;
+        end;
+// отрисовка юнитов
   for i := 0 to high(units) do
       Unit_Update(i);
 end;
@@ -491,7 +587,7 @@ end;
 procedure Unit_Update(id : integer);
 var i, f1, f2, asp : integer;
 begin
-  if id > high(units) then Writeln(id);
+ // if id > high(units) then Writeln(id);
   if id > high(units) then Exit;
   if not units[id].exist then exit;
   if not units[id].alive then
@@ -648,17 +744,17 @@ begin
        w := text_GetWidth( fntCombat, units[id].name, 1) * 0.7;
        h := text_GetHeight( fntCombat, w, units[id].name, 0.3 / scaleXY, 0);
        //pr2d_Rect(x + 196/2 - w/2 + 400, y, w, h, $222222, 150, PR2D_FILL);
-       for i := 0 to high(units[id].auras) do
+    {   for i := 0 to high(units[id].auras) do
          if units[id].auras[i].exist then
             begin
               ASprite2d_Draw(tex_BIcons, x + i * 25, y - 25, 24, 24, 0,
                                          units[id].auras[i].id);
-             // if units[id].auras[i].stacks > 0 then
-             // Text_DrawInRectEx(fntCombat, rect(x + i * 25, y - 25, 24, 24), 0.2 / scaleXY, 1, u_IntToStr(units[id].auras[i].stacks), 200, $ff0000);
+              if units[id].auras[i].stacks > 0 then
+                 Text_DrawInRectEx(fntCombat, rect(x + i * 25, y - 25, 24, 24), 0.2 / scaleXY, 1, u_IntToStr(units[id].auras[i].stacks), 200, $ff0000);
 
-            end;
-       s := IntToStr(units[id].team);
-       Text_DrawInRectEx( fntCombat, rect(x + 256/2 - w/2, y, w, h), 0.3 / scaleXY, 0, units[id].name + ' ' + s, 255, color, TEXT_HALIGN_CENTER );
+            end;    }
+       s := IntToStr(id);
+       Text_DrawInRectEx( fntCombat, rect(x + 256/2 - w/2, y, w, h), 0.3 / scaleXY, 0, units[id].name + '#' + s, 255, color, TEXT_HALIGN_CENTER );
 end;
 
 function cm_SetDir( sX, sY, fX, fY : word ) : byte;
@@ -751,7 +847,7 @@ var i: integer;
 begin
   result := high(byte);
   // Log_add( 'Check enemy ' + u_intToStr(result));
-  Writeln(your_unit);
+  // Writeln(your_unit);
   for i := 0 to high(units) do
   if units[i].exist and (units[i].team <> units[your_unit].team) then
     if units[i].data.pos.x = m_x then
@@ -866,6 +962,165 @@ begin
                end;
 end;
 
+procedure cm_RangeAtk( uLID, tLID, dmg, die, i3 : longword);
+var i: integer; n1, n2, _mod : UTF8String;  x, y: single;
+begin
+  if not units[uLID].exist then exit;
+  if not units[tLID].exist then exit;
+
+         in_action := true;
+         units[uLID].in_act:=true;
+         units[uLID].ani := 7;
+         units[uLID].ani_frame := 29 + units[uLID].data.Direct * 32;
+         units[uLID].ani_delay := 0;
+         n1 := units[uLID].name;
+
+
+         n2 := units[tLID].name;
+         units[tLID].ani := 4;
+         units[tLID].in_act:=true;
+         units[tLID].ani_frame:= 19 + units[tLID].data.Direct * 32;
+
+         if i3 = 0 then _mod := '';
+         if i3 = 1 then _mod := ' * MISS * ';
+         if i3 = 2 then _mod := ' * DODGE *';
+         if i3 = 3 then _mod := ' * BLOCK *';
+         if i3 = 10 then _mod := ' * CRIT *';
+         if i3 / 10 > 1.1 then _mod := ' * CRIT * * BLOCK *';
+
+         x := units[tLID].data.pos.y * 64 + (19 - units[tLID].data.pos.x) * 64 - 32 ;
+         y := units[tLID].data.pos.y * 32 - (19 - units[tLID].data.pos.x) * 32  + 400 - 112;
+         cm_AddCombatText(x - 10, y + 100, '-' + u_IntToStr(dmg) + _mod, $CC0000, 0);
+
+         if i3 = 0 then
+            Chat_AddMessage(3, high(word), n1 + ' shoot ' + n2 + ' for ' + u_IntToStr(dmg) + ' damage.' );
+         if i3 = 1 then
+            Chat_AddMessage(3, high(word), n1 + '''s shot miss ' + '.');
+         if i3 = 2 then
+            Chat_AddMessage(3, high(word), n2 + ' dodge ' + n1 + '''s shoot.');
+         if i3 = 10 then
+            Chat_AddMessage(3, high(word), n1 + ''' shot crits ' + n2 + ' for ' + u_IntToStr(dmg) + ' damage.' );
+         if i3 / 10 > 1.1 then
+            Chat_AddMessage(3, high(word), n2 + ' block ' + n1 + '''s shot crit and got ' + u_IntToStr(dmg) + ' damage.');
+         if i3 = 3 then
+            Chat_AddMessage(3, high(word), n2 + ' block ' + n1 + '''s shot and got ' + u_IntToStr(dmg) + ' damage.');
+
+         if die = 1 then
+         begin
+            Chat_AddMessage(3, high(word), n2 + ' dies.' );
+            units[tLID].ani := 5;
+            units[tLID].ani_frame:= 21 + units[tLID].data.Direct * 32;
+            units[tLID].ani_delay := 0;
+            units[tLID].in_act:=true;
+         end;
+end;
+
+procedure cm_TargetSpell( uLID, tLID, dmg, die, _spID, i3 : longword);
+var i, _i: integer; n1, n2, _mod : UTF8String; x, y : single;
+begin
+  if not units[uLID].exist then exit;
+  if not units[tLID].exist then exit;
+
+  for i := 1 to high(fx) do
+    if not fx[i].exist then
+       begin
+         fx[i].exist:=true;
+         _i := i;
+         fx[i].speed := 7.5;
+         case _spID of
+           5 : fx[i].id:=1;
+           1 : fx[i].id:=3;
+           6 : fx[i].id:=2;
+           12: fx[i].id:=6;
+           4 : fx[i].id:=5;
+           0 : fx[i].id:=4;
+         else
+           fx[i].id:=1;
+         end;
+         break;
+       end;
+
+
+         in_action := true;
+         units[uLID].in_act:=true;
+         units[uLID].ani := 6;
+         units[uLID].ani_frame := 25 + units[uLID].data.Direct * 32;
+         units[uLID].ani_delay := 0;
+         fx[_i].sx := units[uLID].data.pos.y * 64 + (19 - units[uLID].data.pos.x) * 64 - 32 + 96;
+         fx[_i].sy := units[uLID].data.pos.y * 32 - (19 - units[uLID].data.pos.x) * 32  + 400 - 112 + 96;
+         fx[_i].x:= fx[_i].sx;
+         fx[_i].y:= fx[_i].sy;
+         n1 := units[uLID].name;
+
+         n2 := units[tLID].name;
+
+         if _spID <> 5 then
+            begin
+              units[tLID].ani := 4;
+              units[tLID].in_act:=true;
+              units[tLID].ani_frame:= 19 + units[tLID].data.Direct * 32;
+            end;
+
+         fx[_i].tx := units[tLID].data.pos.y * 64 + (19 - units[tLID].data.pos.x) * 64 - 32 + 96;
+         fx[_i].ty := units[tLID].data.pos.y * 32 - (19 - units[tLID].data.pos.x) * 32  + 400 - 112 + 96;
+
+         x := units[tLID].data.pos.y * 64 + (19 - units[tLID].data.pos.x) * 64 - 32 ;
+         y := units[tLID].data.pos.y * 32 - (19 - units[tLID].data.pos.x) * 32  + 400 - 112;
+
+         if i3 = 0 then _mod := '';
+         if i3 = 1 then _mod := ' * MISS * ';
+         if i3 = 2 then _mod := ' * DODGE *';
+         if i3 = 3 then _mod := ' * BLOCK *';
+         if i3 = 10 then _mod := ' * CRIT *';
+         if i3 / 10 > 1.1 then _mod := ' * CRIT * * BLOCK *';
+
+         if _spID <> 5 then
+           cm_AddCombatText(x - 10, y + 100, '-' + u_IntToStr(dmg) + _mod, $5522CC, _spID)
+         else
+           cm_AddCombatText(x - 10, y + 100, '+' + u_IntToStr(dmg) + _mod, $22CC22, _spID);
+
+         if _spID <> 5 then
+            begin
+              if i3 = 0 then
+                 Chat_AddMessage(3, high(word), n1 + ' hits ' + n2 + ' with ' + Spells[_spID].name + ' for ' + u_IntToStr(dmg) + ' magical damage.' );
+              if i3 = 1 then
+                 Chat_AddMessage(3, high(word), n1 + ' miss ' + n2 + ' with ' + Spells[_spID].name + '.' );
+              if i3 = 2 then
+                 Chat_AddMessage(3, high(word), n2 + ' dodge ' + n1 + '''s ' + Spells[_spID].name + '.' );
+              if i3 = 3 then
+                 Chat_AddMessage(3, high(word), n2 + ' block ' + n1 + '''s ' + Spells[_spID].name + ' and got ' + u_IntToStr(dmg) + ' magical damage.' );
+              if i3 = 10 then
+                 Chat_AddMessage(3, high(word), n1 + ' crits ' + n2 + ' with ' + Spells[_spID].name + ' for ' + u_IntToStr(dmg) + ' magical damage.' );
+              if i3 / 10 > 1.1 then
+                 Chat_AddMessage(3, high(word), n2 + ' block ' + n1 + '''s crit with ' + Spells[_spID].name + ' and got ' + u_IntToStr(dmg) + ' magical damage.' );
+            end
+         else
+            Chat_AddMessage(3, high(word), n1 + ' heals ' + n2 + ' with ' + Spells[_spID].name + ' for ' + u_IntToStr(dmg) + '.' ) ;
+
+         if die = 1 then
+         begin
+            Chat_AddMessage(3, high(word), n2 + ' dies.' );
+            units[tLID].ani := 5;
+            units[tLID].ani_frame:= 21 + units[tLID].data.Direct * 32;
+            units[tLID].ani_delay := 0;
+            units[tLID].in_act:=true;
+         end;
+end;
+
+procedure cm_RangeMiss( uLID, x,  y : longword);
+var n1 : UTF8String;
+begin
+  if not units[uLID].exist then exit;
+
+         in_action := true;
+         units[uLID].in_act:=true;
+         units[uLID].ani := 7;
+         units[uLID].ani_frame := 29 + units[uLID].data.Direct * 32;
+         units[uLID].ani_delay := 0;
+         n1 := units[uLID].name;
+         Chat_AddMessage(3, high(word), n1 + ' miss.' );
+end;
+
 procedure cm_SendMove( X, Y: byte );
 var
   _pkg : TPkg106; _head: TPackHeader;
@@ -952,6 +1207,34 @@ var
 begin
   _head._FLAG := $f;
   _head._ID   := 108;
+
+  _pkg.comID   := combat_id;
+  _pkg.uLID    := your_unit;
+  _pkg.skillID := skillID;
+  _pkg.tLID    := tLID;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure cm_SendRange(tLID, skillID : dword);
+var
+  _pkg : TPkg108; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 111;
 
   _pkg.comID   := combat_id;
   _pkg.uLID    := your_unit;
