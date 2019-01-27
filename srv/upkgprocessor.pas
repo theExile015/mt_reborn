@@ -180,6 +180,18 @@ type
     fail_code : byte;
   end;
 
+  TPkg046 = record
+    vName     : string[50];
+    goods     : array [1..20] of TGood;
+    fail_code : byte;
+  end;
+
+  TPkg047 = record
+    vName     : string[50];
+    _id       : dword;
+    fail_code : byte;
+  end;
+
   TPkg100 = record
     ID        : word;
     ceType    : byte;
@@ -255,6 +267,26 @@ type
     fail_code     : byte;
   end;
 
+  TPkg112 = record
+    comID, uLID   : dword;
+    tLID, skillID : dword;
+    x, y, ap_left : byte;
+    victims       : array [1..8] of TVictim;
+    fail_code     : byte;
+  end;
+
+  TPkg113 = record
+    uLID, aID, _what : dword;
+    aura_data: array [0..20] of TPkgAura;
+    fail_code : byte;
+  end;
+
+  TPkg114 = record
+    comID, uLID, spellID : dword;
+    cAP, cMP             : dword;
+    fail_code : byte;
+  end;
+
 procedure pkg001(pkg : TPkg001; sID : word);
    // 2
 procedure pkg003(pkg : TPkg003; sID : word);   // 3
@@ -295,6 +327,9 @@ procedure pkg043(pkg : TPkg043; sID : word);
 
 procedure pkg045(pkg : TPkg045; sID : word);
 
+procedure pkg047(pkg : TPkg047; sID : word);
+
+
 procedure pkg102(pkg : TPkg102; sID : word);
 
 procedure pkg105(pkg : TPkg105; sID : word);
@@ -303,6 +338,9 @@ procedure pkg107(pkg : TPkg107; sID : word);
 procedure pkg108(pkg : TPkg108; sID : word);
 
 procedure pkg111(pkg : TPkg111; sID : word);
+procedure pkg112(pkg : TPkg112; sID : word);
+
+procedure pkg114(pkg : TPkg114; sID : word);
 
 procedure pkgProcess(msg: string);
 
@@ -1165,9 +1203,10 @@ try
   if LocObjs[pkg.ID].exist then
      case LocObjs[pkg.ID].oType of
        1 : Obj_SendDialogs(sID, pkg.ID);
-      // 2 : Obj_SendVerndor(sId, pkg.ID);
-       5 :  Obj_StartBattle(sessions[sID].charLID, LocObjs[pkg.ID].props[1]);
+       3 : Obj_SendDialogs(sID, pkg.ID);
+       5 : Obj_StartBattle(sessions[sID].charLID, LocObjs[pkg.ID].props[1]);
      else
+       Writeln('OTYPE = ', LocObjs[pkg.ID].oType);
        WriteSafeText('DUMMY!!!', 1);
      end;
 
@@ -1175,6 +1214,7 @@ try
   if ObjDialogs[pkg.ID].exist then
      case ObjDialogs[pkg.ID].data.dType of
        3     : Obj_StartQuestBattle(sessions[sID].charLID, pkg.ID);
+       10    : Obj_SendVendors(sID, pkg.ID);
        11, 7 : Obj_QuestSend(Sessions[sID].charLID, pkg.ID);
      else
        WriteSafeText('~~ !!! ~~', 2);
@@ -1193,6 +1233,41 @@ end;
 procedure pkg045(pkg : TPkg045; sID : word);
 begin
   DB_SetCharTutor(Sessions[sID].charLID, pkg.fail_code);
+end;
+
+procedure pkg047(pkg :TPkg047; sID : word);
+var i, j, k : integer;
+    charLID : dword;
+begin
+  k := -1;
+  for i := 1 to high(VendorDB) do
+      if VendorDB[i].name = pkg.vName then k := i;
+  if k = -1 then Exit;
+
+  charLID := sessions[sID].charLID;
+  if pkg.fail_code = 1 then
+     begin
+       if chars[charLID].Inventory[pkg._id].gID <> 0 then
+          begin
+            if itemdb[chars[charLID].Inventory[pkg._id].iID].data.iType = 24 then
+               j := chars[charLID].Inventory[pkg._id].cDur else j := 1;
+            Char_AddNumbers(charLID, round(ItemDB[chars[charLID].Inventory[pkg._id].iID].data.price * 0.3 * j), 0, 0, 0, 0);
+            DB_DelItem(charLID, pkg._id);
+            DB_GetCharInv(charLID);
+          end;
+     end;
+
+  if pkg.fail_code = 2 then
+     begin
+       j := -1;
+       for i := 1 to high(VendorDB[k].goods) do
+           if VendorDB[k].goods[i].id = pkg._id then j := i;
+       if j = -1 then Exit;
+       if ItemDB[VendorDB[k].goods[j].id].data.price > chars[charLID].Numbers.gold then Exit;
+       Char_AddItem(charLID, pkg._id);
+       dec(chars[charlid].Numbers.gold, ItemDB[VendorDB[k].goods[j].id].data.price );
+       DB_SetCharData(charLID, chars[charLID].header.name);
+     end;
 end;
 
 procedure pkg102(pkg : TPkg102; sID : word);
@@ -1291,7 +1366,12 @@ begin
 // Если нашли - устанавливаем координаты, убавляем АП
   combats[comLID].units[uLID].Data.pos.x:=pkg.X;
   combats[comLID].units[uLID].Data.pos.y:=pkg.y;
+
+  writeln('debug 1');
   if length(combats[comLID].Way) < 2 then exit;
+  writeln('debug 2');
+  if length(combats[comLID].Way) > 2 then CM_AddAura(comLID, uLID, 1, 0);  // Keep moving
+  writeln('debug 3');
   combats[comLID].units[uLID].Data.cAP:=combats[comLID].units[uLID].Data.cAP - (length(combats[comLID].Way) - 1) * Step_AP;
   Writeln('AP LEFT : ',  combats[comLID].units[uLID].Data.cAP);
   DIR := CM_SetUnitDirection(combats[comLID].Way[length(combats[comLID].Way) - 2].x,
@@ -1428,7 +1508,76 @@ begin
   if comLID = high(DWORD) then exit;
 
   CM_RangeAttack( comLID, pkg.uLID, pkg.tLID, pkg.skillID);
+end;
 
+procedure pkg112(pkg : TPkg112; sID : word);
+var i: integer;
+    comLID : DWORD;
+begin
+  comLID := CM_GetCombatLID(pkg.comID);
+  if comLID = high(DWORD) then exit;
+
+  CM_FriendlyCast( comLID, pkg.uLID, pkg.tLID, pkg.skillID);
+end;
+
+procedure pkg114(pkg : TPkg114; sID : word);
+var comLID, charLID : DWORD;
+    ef, rs, i : integer;
+    _pkg : TPkg114; _head : TPackHeader;
+    mStr : TMemoryStream;
+begin
+  comLID := CM_GetCombatLID(pkg.comID);
+  if comLID = high(DWORD) then exit;
+
+  if pkg.spellID = 14 then
+     begin
+       if combats[comLID].Units[pkg.uLID].Data.cAP > 24 then
+       if combats[comLID].Units[pkg.uLID].Data.cMP > 50 then
+          begin
+            if cm_FindAura(comLID, pkg.uLID, 8) <> high(byte) then
+               cm_DelAura(comLID, pkg.uLID, 8);
+            ef := 1 + combats[comLID].Units[pkg.uLID].spow + combats[comLID].Units[pkg.uLID].spi * 2;
+            rs := CM_AddAura(comLID, pkg.uLID, 8, ef div 3);
+            combats[comLID].Units[pkg.uLID].auras[rs].left:=3;
+
+            dec( combats[comLID].Units[pkg.uLID].Data.cAP, 25 );
+            dec( combats[comLID].Units[pkg.uLID].Data.cMP, 50 );
+          end;
+     end;
+try
+  mStr := TMemoryStream.Create;
+
+  _head._flag:=$f;
+  _head._id:=114;
+
+  _pkg.comID   := combats[comLID].ID;
+  _pkg.uLID    := pkg.uLID;
+
+  _pkg.cAP     := combats[comLID].Units[pkg.uLID].Data.cAP;
+  _pkg.cMP     := combats[comLID].Units[pkg.uLID].Data.cMP;
+
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+           // Отправляем пакет всем игрока в бою
+  for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uType = 1 then
+         begin
+         TCP.FCon.IterReset;
+         charLID := combats[comLID].Units[i].charLID;
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                Writeln('Bytes sended... ', TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator));
+                Break;
+              end;
+         end;
+finally
+  mStr.Free;
+end;
 end;
 
 procedure pkgProcess(msg: string);

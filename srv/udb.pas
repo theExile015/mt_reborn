@@ -267,7 +267,7 @@ TRY
     Query.Next;
   end;
 
-{ WriteSafeText('Getting VendorDB...', 2 );
+  WriteSafeText('Getting VendorDB...', 2 );
   Query.Close;
   Query.SQL.Text:= 'SELECT * FROM vendors';
   Query.Open;
@@ -282,39 +282,39 @@ TRY
     pr := GetItemProps(Query.FieldByName('goods1').AsString);
     j := 0;
     for i := 1 to 12 do
-      if pr[i * 2 - 1].pNum > 0 then
+      if pr[i * 2 - 1] > 0 then
          begin
            inc(j);
            VendorDB[id].goods[j].exist := true;
-           VendorDB[id].goods[j].id := pr[i * 2 - 1].pNum;
-           VendorDB[id].goods[j].num:= pr[i * 2].pNum;
+           VendorDB[id].goods[j].id := pr[i * 2 - 1];
+           VendorDB[id].goods[j].num:= pr[i * 2];
          end;
 
     pr := GetItemProps(Query.FieldByName('goods2').AsString);
     for i := 1 to 12 do
-      if pr[i * 2 - 1].pNum > 0 then
+      if pr[i * 2 - 1] > 0 then
          begin
            inc(j);
            VendorDB[id].goods[j].exist := true;
-           VendorDB[id].goods[j].id := pr[i * 2 - 1].pNum;
-           VendorDB[id].goods[j].num:= pr[i * 2].pNum;
+           VendorDB[id].goods[j].id := pr[i * 2 - 1];
+           VendorDB[id].goods[j].num:= pr[i * 2];
          end;
 
     pr := GetItemProps(Query.FieldByName('goods3').AsString);
     for i := 1 to 12 do
-      if pr[i * 2 - 1].pNum > 0 then
+      if pr[i * 2 - 1] > 0 then
          begin
            inc(j);
            VendorDB[id].goods[j].exist := true;
-           VendorDB[id].goods[j].id := pr[i * 2 - 1].pNum;
-           VendorDB[id].goods[j].num:= pr[i * 2].pNum;
+           VendorDB[id].goods[j].id := pr[i * 2 - 1];
+           VendorDB[id].goods[j].num:= pr[i * 2];
          end;
 
   //  for i := 1 to high(VendorDB[id].goods) do
   //      WriteSafeText(IntToStr(VendorDB[id].goods[i].id), 1);
 
     Query.Next;
-  end;   }
+  end;
 
   WriteSafeText('Getting MobDataDB...', 2 );
   Query.Close;

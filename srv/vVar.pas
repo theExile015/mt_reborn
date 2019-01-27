@@ -186,6 +186,8 @@ type
     left  : dword;
   end;
 
+  TPkgAura = array [1..16] of TAura;
+
   TUnitData = record
     cHP, cMP, cAP, mHP, mMP, mAP : integer;
     pos     : TMPoint;
@@ -223,7 +225,7 @@ type
     VData                 : TUnitVisualData;
     PData                 : TUnitPrivateData;
 
-     range                : byte;
+    range                 : byte;
     minD, maxD, armor     : word;
     Ini, APH, bVal, spi   : word;
     str, spow             : word;
@@ -233,7 +235,7 @@ type
 
     tar_pos               : TMPoint;
 
-    rounds_in             : word;
+    rounds_in, aiFlag     : word;
     turn                  : boolean;
     auras                 : array [1..16] of TAura;
   end;
@@ -313,6 +315,19 @@ type
     LItems: array [1..12] of TLTItem;
   end;
 
+  TGood = record
+    exist   : boolean;
+    id, num : dword;
+    hh, mm, ss, timer : word;
+  end;
+
+  TVendor = record
+    exist : boolean;
+    name  : string;
+    repair: boolean;
+    goods : array [1..20] of TGood;
+  end;
+
 Var
   CS : TCriticalSection;
 
@@ -348,6 +363,7 @@ Var
   MobDataDB : array [1..100] of TMob;
   ceDB      : array [1..100] of TCE;
   LootDB    : array [1..50] of TLootTable;
+  VendorDB  : array [1..50] of TVendor;
 
 implementation
 

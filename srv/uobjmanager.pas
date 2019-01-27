@@ -9,7 +9,7 @@ uses
   Classes, SysUtils, vNetCore, vVar;
 
 procedure Obj_SendDialogs(sID, oID : DWORD);
-//procedure Obj_SendVendors(sID, oID : DWORD)
+procedure Obj_SendVendors(sID, oID : DWORD);
 
 procedure Obj_QuestSend(charLID, dID : DWORD);
 procedure Obj_QuestProcess(sID, qID, rID, f_code : DWORD);
@@ -110,6 +110,47 @@ begin
          _head._id   := 41;
 
          _pkg.fail_code := k - 1;
+
+         mStr.Write(_head, sizeof(_head));
+         mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет
+         TCP.FCon.IterReset;
+         while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                Break;
+              end;
+       finally
+         mStr.Free;
+       end;
+end;
+
+procedure Obj_SendVendors(sID, oID : DWORD);
+var _head : TPackHEader; _pkg: TPkg046;
+    mStr : TMemoryStream;
+    vlid, k, i: byte;
+begin
+  _head._flag := $f;
+  _head._id   := 46;
+
+  for i := 1 to high(_pkg.goods) do
+    _pkg.goods[i].exist:=false;
+
+   vlid := ObjDialogs[oID].qLink;
+   k := 0;
+   _pkg.vName := VendorDB[vlid].name;
+   for i := 1 to high(VendorDB[vlid].goods) do
+     if VendorDB[vLID].goods[i].exist then
+        begin
+          inc(k);
+          _pkg.goods[k] := VendorDB[vLID].goods[i];
+        end;
+
+  try
+         mStr := TMemoryStream.Create;
 
          mStr.Write(_head, sizeof(_head));
          mStr.Write(_pkg, sizeof(_pkg));

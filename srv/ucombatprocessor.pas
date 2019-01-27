@@ -21,6 +21,9 @@ function CM_AddAIUnit(comID, uID : DWORD; uTeam : byte) : byte;
 
 function CM_MeleeAttack( comLID, uLID, tLID, spID : dword) : byte;
 function CM_RangeAttack( comLID, uLID, tLID, spID : dword) : byte;
+function CM_FriendlyCast( comLID, uLID, tLID, spID : dword) : byte;
+procedure CM_Effect(comLID, uLID, e_ID: DWORD);
+procedure CM_Effect2(comLID, uLID, e_ID: DWORD);
 
 function CM_CombatEnd( comLID, WinTeam : dword) : byte;
 function CM_Loot(charLID, lootID: dword) : byte;
@@ -106,6 +109,8 @@ for i := 0 to high(combats) do
 // перестройка АТБ-шкалы
     if combats[i].On_Recount then
        begin
+         for j := 0 to high(combats[i].Units) do
+             CM_DelAura(i, j, 1);
          combats[i].NextTurn    := -1;
          combats[i].NextTurnATB := -1;
 // сначала проверяем, может кто-то уже зашёл за финишную черту
@@ -134,6 +139,40 @@ for i := 0 to high(combats) do
                        if combats[i].units[j].alive then
                        if combats[i].units[j].uType = 1 then
                           inc(combats[i].units[j].rounds_in);
+                       // срабатываение аур по времени
+                     for j := 0 to high(combats[i].units) do
+                     if combats[i].units[j].exist then
+                        for n := 1 to 16 do
+                            if combats[i].units[j].auras[n].exist then
+                               begin
+                                 if combats[i].units[j].auras[n].id = 4 then
+                                    begin  // rend
+                                      CM_Effect(i, j, 4);
+                                      dec(combats[i].units[j].auras[n].left);
+                                      if combats[i].units[j].auras[n].left <= 0 then
+                                         CM_DelAura(i, j, 4);
+                                    end;
+                                  if combats[i].units[j].auras[n].id = 6 then
+                                    begin  // poison wave
+                                      CM_Effect(i, j, 6);
+                                      dec(combats[i].units[j].auras[n].left);
+                                      if combats[i].units[j].auras[n].left <= 0 then
+                                         CM_DelAura(i, j, 6);
+                                    end;
+                                  if combats[i].units[j].auras[n].id = 8 then
+                                    begin  // inner fire
+                                      CM_Effect2(i, j, 8);
+                                      dec(combats[i].units[j].auras[n].left);
+                                      if combats[i].units[j].auras[n].left <= 0 then
+                                         CM_DelAura(i, j, 8);
+                                    end;
+                                  if combats[i].units[j].auras[n].id = 11 then
+                                    begin  // suppersion
+                                      dec(combats[i].units[j].auras[n].left);
+                                      if combats[i].units[j].auras[n].left <= 0 then
+                                         CM_DelAura(i, j, 11);
+                                    end;
+                               end;
                    end;
 // Двигаем юнитов по АТБ шкале
                  for j := 0 to length(combats[i].units) - 1 do
@@ -179,7 +218,7 @@ for i := 0 to high(combats) do
 end;
 
 function CM_StartNew(initiator, ceType, ceUID : DWORD): word;
-var i, j, r: integer;
+var i, j, k, r: integer;
 begin
   result := high(word);
                      // создаём бой
@@ -202,6 +241,15 @@ begin
              begin
                combats[i].Units[j].uID := high(word);
                combats[i].Units[j].uLID := high(word);
+               for k := 1 to high(combats[i].Units[j].auras) do
+                   begin
+                     combats[i].Units[j].auras[k].exist := false;
+                     combats[i].Units[j].auras[k].id:=0;
+                     combats[i].Units[j].auras[k].left:=0;
+                     combats[i].Units[j].auras[k].stacks:=0;
+                     combats[i].Units[j].auras[k].sub:=0;
+                     combats[i].Units[j].auras[k]._st:=false;
+                   end;
              end;
 
          result := combats[i].ID;
@@ -267,6 +315,7 @@ begin
 
         combats[comLID].Units[i].exist   := true;
         combats[comLID].Units[i].alive   := true;
+        combats[comLID].Units[i].visible := true;
         combats[comLID].Units[i].uLID    := i;
         combats[comLID].Units[i].uType   := 1;
         combats[comLID].Units[i].uTeam   := uTeam;
@@ -345,6 +394,7 @@ begin
       begin
         combats[comLID].Units[i].exist   := true;
         combats[comLID].Units[i].alive   := true;
+        combats[comLID].Units[i].visible := true;
         combats[comLID].Units[i].uLID    := i;
         combats[comLID].Units[i].uType   := 2;
         combats[comLID].Units[i].uTeam   := uTeam;
@@ -1224,7 +1274,340 @@ begin
        CM_SendBaseInfo( comLID, tLID );
 end;
 
+function CM_FriendlyCast( comLID, uLID, tLID, spID : dword) : byte;
+var i, j, k, rs: integer;
+    r, charLID: DWORD;
+    dr : single;
+  //  charLID, tarLID, _charLID, _tarLID : DWORD;
+    dam : integer;
+    sX, sY, tX, tY : dword;
+    targets : array [0..50] of TMPoint;
+    trueApCost, trueMpCost, trueRange : integer;
+    spi1, spi2 : integer;
+    _pkg : TPkg111; _head : TPackHeader;
+    mStr : TMemoryStream;
+begin
+  if not combats[comLID].exist then exit;
+  if not combats[comLID].Units[uLID].exist then exit;
+  if not combats[comLID].Units[tLID].exist then exit;
 
+  if (spID <> 5) then exit;
+  dam := 0;
+
+  sX := combats[comLID].units[uLID].Data.pos.X;
+  sY := combats[comLID].units[uLID].Data.pos.Y;
+  tX := combats[comLID].units[tLID].Data.pos.X;
+  tY := combats[comLID].units[tLID].Data.pos.Y;
+
+  for i := 0 to high(targets) do
+    begin
+      targets[i].x := 0;
+      targets[i].y := 0;
+    end;
+
+  case spID of
+    5:
+      begin
+        trueApCost := 25;
+        trueMpCost := 37;
+        trueRange  := 5;
+      end;
+  else
+    WriteSafeText('Unknown spID = ' + IntToStr(spID), 3);
+    exit;
+  end;
+
+ // if tLID <> uLID then
+  if not InSector( combats[comLID].units[uLID].Data.Direct, m_Angle( sX, sY, tX, tY ) ) then
+     begin
+       WriteSafeText( ' Not in sector for range attack !! ', 3 );
+       exit;
+     end;
+
+  if combats[comLID].units[uLID].Data.cAP < trueApCost then
+     begin
+       WriteSafeText( ' Not enough AP for range attack !! ', 3 );
+       exit;
+     end;
+
+  CM_DelAura(comLID, uLID, 1); // Keep moving
+  sleep(10);
+  CM_DelAura(comLID, uLID, 2); // INERTIA
+
+// теперь рассчитываем простреливаемость
+// построили маску карты
+// заполняем маску карты "препядствиями"
+  Map_CreateMask( comLID );
+  for i := 0 to length(combats[comLID].units) - 1 do
+      if combats[comLID].units[i].exist and combats[comLID].units[i].alive then
+      if (i <> uLID) then
+         combats[comLID].MapMatrix[combats[comLID].units[i].Data.pos.x, combats[comLID].units[i].Data.pos.Y].cType:= 1;
+
+  k := 0;
+  for i:=1 to 19 do
+    for j:=1 to 19 do
+      if col2d_LineVSCircle( line( sX * 64 + 32, sY * 64 + 32  ,
+                                   tX * 64 + 32, tY * 63 + 32 ),
+                             circle( i * 64 + 32, j * 64 + 32, 32 ) ) then
+         if combats[comLID].MapMatrix[i, j].cType = 1 then
+         if distance( i, j, sX, sY ) <= trueRange then
+            begin
+              targets[k].x:= i;
+              targets[k].y:= j;
+              inc(k);
+            end;
+  Writeln('k = ', k);
+  if k = 0 then
+     begin
+       WriteSafeText( ' Shooting line is empty! ', 3 );
+       exit;
+     end;
+// построили линию обстрела, теперь её нужно отсортировать на основании дистанции
+  if k > 1 then
+  begin
+    dr := distance( sX, sY, targets[0].x, targets[0].y );
+    j  := 0; // заносим нулевую ячейку как самую ближнюю
+    for i := 1 to k do
+      if dr > distance( sX, sY, targets[i].x, targets[i].y ) then
+         begin  // если кто-то ещё ближе, то запоминаем.
+           j := i;
+           dr := distance( sX, sY, targets[i].x, targets[i].y ) ;
+         end;
+  end else j := 0;
+// обнаружили самую ближнюю цель, теперь проверяем, игрок ли это или нет...
+  k := 10000; // флаг того, что цель не юнит
+  for i := 0 to length(combats[comLID].units) - 1 do
+    if combats[comLID].units[i].exist then
+    if combats[comLID].units[i].alive then
+       if combats[comLID].units[i].Data.pos.x = targets[j].x then
+       if combats[comLID].units[i].Data.pos.y = targets[j].y then
+          begin
+            k := i; // флагаем юнита, в которого попали...
+            Writeln(combats[comLID].Units[i].VData.name);
+            break;
+          end;
+  // вычитаем АП
+  combats[comLID].units[uLID].Data.cAP:=combats[comLID].units[uLID].Data.cAP - trueApCost;
+  if combats[comLID].units[uLID].Data.cAP < 0 then combats[comLID].units[uLID].Data.cAP := 0;
+
+{  // отменяем инвиз, если есть
+  if not combats[comLID].units[charLID].visible then
+     CM_TurnVisible(comLID, charLID);         }
+
+  if k <> 10000 then
+     begin
+         // RECOVERY SPELL
+      if spID = 5 then
+         begin
+           if combats[comLID].units[uLID].Data.cMP < trueMpCost then exit;
+           dam := 17 + (combats[comLID].units[uLID].spow + combats[comLID].units[uLID].Spi);
+           combats[comLID].units[uLID].Data.cMP:=combats[comLID].units[uLID].Data.cMP - trueMpCost;
+           combats[comLID].units[k].Data.cHP:= combats[comLID].units[k].Data.cHP + dam;
+           // отменяем инвиз у цели, если есть
+           if not combats[comLID].units[k].visible then
+       //    CM_TurnVisible(comLID, k);
+           // снимаем яд, если есть
+           if CM_FindAura(comLID, k, 6) <> high(byte) then CM_DelAura(comLID, k, 6);
+
+           combats[comLID].units[uLID].Data.cAP:=combats[comLID].units[uLID].Data.cAP - trueApCost;
+           if combats[comLID].units[uLID].Data.cAP < 0 then combats[comLID].units[uLID].Data.cAP := 0;
+           // отменяем инвиз у кастера, если есть
+           if not combats[comLID].units[uLID].visible then
+         //  CM_TurnVisible(comLID, charLID);
+         end;
+
+
+      if (combats[comLID].units[k].Data.cHP >= combats[comLID].units[k].Data.mHP ) then
+        begin
+          combats[comLID].units[k].Data.cHP := combats[comLID].units[k].Data.mHP
+        end;
+     end;
+
+
+     try
+       writeln(combats[comLID].Units[uLID].VData.name);
+       writeln(combats[comLID].Units[k].VData.name);
+       mStr := TMemoryStream.Create;
+
+       _head._flag := $f;
+       _head._id   := 112;
+
+       _pkg.comID   := combats[comLID].ID;
+       _pkg.x       := sX;
+       _pkg.y       := sY;
+       _pkg.tLID    := k;
+       _pkg.uLID    := uLID;
+       _pkg.skillID := spID;
+       _pkg.ap_left := combats[comLID].Units[uLID].Data.cAP;
+
+       _pkg.victims[1].uLID   := k;
+       _pkg.victims[1].dmg    := dam;
+       _pkg.victims[1].hp_left:= combats[comLID].Units[k].Data.cHP;
+
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+         // Отправляем пакет всем игрока в бою
+       for i := 0 to high(combats[comLID].Units) do
+           if combats[comLID].Units[i].exist then
+           if combats[comLID].Units[i].uType = 1 then
+              begin
+                TCP.FCon.IterReset;
+                charLID := combats[comLID].Units[i].charLID;
+                while TCP.FCon.IterNext do
+                if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+                if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+                   begin
+                     TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                     break;
+                   end;
+              end;
+     finally
+       mStr.Free;
+     end;
+       CM_SendBaseInfo( comLID, uLID );  // отправляем обновлённые данные о хп
+       CM_SendBaseInfo( comLID, tLID );
+end;
+
+procedure CM_Effect(comLID, uLID, e_ID: DWORD);
+var i, r, rs, dmg, deadly: integer;
+    cID : DWORD;
+    dr  : single;
+    s, s2 : string;
+    _charLID : DWORD;
+begin
+ {
+  if e_ID = 4 then
+     begin  // rend
+       r := CM_FindAura(comLID, uLID, 4);
+       if r = high(byte) then Exit;
+
+       dmg := Combats[comLID].units[uLID].auras[r].stacks;
+
+       if _charLID <> high(dword) then
+          if chars[_charLID].perks[5][2].pNum > 0 then  // Сурвайвал инстинкт
+             dr := PerksDB[8].xyz[chars[_charLID].perks[5][2].pNum].x / 100;
+       dmg := trunc(dmg * (1 - dr));
+
+       Dec(combats[comLID].units[charLID].cHP, dmg);
+
+       if combats[comLID].units[charLID].cHP <= 0 then
+          begin
+            combats[comLID].units[charLID].cHP := 0;
+            deadly := 1;
+            combats[comLID].units[charLID].alive:=false;
+            combats[comLID].xpPool := combats[comLID].xpPool + exp_mob[combats[comlid].units[charLID].lvl];
+          end;
+
+       s := IntToStr(combats[comLID].units[charLID].uType) + '`' +
+            IntToStr(combats[comLID].units[charLID].charID) + '`7`' +
+            IntToStr(dmg) + '`' + IntToStr(deadly) + '`';
+     end;
+
+  if e_ID = 6 then
+     begin  // poison wave
+       r := CM_FindAura(comLID, charLID, 6);
+       if r = high(byte) then Exit;
+
+       dmg := Combats[comLID].units[charLID].auras[r].stacks;
+       if _charLID <> high(dword) then
+          if chars[_charLID].perks[5][2].pNum > 0 then  // Сурвайвал инстинкт
+             dr := PerksDB[8].xyz[chars[_charLID].perks[5][2].pNum].x / 100;
+       dmg := trunc(dmg * (1 - dr));
+       if combats[comLID].units[charLID].uRace = 4 then   // поправка на тролля
+          dmg := trunc(dmg * 0.9);
+
+       Dec(combats[comLID].units[charLID].cHP, dmg);
+
+       if combats[comLID].units[charLID].cHP <= 0 then
+          begin
+            combats[comLID].units[charLID].cHP := 0;
+            deadly := 1;
+            combats[comLID].units[charLID].alive:=false;
+            combats[comLID].xpPool := combats[comLID].xpPool + exp_mob[combats[comlid].units[charLID].lvl];
+          end;
+
+       s := IntToStr(combats[comLID].units[charLID].uType) + '`' +
+            IntToStr(combats[comLID].units[charLID].charID) + '`12`' +
+            IntToStr(dmg) + '`' + IntToStr(deadly) + '`';
+     end;
+
+ if s <> '' then
+ for i := 0 to high(combats[comLID].units) do
+    if combats[comLID].units[i].exist then
+       if combats[comLID].units[i].uType = 1 then
+          begin
+            cID := Char_GetCharCID( combats[comLID].units[i].charID );
+            s2 := IntToStr(connections[cID].id) + '`062`' + s;
+            TCP.FCon.IterReset;
+            while TCP.FCon.IterNext do
+            if (TCP.FCon.Iterator.PeerAddress = connections[cid].ip) and
+               (TCP.FCon.Iterator.LocalPort = connections[cid].lport) then
+            rs := TCP.FCon.SendMessage(s2, TCP.FCon.Iterator);
+            if rs < 0 then WriteSafeText(IntToStr(rs));
+            if rs = 0 then Con_Clear(cid);
+          end;
+
+ CM_SendBaseInfo( comLID );  // отправляем обновлённые данные о хп    }
+end;
+
+procedure CM_Effect2(comLID, uLID, e_ID: DWORD);
+var i, r, rs, dmg, deadly: integer;
+    cID : DWORD;
+    dr  : single;
+    s, s2 : string;
+    _charLID : DWORD;
+begin
+ { writesafetext(' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ');
+  s:= '';
+  _charLID := Char_GetCharLID2(combats[comLID].units[charLID].charID);
+  if e_ID = 8 then
+     begin  // inner fire
+       r := CM_FindAura(comLID, charLID, 8);
+       if r = high(byte) then Exit;
+
+       dmg := Combats[comLID].units[charLID].auras[r].stacks;
+
+       inc(combats[comLID].units[charLID].cHP, dmg);
+
+       s := IntToStr(combats[comLID].units[charLID].uType) + '`' +
+            IntToStr(combats[comLID].units[charLID].charID) + '`14`' +
+            IntToStr(dmg) + '`';
+     end;
+
+  if e_ID = 10 then
+     begin  // vampirism
+       r := CM_FindAura(comLID, charLID, 10);
+       if r = high(byte) then Exit;
+
+       dmg := Combats[comLID].units[charLID].auras[r].stacks;
+
+       inc(combats[comLID].units[charLID].cHP, dmg);
+       CM_DelAura(comLID, charLID, 10);
+
+       s := IntToStr(combats[comLID].units[charLID].uType) + '`' +
+            IntToStr(combats[comLID].units[charLID].charID) + '`16`' +
+            IntToStr(dmg) + '`';
+     end;
+
+ if s <> '' then
+ for i := 0 to high(combats[comLID].units) do
+    if combats[comLID].units[i].exist then
+       if combats[comLID].units[i].uType = 1 then
+          begin
+            cID := Char_GetCharCID( combats[comLID].units[i].charID );
+            s2 := IntToStr(connections[cID].id) + '`063`' + s;
+            TCP.FCon.IterReset;
+            while TCP.FCon.IterNext do
+            if (TCP.FCon.Iterator.PeerAddress = connections[cid].ip) and
+               (TCP.FCon.Iterator.LocalPort = connections[cid].lport) then
+            rs := TCP.FCon.SendMessage(s2, TCP.FCon.Iterator);
+            if rs < 0 then WriteSafeText(IntToStr(rs));
+            if rs = 0 then Con_Clear(cid);
+          end;
+
+ CM_SendBaseInfo( comLID );  // отправляем обновлённые данные о хп     }
+end;
 
 function CM_CombatEnd( comLID, WinTeam : dword) : byte;
 var i, j, rs: integer;
@@ -1544,7 +1927,9 @@ begin
 end;
 
 function CM_AddAura(comLID, charLID, ID, stacks : DWord): byte;
-var i: integer;
+var i, j: integer;
+    _head : TPackHeader; _pkg: Tpkg113;
+    mStr  : TMemoryStream;
 begin
   result := high(byte);
   for i := 1 to high(combats[comLID].units[charLID].auras) do
@@ -1559,6 +1944,7 @@ begin
       if not combats[comLID].units[charLID].auras[i].exist then
          begin
            result := i;
+           Writeln('Aura ', ID, ' added in slot ', i,' for unit ', combats[comLID].Units[charLID].VData.name);
            combats[comLID].units[charLID].auras[i].exist := true;
            combats[comLID].units[charLID].auras[i].id := ID;
            combats[comLID].units[charLID].auras[i].sub := 1;
@@ -1571,11 +1957,59 @@ begin
            break;
          end;
 
-//  CM_SendAuras(comLID);
+if result = high(byte) then exit;
+try
+  mStr := TMemoryStream.Create;
+
+  _head._flag :=  $f;
+  _head._id   := 113;
+
+  _pkg.uLID := charLID;
+  _pkg.aID  := ID;
+  _pkg._what:= 1; // флаг того, что гейним ауру
+
+
+{  for i := 0 to high(combats[comLID].Units) do
+    if combats[comLID].Units[i].exist then
+       for j := 1 to 16 do
+         begin
+           writeln(combats[comLID].Units[i].VData.name, '>>>', combats[comLID].Units[i].auras[j].exist);
+           writeln(combats[comLID].Units[i].VData.name, '>>>', combats[comLID].Units[i].auras[j].id);
+           writeln(combats[comLID].Units[i].VData.name, '>>>', combats[comLID].Units[i].auras[j].stacks);
+         end;     }
+
+  for i := 0 to high(combats[comLID].Units) do
+      _pkg.aura_data[i] := combats[comLID].Units[i].auras;
+
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+  Writeln(SizeOf(_pkg));
+
+    // Отправляем пакет
+  for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uType = 1 then
+         begin
+           charLID := i;
+           TCP.FCon.IterReset;
+           while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                Writeln('Bytes << ', TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator));
+                Break;
+              end;
+         end;
+finally
+  mStr.Free;
+end;
 end;
 
 function CM_DelAura(comLID, charLID, ID : DWord): byte;
-var i: integer;
+var i, j: integer;
+    _head : TPackHeader; _pkg: Tpkg113;
+    mStr  : TMemoryStream;
 begin
   result := high(byte) ;
   for i := 1 to high(combats[comLID].units[charLID].auras) do
@@ -1585,9 +2019,45 @@ begin
               combats[comLID].units[charLID].auras[i].exist := false;
               combats[comLID].units[charLID].auras[i]._st:=false;
               combats[comLID].units[charLID].auras[i].stacks:=0;
+              result := 0;
               WriteSafeText('Aura ' + IntToStr(combats[comLID].units[charLID].auras[i].id) + ' deleted.', 1);
               break;
             end;
+if result = high(byte) then exit;
+try
+  mStr := TMemoryStream.Create;
+
+  _head._flag :=  $f;
+  _head._id   := 113;
+
+  _pkg.uLID := charLID;
+  _pkg.aID  := ID;
+  _pkg._what:= 2; // флаг того, что теряем ауру
+
+  for i := 0 to high(combats[comLID].Units) do
+      _pkg.aura_data[i] := combats[comLID].Units[i].auras;
+
+   mStr.Write(_head, sizeof(_head));
+   mStr.Write(_pkg, sizeof(_pkg));
+
+    // Отправляем пакет
+   for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uType = 1 then
+         begin
+           charLID := i;
+           TCP.FCon.IterReset;
+           while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                Break;
+              end;
+         end;
+finally
+  mStr.Free;
+end;
  // CM_SendAuras(comLID);
 end;
 
@@ -1595,13 +2065,16 @@ function CM_FindAura(comLID, charLID, ID : DWord): byte;
 var i: integer;
 begin
   result := high(byte) ;
+  Writeln('Looking for aura: ', i, ' for ', combats[comLID].Units[charLID].VData.name);
   for i := 1 to high(combats[comLID].units[charLID].auras) do
       if combats[comLID].units[charLID].auras[i].exist then
          if combats[comLID].units[charLID].auras[i].id = ID then
             begin
               result := i;
+              Writeln('Found in slot ', i);
               exit;
             end;
+  Writeln('Not found');
 end;
 
 procedure CM_SendUnits(comLID, charLID : word);
