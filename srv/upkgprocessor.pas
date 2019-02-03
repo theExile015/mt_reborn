@@ -172,7 +172,7 @@ type
 
   TPkg044 = record
     _what : dword;
-    _num  : dword;
+    _num  : integer;
     fail_code : byte;
   end;
 
@@ -284,6 +284,11 @@ type
   TPkg114 = record
     comID, uLID, spellID : dword;
     cAP, cMP             : dword;
+    fail_code : byte;
+  end;
+
+  TPkg115 = record
+    ATB_Data  : array [0..20] of TATBItem;
     fail_code : byte;
   end;
 
@@ -1266,6 +1271,7 @@ begin
        if ItemDB[VendorDB[k].goods[j].id].data.price > chars[charLID].Numbers.gold then Exit;
        Char_AddItem(charLID, pkg._id);
        dec(chars[charlid].Numbers.gold, ItemDB[VendorDB[k].goods[j].id].data.price );
+       Char_SendNew(charLID, 1,  -1 * ItemDB[VendorDB[k].goods[j].id].data.price );
        DB_SetCharData(charLID, chars[charLID].header.name);
      end;
 end;
@@ -1322,12 +1328,33 @@ begin
 end;
 
 procedure pkg105(pkg : TPkg105; sID : word);
-var comLID : dword;
+var comLID, j, n : dword;
 begin
   comLID := CM_GetCombatLID(pkg.comID);
   if comlid <> high(dword) then
      if combats[comlid].NextTurn = pkg.uLID then
         combats[comlid].On_Recount := true;
+  if pkg.fail_code = 0 then
+     if combats[comlid].Units[pkg.uLID].Data.cAP = combats[comlid].Units[pkg.uLID].Data.mAP then
+        cm_AddAura(comLID, pkg.uLID, 25, 1) else cm_DelAura(comLID, pkg.uLID, 25);
+
+  if pkg.fail_code = 1 then
+     begin
+       inc(combats[comlid].Units[pkg.uLID].ATB, 500);
+       cm_AddAura(comLID, pkg.uLID, 25, 1);
+     end;
+
+  n := CM_FindAura(comLID, pkg.uLID, 25);
+  if n <> high(byte) then
+     if combats[comLID].Units[pkg.uLID].auras[n].stacks >= 3 then
+        begin
+          CM_SendEndBattle(comLID, pkg.uLID, 100);
+          combats[comLID].Units[pkg.uLID].exist := false;
+          for j := 0 to high(combats[comLID].Units) do
+              if combats[comLID].Units[j].exist then
+              if combats[comLID].Units[j].uType = 1 then
+                 cm_SendUnits(comLID, j);
+        end;
 end;
 
 procedure pkg106(pkg : TPkg106; sID : word);

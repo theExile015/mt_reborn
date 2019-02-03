@@ -25,7 +25,7 @@ function Char_CalculateStats(charLID: dword): word;
 procedure char_MoveToLoc(charLID, locID : DWORD) ;
 procedure char_SendLocObjs(charLID, locLID: DWORD) ;
 procedure Char_AddItem(charLID, protID : DWORD) ;
-procedure Char_SendNew(charLID, what, num: DWORD);
+procedure Char_SendNew(charLID, what, num: integer);
 
 implementation
 
@@ -517,7 +517,7 @@ begin
   Char_SendNew(CharLID, 5, protID);
 end;
 
-procedure Char_SendNew(charLID, what, num: DWORD);
+procedure Char_SendNew(charLID, what, num: integer);
 var _head : TPackHeader; _pkg : Tpkg044;
     mStr  : TMemoryStream;
 begin

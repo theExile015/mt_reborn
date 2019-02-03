@@ -50,6 +50,8 @@ procedure CM_SendTurnStart(comLID, uLID : DWORD );
 procedure CM_SendBaseInfo( comLID, uLID : DWORD );
 procedure CM_SendEndBattle( comLID, uLID, WinTeam : DWORD );
 
+procedure CM_SendATB( comLID : DWORD );
+
 var
   zero_combat : TCombatEvent;
 
@@ -102,8 +104,24 @@ for i := 0 to high(combats) do
     GetTime(hh, mm, ss, ms);
     if abs((60 * mm + ss) - (60 * combats[i].tsMin + combats[i].tsSec)) > 20 then
        begin
+         if combats[i].NextTurn > -1 then
+            begin
+              if combats[i].Units[combats[i].NextTurn].Data.cAP = combats[i].Units[combats[i].NextTurn].Data.mAP then
+                 CM_AddAura(i, combats[i].NextTurn, 25, 1) else CM_DelAura(i, combats[i].NextTurn, 25);
+              n := CM_FindAura(i, combats[i].NextTurn, 25);
+              if n <> high(byte) then
+                 if combats[i].Units[combats[i].NextTurn].auras[n].stacks >= 3 then
+                    begin
+                      CM_SendEndBattle(i, combats[i].NextTurn, 100);
+                      combats[i].Units[combats[i].NextTurn].exist := false;
+                      for j := 0 to high(combats[i].Units) do
+                          if combats[i].Units[j].exist then
+                             if combats[i].Units[j].uType = 1 then
+                                cm_SendUnits(i, j);
+                    end;
+            end;
          combats[i].on_recount:=true;
-// combats[i].AI.build_turn:=false;
+         combats[i].AI.build_turn:=false;
 // время вышло, передаём ход...
        end;
 // перестройка АТБ-шкалы
@@ -195,7 +213,7 @@ for i := 0 to high(combats) do
             begin
               combats[i].tsMin:= mm;
               combats[i].tsSec:= ss;
-
+              CM_SendATB( i ); // отправляем АТБ шкалу
               combats[i].on_recount := false;
               combats[i].uTurn := combats[i].NextTurn;
               for j := 0 to high(combats[i].Units) do
@@ -428,6 +446,21 @@ begin
         combats[comLID].Units[i].minD       := trunc(MobDataDB[uID].DPAP * MobDataDB[uID].APH * 0.95 / 10);
         combats[comLID].Units[i].maxD       := trunc(MobDataDB[uID].DPAP * MobDataDB[uID].APH * 1.05 / 10);
         combats[comLID].Units[i].armor      := MobDataDB[uID].ARM;
+
+        combats[comLID].units[i].aiFlag:= 0; // флаг милика
+
+        if MobDataDB[uID].skMH = 4 then
+           begin
+             combats[comLID].units[i].aiFlag:= 1; // флаг стрелка
+             combats[comLID].units[i].range:=8;
+             combats[comLID].units[i].sDist:=5;
+           end;
+
+        if MobDataDB[uID].skMH = 2 then
+           begin
+             combats[comLID].units[i].aiFlag:= 2; // флаг хила
+             combats[comLID].units[i].range:=8;
+           end;
 
         k := i;
         writesafetext('AI Unit ## ' + IntToStr(uID) + ' has been added in slot ' + IntToStr(i));
@@ -1476,7 +1509,7 @@ var i, r, rs, dmg, deadly: integer;
     s, s2 : string;
     _charLID : DWORD;
 begin
- {
+  _charLID := combats[comLID].Units[uLID].charLID;
   if e_ID = 4 then
      begin  // rend
        r := CM_FindAura(comLID, uLID, 4);
@@ -1484,54 +1517,46 @@ begin
 
        dmg := Combats[comLID].units[uLID].auras[r].stacks;
 
-       if _charLID <> high(dword) then
-          if chars[_charLID].perks[5][2].pNum > 0 then  // Сурвайвал инстинкт
-             dr := PerksDB[8].xyz[chars[_charLID].perks[5][2].pNum].x / 100;
+       if uLID <> high(dword) then
+          if chars[_charLID].perks[5][2] > 0 then  // Сурвайвал инстинкт
+             dr := PerksDB[8].xyz[chars[_charLID].perks[5][2]].x / 100;
        dmg := trunc(dmg * (1 - dr));
 
-       Dec(combats[comLID].units[charLID].cHP, dmg);
+       Dec(combats[comLID].units[uLID].Data.cHP, dmg);
 
-       if combats[comLID].units[charLID].cHP <= 0 then
+       if combats[comLID].units[uLID].Data.cHP <= 0 then
           begin
-            combats[comLID].units[charLID].cHP := 0;
+            combats[comLID].units[uLID].Data.cHP := 0;
             deadly := 1;
-            combats[comLID].units[charLID].alive:=false;
-            combats[comLID].xpPool := combats[comLID].xpPool + exp_mob[combats[comlid].units[charLID].lvl];
+            combats[comLID].units[uLID].alive:=false;
+            combats[comLID].xpPool := combats[comLID].xpPool + exp_mob[combats[comlid].units[uLID].VData.lvl];
           end;
-
-       s := IntToStr(combats[comLID].units[charLID].uType) + '`' +
-            IntToStr(combats[comLID].units[charLID].charID) + '`7`' +
-            IntToStr(dmg) + '`' + IntToStr(deadly) + '`';
      end;
 
   if e_ID = 6 then
      begin  // poison wave
-       r := CM_FindAura(comLID, charLID, 6);
+       r := CM_FindAura(comLID, uLID, 6);
        if r = high(byte) then Exit;
 
-       dmg := Combats[comLID].units[charLID].auras[r].stacks;
+       dmg := Combats[comLID].units[uLID].auras[r].stacks;
        if _charLID <> high(dword) then
-          if chars[_charLID].perks[5][2].pNum > 0 then  // Сурвайвал инстинкт
-             dr := PerksDB[8].xyz[chars[_charLID].perks[5][2].pNum].x / 100;
+          if chars[_charLID].perks[5][2] > 0 then  // Сурвайвал инстинкт
+             dr := PerksDB[8].xyz[chars[_charLID].perks[5][2]].x / 100;
        dmg := trunc(dmg * (1 - dr));
-       if combats[comLID].units[charLID].uRace = 4 then   // поправка на тролля
+       if combats[comLID].units[uLID].VData.Race = 4 then   // поправка на тролля
           dmg := trunc(dmg * 0.9);
 
-       Dec(combats[comLID].units[charLID].cHP, dmg);
+       Dec(combats[comLID].units[uLID].Data.cHP, dmg);
 
-       if combats[comLID].units[charLID].cHP <= 0 then
+       if combats[comLID].units[uLID].Data.cHP <= 0 then
           begin
-            combats[comLID].units[charLID].cHP := 0;
+            combats[comLID].units[uLID].Data.cHP := 0;
             deadly := 1;
-            combats[comLID].units[charLID].alive:=false;
-            combats[comLID].xpPool := combats[comLID].xpPool + exp_mob[combats[comlid].units[charLID].lvl];
+            combats[comLID].units[uLID].alive:=false;
+            combats[comLID].xpPool := combats[comLID].xpPool + exp_mob[combats[comlid].units[uLID].VData.lvl];
           end;
-
-       s := IntToStr(combats[comLID].units[charLID].uType) + '`' +
-            IntToStr(combats[comLID].units[charLID].charID) + '`12`' +
-            IntToStr(dmg) + '`' + IntToStr(deadly) + '`';
      end;
-
+         {
  if s <> '' then
  for i := 0 to high(combats[comLID].units) do
     if combats[comLID].units[i].exist then
@@ -1546,9 +1571,9 @@ begin
             rs := TCP.FCon.SendMessage(s2, TCP.FCon.Iterator);
             if rs < 0 then WriteSafeText(IntToStr(rs));
             if rs = 0 then Con_Clear(cid);
-          end;
+          end;    }
 
- CM_SendBaseInfo( comLID );  // отправляем обновлённые данные о хп    }
+ CM_SendBaseInfo( comLID, uLID );  // отправляем обновлённые данные о хп    }
 end;
 
 procedure CM_Effect2(comLID, uLID, e_ID: DWORD);
@@ -1927,19 +1952,32 @@ begin
 end;
 
 function CM_AddAura(comLID, charLID, ID, stacks : DWord): byte;
-var i, j: integer;
+var i, j: integer;   flag : boolean;
     _head : TPackHeader; _pkg: Tpkg113;
     mStr  : TMemoryStream;
 begin
-  result := high(byte);
+  result := high(byte); flag := false;
+
+  if id = 25 then      // на ИИ дезертир не распространяется
+     if combats[comLID].Units[charLID].uType = 2 then Exit;
+
   for i := 1 to high(combats[comLID].units[charLID].auras) do
       if combats[comLID].units[charLID].auras[i].exist then
          if combats[comLID].units[charLID].auras[i].id = ID then
             begin
-              result := high(byte) - 1;
-              exit;
+              if combats[comLID].units[charLID].auras[i]._st then
+              begin
+                 inc(combats[comLID].units[charLID].auras[i].stacks, stacks);
+                 flag := true;
+                 result := high(byte) - 2;
+              end else
+              begin
+                result := high(byte) - 1;
+                exit;
+              end;
             end;
 
+  if not flag then
   for i := 1 to high(combats[comLID].units[charLID].auras) do
       if not combats[comLID].units[charLID].auras[i].exist then
          begin
@@ -2311,6 +2349,55 @@ begin
   end;
 end;
 
+procedure CM_SendATB( comLID : DWORD );
+var i : integer; charLID : DWORD;
+    mStr : TMemoryStream;
+    _head : TPackHeader; _pkg : TPkg115;
+begin
+
+  for i := 0 to high(combats[comLID].Units) do
+    begin
+      _pkg.ATB_Data[i].ID := -1;
+      _pkg.ATB_Data[i].atb:= -1;
+      _pkg.ATB_Data[i].ini:=  0;
+    end;
+  // заполняем текущими данными
+  for i := 0 to high(combats[comLID].Units) do
+    if combats[comLID].Units[i].exist and combats[comLID].Units[i].alive then
+       begin
+         _pkg.ATB_Data[i].atb := combats[comLID].Units[i].ATB;
+         _pkg.ATB_Data[i].ID  := i;
+         _pkg.ATB_Data[i].ini := combats[comLID].Units[i].Ini;
+       end;
+
+try
+  _head._flag := $f;
+  _head._id   := 115;
+
+  mStr := TMemoryStream.Create;
+
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+  // Отправляем пакет всем игрока в бою
+  for i := 0 to high(combats[comLID].Units) do
+      if combats[comLID].Units[i].exist then
+      if combats[comLID].Units[i].uType = 1 then
+         begin
+           TCP.FCon.IterReset;
+           charLID := combats[comLID].Units[i].charLID;
+           while TCP.FCon.IterNext do
+           if TCP.FCon.Iterator.PeerAddress = sessions[Chars[CharLID].sID].ip then
+           if TCP.FCon.Iterator.LocalPort = sessions[Chars[CharLID].sID].lport then
+              begin
+                TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+                Break;
+              end;
+         end;
+finally
+  mStr.Free;
+end;
+end;
 
 end.
 

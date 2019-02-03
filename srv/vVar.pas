@@ -328,6 +328,13 @@ type
     goods : array [1..20] of TGood;
   end;
 
+  TATBItem = record
+    ID  : integer;
+    ini : integer;
+    atb : integer;
+  end;
+
+
 Var
   CS : TCriticalSection;
 
