@@ -365,9 +365,14 @@ type
   end;
 
   TAura = record
-     exist : boolean;
-     id, stacks, sub, left : longword;
+     exist, _st : boolean;
+     id         : word;
+     stacks     : word;
+     sub        : byte;
+     left       : dword;
   end;
+
+  TPkgAura = array[1..16] of TAura;
 
   TCombatText = record
     exist : boolean;
@@ -421,15 +426,6 @@ type
     auras    : array [1..16] of TAura;
   end;
 
-  TATBPoint = record
-    exist       : boolean;
-    name        : UTF8String;
-    uType, uID  : longword;
-    ATB, vATB   : integer;
-    Team        : byte;
-    updated     : boolean;
-  end;
-
   TWhoItem  = record
     id   : word;
     name : string[50];
@@ -450,6 +446,31 @@ type
      sx, sy, tx, ty: single;
      speed : single;
   end;
+
+  TAuraData = record
+    Name, Descr, icon : String;
+    color             : DWORD;
+  end;
+
+  TGood = record
+    exist  : boolean;
+    id, num: dword;
+    hh, mm, ss, timer : word;
+  end;
+
+  TATBItem = record
+    ID  : integer;
+    ini : integer;
+    atb : integer;
+  end;
+
+  TATBGItem = record
+    x, y, w, h : integer;
+    omo        : boolean;
+    id         : integer;
+  end;
+
+  TATB_Data = array [0..20] of TATBItem;
 
 var
   // CORE VARS
@@ -486,9 +507,9 @@ var
 
   wholist : array [1..1000] of TWhoItem;
 
-  wait_for_05           : byte = 255;
-  wait_for_29           : byte = 255;
-  wait_for_103          : byte = 255;
+  wait_for_05           : boolean;
+  wait_for_29           : boolean;
+  wait_for_103          : boolean;
 
 
   // ZEN VARS
@@ -505,7 +526,7 @@ var
 
   tex_UnkItem  : zglPTexture;
   tex_Units    : array [0..1, 0..5] of TCharPack;
-  tex_Creatures: array [0..10] of zglPTexture;
+  tex_Creatures: array [1..10] of zglPTexture;
   tex_qPic     : array [1..10] of zglPTexture;
   tex_qMask    : array [1..10] of zglPTexture;
   tex_Cursors  : array [1..10] of zglPTexture;
@@ -552,6 +573,8 @@ var
                                                    2520, 3150, 3840, 4590, 5400,
                                                    6270, 7200, 8190, 9240, 100500);
 
+  aura_data          : array [1..50] of TAuraData;
+
   // OBJECT, LOCATIONS ETC
   mapW, mapH   : integer;                                 // ширина и высота карты
   layer        : array [0..10] of TTileMap;               // слои
@@ -593,17 +616,21 @@ var
   chat_last_request : word;
 
    //  COMBAT
+   Close_Combat          : boolean = false;
+   win_team              : byte = 0;
    units                 : array [0..20] of TUnit;
    MapMatrix             : array [0..20, 0..20] of TCell;
    cText                 : array [1..20] of TCombatText;
+   ATB_Data              : TATB_Data;
+   ATB_Grid              : array [1..10] of TATBGItem;
+   nATB                  : array [1..10] of Integer;
    your_turn             : boolean;
-   your_unit             : integer;
+   your_unit, focus_unit : integer;
    in_action, m_omo      : boolean;
    on_CGUI               : boolean;
    m_x, m_y              : integer;
    combat_ID             : longword;
    curr_round            : word;
-   nATB, ATB             : array [1..200] of TATBPoint;
    sw_result             : boolean;
    n_dir                 : byte;
    spID, spR             : word;
@@ -621,7 +648,7 @@ var
    theme_scale           : integer;
 
    ambient_vol           : single = 0.15;
-   gui_vol               : single =    1;
+   gui_vol               : single =  0.3;
 
 
 implementation

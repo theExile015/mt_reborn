@@ -287,6 +287,12 @@ begin
        mWins[2].texts[4].visible:=false;
        mWins[2].texts[5].visible:=false;
      end;
+/// AURAS
+  if sender > 500 then
+     begin
+       mWins[2].texts[1].Text := aura_data[sender - 500].Name;
+       mWins[2].texts[2].Text := aura_data[sender - 500].Descr;
+     end;
 {$ENDREGION}
 
   mWins[2].visible:=true;

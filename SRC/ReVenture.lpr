@@ -28,7 +28,8 @@ procedure Draw;
 begin
   Game_Render;
   SSprite2d_Draw( tex_Cursors[cur_type], mouse_x() - 2, mouse_y() - 3, 32, 32, cur_angle);
-
+  if scr_w = 1920 then
+     text_draw(fntMain, Mouse_x() + 10, mouse_y() + 15, u_IntToStr(mouse_x()) + ',' + u_IntToStr(mouse_y()));
 //  SSprite2d_Draw( texZero, 10, 10, 20, 20, 0);
 
   Text_Draw( fntMain, scr_w - 50, scr_h - 20, u_IntToStr(zgl_Get(RENDER_FPS)) );

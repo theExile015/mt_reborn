@@ -170,8 +170,9 @@ procedure objMan_Update;
 var
   i: integer;
 begin
+  if iga <> igaLoc then Exit;
   if igs <> igsNone then
-    Exit;
+     Exit;
 
   for i := 1 to high(objStore) do
     if objStore[i].exist and objStore[i].Visible then
@@ -247,6 +248,9 @@ begin
   for i := 1 to high(objStore) do
     if objStore[i].exist and objStore[i].Visible then
     begin
+       if scr_w = 1920 then
+             pr2d_Rect(objStore[i].Data.x, objStore[i].data.y,
+                       objStore[i].data.w, objStore[i].data.h, $ffffff, 150);
      if objStore[i].Data.tID <> 0 then
      if (objStore[i].Data.Enabled = 1) and objStore[i].MouseOver then
         // отрисовка с подсветкой

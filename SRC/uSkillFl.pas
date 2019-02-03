@@ -12,6 +12,8 @@ uses
 procedure SF_Init();
 procedure SF_Update();
 
+procedure SF_Zero();
+
 implementation
 
 uses uXClick, uMyGUITT;
@@ -449,6 +451,13 @@ begin
 
   if skills[70].rank > 1 then skills[71].enabled:=true;
   if skills[70].rank > 1 then skills[72].enabled:=true;
+end;
+
+procedure SF_Zero();
+var i : integer;
+begin
+  for i := 1 to high(skills) do
+    skills[i].rank := 0;
 end;
 
 end.

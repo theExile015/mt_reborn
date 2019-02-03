@@ -52,6 +52,7 @@ function inv_FindFreeSpot(): word;
 function sp_GetSchool(sID: word): utf8string;
 function sp_GetType(tID: word): utf8string;
 
+procedure Rebuild_Atb(var ATB_Data : TATB_Data);
 
 //function KillTask(ExeFileName: string): Integer;
 
@@ -613,6 +614,42 @@ begin
     else
       Result := 'Unknown';
   end;
+end;
+
+procedure Rebuild_Atb(var ATB_Data : TATB_Data);
+var i, j : integer;
+    tmp : TATBItem;
+begin
+{  // сначала переносим лидера в жопу
+  if ATB_Data[20].atb >= 1000 then
+     begin
+       dec(atb_data[20].atb, 1000);  }
+       // сортируем
+       for i := 0 to 19 do
+       for j := 0 to 19 - i do
+            if ATB_Data[j].atb > ATB_Data[j+1].atb then
+            begin
+                tmp           := ATB_Data[j];
+                ATB_Data[j  ] := ATB_Data[j + 1];
+                ATB_Data[j+1] := tmp;
+            end;
+//     end;
+  // если был ещё кто-то с АТБ > 1000 то всё ок
+  if ATB_Data[20].atb >= 1000 then Exit;
+  // если нет, пробуем провести игру имитацию
+  for i := 0 to 20 do
+    if atb_data[i].ID > -1 then
+       inc(atb_data[i].atb, atb_data[i].ini); // имитируем тик инициативы
+  // и ещё раз сортируем
+  for i := 0 to 19 do
+       for j := 0 to 19 - i do
+            if ATB_Data[j].atb > ATB_Data[j+1].atb then
+            begin
+                tmp           := ATB_Data[j];
+                ATB_Data[j]   := ATB_Data[j+1];
+                ATB_Data[j+1] := tmp;
+            end;
+  // на этом всё, выходим в цикл
 end;
 
 end.

@@ -38,6 +38,8 @@ procedure DoSendQuest(id, action : word);
 procedure DoSendTutorial(step : byte);
 procedure DoRequestUnit(id, uType, what: word);
 procedure DoRequestMembers();
+procedure DoSellItem(id: word);
+procedure DoBuyItem(id: word);
 
 implementation
 
@@ -148,26 +150,27 @@ begin
   if CharList[gSI].ID = 0 then Exit;
   fCharMan.Hide;
   a_p := 0;
-  gs := gsPreGame;
+  gs  := gsPreGame;
 end;
 
 procedure SendEnterTheWorld();
 var _pkg  : TPkg005;
     _head : TPackHeader;
     mStr  : TMemoryStream;
-    hh, mm, ss, ms : word;
 begin
        _head._FLAG := $f;
        _head._ID   := 5;
        _pkg.id     := charlist[gSI].ID ;
 
-       GetTime(hh, mm, ss, ms);
-       wait_for_05 := ss;
+       lProgress := 0;
+       lVProgress := 0;
+
+       wait_for_05 := true;
 
        activechar.header := charlist[gSI];
        tutorial := activechar.header.tutorial;
 
-       writeln('Tutorial ## ', tutorial);
+       //writeln('Tutorial ## ', tutorial);
 try
        mStr := TMemoryStream.Create;
        mStr.Position := 0;
@@ -537,8 +540,7 @@ var
   mStr  : TMemoryStream;
   hh, mm, ss, ms : word;
 begin
-    GetTime(hh, mm, ss, ms);
-    wait_for_29 := ss;
+    wait_for_29 := true;
 
     _head._FLAG := $f;
     _head._ID   := 29;
@@ -791,7 +793,64 @@ try
 finally
   mStr.Free;
 end;
+end;
 
+procedure DoSellItem(id: word);
+var
+  _pkg : TPkg047; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 47;
+ 
+  if not mWins[14].visible then exit;
+
+  _pkg.fail_code :=  1;
+  _pkg._id       := id;
+  _pkg.vName     := mWins[14].texts[1].Text;
+try
+  mStr := TMemoryStream.Create;
+  mStr.Position := 0;
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+  TCP.FCon.IterReset;
+  TCP.FCon.IterNext;
+  TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+
+  Sleep(100);
+finally
+  mStr.Free;
+end;
+end;
+
+procedure DoBuyItem(id: word);
+var
+  _pkg : TPkg047; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 47;
+
+  if not mWins[14].visible then exit;
+
+  _pkg.fail_code :=  2;
+  _pkg._id       := id;
+  _pkg.vName     := mWins[14].texts[1].Text;
+try
+  mStr := TMemoryStream.Create;
+  mStr.Position := 0;
+  mStr.Write(_head, sizeof(_head));
+  mStr.Write(_pkg, sizeof(_pkg));
+
+  TCP.FCon.IterReset;
+  TCP.FCon.IterNext;
+  TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+
+  Sleep(100);
+finally
+  mStr.Free;
+end;
 end;
 
 end.

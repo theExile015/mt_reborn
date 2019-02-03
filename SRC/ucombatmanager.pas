@@ -19,6 +19,7 @@ procedure Combat_Init;
 procedure Combat_Draw;
 procedure Combat_GUI_Draw;
 procedure Combat_Update;
+procedure Combat_GUI_Update;
 
 procedure Unit_Update(id : integer);
 procedure Unit_Draw(id : integer);
@@ -39,16 +40,18 @@ procedure cm_RangeAtk( uLID, tLID, dmg, die, i3 : longword);
 procedure cm_TargetSpell( uLID, tLID, dmg, die, _spID, i3 : longword);
 procedure cm_RangeMiss( uLID, x,  y : longword);
 
-
 procedure cm_SetWay( uLID, X, Y, ap_left : Longword);
 
 procedure cm_SendMove( X, Y: byte );
 procedure cm_SendDir( dir : byte );
-procedure cm_EndTurn();
+procedure cm_EndTurn( _end : byte);
 procedure cm_SendMelee(tLID, skillID : dword);
 procedure cm_SendRange(tLID, skillID : dword);
+procedure cm_SendSpell(tLID, skillID : dword);
+procedure cm_SendSelfSpell(skillID : dword);
 
 procedure cm_AddCombatText( x, y : single; text : utf8string; color, _spID : longword);
+procedure cm_CloseCombat();
 
 type
   TUnitQ = record
@@ -61,13 +64,15 @@ uses
   uXClick, uChat, uPkgProcessor, uNetCore;
 
 procedure Combat_Init;
-var i : integer;
+var i, j : integer;
 begin
   Writeln('Combat Init.');
   in_action  := false;
   your_turn  := false;
+  close_combat := false;
   icm        := icmNone;
   your_unit  := high(byte);
+  focus_unit := -1;
   for i := 1 to high(cText) do
       cText[i].exist:=false;
 
@@ -81,6 +86,14 @@ begin
         units[i].uType := 0;
         units[i].vdata.sex:=0;
         units[i].in_act:=false;
+        for j := 1 to high(units[i].auras) do
+            begin
+              units[i].auras[j].exist  := false;
+              units[i].auras[j].id     := 0;
+              units[i].auras[j].left   := 0;
+              units[i].auras[j].stacks := 0;
+              units[i].auras[j].sub    := 0;
+            end;
       end;
 
   Map_CreateMask();
@@ -99,6 +112,23 @@ begin
        theme2 := snd_LoadFromFile('Data\Sound\close_the_gates.ogg');
        theme_change := true;
      end;
+
+  ATB_Grid[1].x :=  5;
+  ATB_Grid[1].y :=  5;
+  ATB_Grid[1].w := 45;
+  ATB_Grid[1].h := 60;
+  ATB_Grid[1].omo := false;
+  ATB_Grid[1].id  := 0;
+
+  for i := 2 to 10 do
+      begin
+        ATB_Grid[i].x := 55 + (i - 2) * 35;
+        ATB_Grid[i].y :=  5;
+        ATB_Grid[i].w := 30;
+        ATB_Grid[i].h := 40;
+        ATB_Grid[i].omo := false;
+        ATB_Grid[i].id  := 0;
+      end;
 end;
 
 procedure Combat_Draw;
@@ -191,8 +221,8 @@ begin
            draw_q[i].y  := units[i].data.pos.y * 32 - (19 - units[i].data.pos.x) * 32  + 400;
          end else draw_q[i].id := high(units);
 
-  for i := 0 to 20 do
-        for j := 0 to 20 - i do
+  for i := 0 to 19 do
+        for j := 0 to 19 - i do
             if draw_q[j].y > draw_q[j+1].y then
             begin
                 buffer := draw_q[j];
@@ -223,36 +253,34 @@ begin
   if iga <> igaCombat then Exit;
   if gs  <> gsGame    then Exit;
 
-  k := 0; flag := false;
-  SSprite2d_draw( tex_ATB, 0, 0, 85, 300, 0 );
-  for i := 1 to high(ATB) do
-  if ATB[i].exist then
-     begin
-        r.W := 80;
-        r.H := 20;
-        r.Y := 280 - ATB[i].vATB / 4.8;
-        r.X := 5;
-        if r.y < 60 then r.y := 60;
-      //  pr2d_RECT( r.X, r.Y, r.W, r.H, color, 150, pr2d_FILL);
-        SSprite2d_Draw( tex_ATB_Rect, r.X, r.Y, r.W, r.H, 0);
-        Scissor_Begin( 5, round(r.Y), 75, 15);
-        if ATB[i].Team = 2 then color := $ff9999 else color := $9999ff;
-        text_DrawInRectEx( fntMain, rect(r.X + 5, r.Y + 4, r.W - 10, r.H - 7), 0.8, 0,
-                           ATB[i].name, 255, color, TEXT_HALIGN_CENTER);
-        Scissor_End;
-      end;
+  for i := 1 to high(ATB_Grid) do
+      SSprite2D_Draw( GetTex('ava' + u_IntToStr((units[ATB_Grid[i].id].VData.race - 1) * 2 + units[ATB_Grid[i].id].vdata.sex + 1)),
+                              ATB_Grid[i].x, ATB_Grid[i].y, ATB_Grid[i].w, ATB_Grid[i].h, 0);
 
       GetTime(hh, mm, ss, ms);
       T := 20 - abs(mm * 60 + ss - t_mm * 60 - t_ss);
       if T > 20 then T := 20; if T < 0 then T := 0;
 
-      Text_DrawInRectEx(fntCombat, rect(0, 0, 70, 40), 0.4, 2, u_IntToStr(T), 255, $FFFFFF, TEXT_HALIGN_CENTER or TEXT_VALIGN_CENTER);
+      Text_DrawInRectEx(fntCombat, rect(5, 30, 45, 40), 0.4, 2, u_IntToStr(T), 255, $FFFFFF, TEXT_HALIGN_CENTER or TEXT_VALIGN_CENTER);
 
-      Scissor_Begin( 1, 40, 70, 15);
-        text_DrawInRectEx(fntMain, rect(1, 40, 70, 15), 0.8, 0, curr_turn_name, 255, $ffffff, TEXT_HALIGN_CENTER );
+      Scissor_Begin( 0, 65, 55, 15);
+        text_DrawInRectEx(fntMain, rect(0, 65, 55, 15), 0.6, 0, curr_turn_name, 255, $ffffff, TEXT_HALIGN_CENTER );
       Scissor_End;
 
+      k := 0;
       mWins[15].visible:=true;
+      for i := 1 to high(mWins[15].dnds) do
+          mWins[15].dnds[i].visible:=false;
+
+      for i := 1 to high(units[your_unit].auras) do
+          if units[your_unit].auras[i].exist then
+          if units[your_unit].auras[i].id < 40 then
+             begin
+               inc(k);
+               mWins[15].dnds[k].visible      := true;
+               mWins[15].dnds[k].data.contain := units[your_unit].auras[i].id;
+             end;
+
       mWins[15].pbs[3].visible:=true;
       mWins[15].pbs[4].visible:=true;
       mWins[15].imgs[2].visible:=false;
@@ -271,9 +299,22 @@ begin
 
       for i := 0 to high(units) do
         if units[i].exist then
-         if units[i].data.pos.x = m_X then
+          if units[i].data.pos.x = m_X then
            if units[i].data.pos.y = m_y then
               begin
+                 k := 0;
+                 for j := 1 to high(mWins[16].dnds) do
+                     mWins[16].dnds[j].visible:=false;
+
+                 for j := 1 to high(units[i].auras) do
+                     if units[i].auras[j].exist then
+                     if units[i].auras[j].id < 40 then
+                        begin
+                          inc(k);
+                          mWins[16].dnds[k].visible      := true;
+                          mWins[16].dnds[k].data.contain := units[i].auras[j].id;
+                        end;
+
                  mWins[16].visible:=true;
                  mWins[16].pbs[1].cProg:=units[i].data.cHP;
                  mWins[16].pbs[1].mProg:=units[i].data.mHP;
@@ -285,6 +326,61 @@ begin
                  mWins[16].imgs[1].texID:= 'ava' + u_IntToStr((units[i].VData.race - 1) * 2 + units[i].vdata.sex + 1);
                  flag := true;
               end;
+
+    for i := 1 to 10 do
+      if ATB_Grid[i].omo then
+         begin
+           k := 0;
+           for j := 1 to high(mWins[16].dnds) do
+               mWins[16].dnds[j].visible:=false;
+
+           for j := 1 to high(units[i].auras) do
+               if units[ATB_Grid[i].id].auras[j].exist then
+               if units[ATB_Grid[i].id].auras[j].id < 40 then
+                  begin
+                    inc(k);
+                    mWins[16].dnds[k].visible      := true;
+                    mWins[16].dnds[k].data.contain := units[ATB_Grid[i].id].auras[j].id;
+                  end;
+
+           mWins[16].visible:=true;
+           mWins[16].pbs[1].cProg:=units[ATB_Grid[i].id].data.cHP;
+           mWins[16].pbs[1].mProg:=units[ATB_Grid[i].id].data.mHP;
+           mWins[16].pbs[2].mProg:=units[ATB_Grid[i].id].data.mMP;
+           mWins[16].pbs[2].cProg:=units[ATB_Grid[i].id].data.cMP;
+           mWins[16].pbs[3].mProg:=units[ATB_Grid[i].id].data.mAP;
+           mWins[16].pbs[3].cProg:=units[ATB_Grid[i].id].data.cAP;
+           mWins[16].texts[1].Text:=units[ATB_Grid[i].id].name;
+           mWins[16].imgs[1].texID:= 'ava' + u_IntToStr((units[ATB_Grid[i].id].VData.race - 1) * 2 + units[ATB_Grid[i].id].vdata.sex + 1);
+           flag := true;
+         end;
+
+    if focus_unit > -1 then
+       begin
+         k := 0;
+         for j := 1 to high(mWins[16].dnds) do
+             mWins[16].dnds[j].visible:=false;
+
+         for j := 1 to high(units[focus_unit].auras) do
+             if units[focus_unit].auras[j].exist then
+             if units[focus_unit].auras[j].id < 40 then
+                begin
+                  inc(k);
+                  mWins[16].dnds[k].visible      := true;
+                  mWins[16].dnds[k].data.contain := units[focus_unit].auras[j].id;
+                end;
+
+         mWins[16].visible:=true;
+         mWins[16].pbs[1].cProg:=units[focus_unit].data.cHP;
+         mWins[16].pbs[1].mProg:=units[focus_unit].data.mHP;
+         mWins[16].pbs[2].mProg:=units[focus_unit].data.mMP;
+         mWins[16].pbs[2].cProg:=units[focus_unit].data.cMP;
+         mWins[16].pbs[3].mProg:=units[focus_unit].data.mAP;
+         mWins[16].pbs[3].cProg:=units[focus_unit].data.cAP;
+         mWins[16].texts[1].Text:=units[focus_unit].name;
+         mWins[16].imgs[1].texID:= 'ava' + u_IntToStr((units[focus_unit].VData.race - 1) * 2 + units[focus_unit].vdata.sex + 1);
+         flag := true;
+       end;
 
     if not flag then mWins[16].visible:= false;
 
@@ -300,33 +396,31 @@ begin
   if iga <> igaCombat then Exit;
   if gs  <> gsGame    then Exit;
 
+  if not in_action then
+     if close_combat then
+        cm_CloseCombat();
+
   if your_unit = high(byte) then
      for i := 0 to high(units) do
        if units[i].exist then
        if units[i].name = activechar.header.Name then
        your_unit := i;
 
-  if wait_for_103 <> 255 then
+{  if not wait_for_103 then
      begin
-       GetTime(hh, mm, ss, ms);
-       if wait_for_103 > 54 then
-          if ss < 10 then ss := ss + 54;
-       if abs(ss - wait_for_103) > 5 then
-          begin
-            for i := 0 to high(units) do
-              if units[i].exist then
-                 DoRequestUnit(units[i].uLID, units[i].uType, 1);
-          end;
-     end;
+       for i := 0 to high(units) do
+         if units[i].exist then
+            DoRequestUnit(units[i].uLID, units[i].uType, 1);
+     end;   }
 
   if your_turn and (not in_action) and (icm = icmNone) then
      sw_result := SearchWay(your_unit, units[your_unit].data.pos.x, units[your_unit].data.pos.y, m_x, m_y );
 
    // движение камеры
-  if mouse_x() < 0 then fCam_X := fCam_X + mouse_x() / 10 - 1;
-  if mouse_X() > scr_w then fCam_X := fCam_X + (mouse_x() - scr_w) / 10 + 1;
-  if mouse_y() < 0 then fCam_y := fCam_y + mouse_y() / 10 - 1;
-  if mouse_y() > scr_h then fCam_y := fCam_y + (mouse_y() - scr_h) / 10 + 1;
+  if mouse_x() < 5 then fCam_X := fCam_X + mouse_x() / 10 - 1;
+  if mouse_X() > scr_w - 5 then fCam_X := fCam_X + (mouse_x() - scr_w) / 10 + 1;
+  if mouse_y() < 5 then fCam_y := fCam_y + mouse_y() / 10 - 1;
+  if mouse_y() > scr_h - 5 then fCam_y := fCam_y + (mouse_y() - scr_h) / 10 + 1;
 
   if fCam_X < scr_w / 4 then fCam_X := scr_w / 4;
   if fCam_Y < -200 then fCam_Y := -200;
@@ -382,6 +476,14 @@ begin
     if spID = 0 then
     if da <> high(byte) then cur_type := 2 else cur_type := 1;
   end;
+// ФОКУС ИГРОКА
+  if m_Omo then
+  if mouse_click(M_BRIGHT) then
+     begin
+       focus_unit := -1;
+       if cm_CheckEnemyOmo <> high(byte) then focus_unit := cm_CheckEnemyOmo();
+       if cm_CheckFriendOmo <> high(byte) then focus_unit := cm_CheckFriendOmo();
+     end;
 
 // Наводим мышку на игрока
   if m_omo then
@@ -461,11 +563,21 @@ begin
                 end;
            end;
 //  передача хода
-       if Key_Press( K_SPACE ) and not ch_message_inp then
+       if Key_Press( K_F1 ) and not ch_message_inp then
           begin
-            cm_EndTurn();
+            cm_EndTurn( 0 );
             your_turn := false;
           end;
+       if Key_Press( K_F2 ) and not ch_message_inp then
+       if units[your_unit].data.cAP = units[your_unit].data.mAP then
+          begin
+            cm_EndTurn( 1 );
+            your_turn := false;
+          end;
+       if Key_Press( K_F3 ) and not ch_message_inp then
+          icm := icmRotate;
+       if Key_Press( K_F4 ) and not ch_message_inp then
+          icm := icmRange;
      end;
 //  Отключаем все режимы
   if your_turn then
@@ -498,6 +610,10 @@ begin
             { TODO 1 -oVeresk -cbug : Добавить проверку на Keep Moving }
             if units[your_unit].data.cAP >= 5 then
                begin
+                 cur_type  := 1;
+                 cur_angle := 0;
+                 mWins[13].visible := false;
+                 icm := icmNone;
                  cm_SendDir( n_dir );
                  exit;
                end else chat_addmessage(3, high(word), 'Not enough AP to turn.');
@@ -533,6 +649,7 @@ begin
                          chat_addMessage(3, high(word), 'Not enough AP for range attack.');
                   end else
                   begin
+                  //  writeln('WHOOOT ', spID);
                     cm_SendRange(da, spID);
                     spID := 0;
                     mWins[13].visible := false;
@@ -542,7 +659,7 @@ begin
                     exit;
                   end;
 
-            da := cm_CheckFriendOMO();
+            da := cm_CheckEnemyOMO();
             chat_addMessage(3, high(word), u_IntToStr(da));
             if da <> high(byte) then
                if cm_inrange(m_X, m_Y, spR) and (InSector( units[your_unit].data.Direct,
@@ -553,7 +670,7 @@ begin
                      begin
                        if units[your_unit].data.cAP >= 24 then
                           begin
-                            cm_SendRange(da, spID);
+                            cm_SendSpell(da, spID);
                             spID := 0;
                             mWins[13].visible := false;
                             cur_type  := 1;
@@ -582,6 +699,18 @@ begin
 // отрисовка юнитов
   for i := 0 to high(units) do
       Unit_Update(i);
+
+  Combat_GUI_Update;
+end;
+
+procedure Combat_GUI_Update;
+var i : integer;
+begin
+  for i := 1 to 10 do
+    if col2d_PointInRect( Mouse_X(), Mouse_Y(),
+                          rect(ATB_Grid[i].x, ATB_Grid[i].y,
+                               ATB_Grid[i].w, ATB_Grid[i].h)) then
+       ATB_Grid[i].omo := true else ATB_Grid[i].omo := false;
 end;
 
 procedure Unit_Update(id : integer);
@@ -703,7 +832,7 @@ begin
 end;
 
 procedure Unit_Draw(id : integer);
-var f1, f2, i : integer;
+var f1, f2, i, n : integer;
     color : longword;
     x, y, x2, y2, w, h: single;
     s : string;
@@ -738,22 +867,28 @@ begin
             ASprite2d_Draw( tex_Units[units[id].vdata.sex, 0].MH[units[id].VData.skinMH], x, y, 256, 256, 0, units[id].ani_frame, alpha );
             ASprite2d_Draw( tex_Units[units[id].vdata.sex, 0].OH[units[id].VData.skinOH], x, y, 256, 256, 0, units[id].ani_frame, alpha );
           end else
-            ASprite2d_Draw( tex_Creatures[units[id].ani_key], x, y, 196, 196, units[id].ani_frame, alpha);
+            ASprite2d_Draw( tex_Creatures[1], x, y, 196, 196, 0, units[id].ani_frame, alpha);
 
        if units[id].team = 2 then color := $aa7777 else color := $7777aa;
        w := text_GetWidth( fntCombat, units[id].name, 1) * 0.7;
        h := text_GetHeight( fntCombat, w, units[id].name, 0.3 / scaleXY, 0);
        //pr2d_Rect(x + 196/2 - w/2 + 400, y, w, h, $222222, 150, PR2D_FILL);
-    {   for i := 0 to high(units[id].auras) do
+       s := ''; n := 0;
+       s := IntToStr(units[id].data.pos.x) + ' ' + IntToStr(units[id].data.pos.y);
+       for i := 1 to high(units[id].auras) do
          if units[id].auras[i].exist then
             begin
-              ASprite2d_Draw(tex_BIcons, x + i * 25, y - 25, 24, 24, 0,
-                                         units[id].auras[i].id);
+              if n > 7 then x2 := x + 256 / 2 - 24 * 4 + (n - 8) * 24
+                       else x2 := x + 256 / 2 - 24 * 4 + (n) * 24 ;
+              if n > 7 then y2 := y - 49 else y2 := y - 25;
+              inc(n);
+
+              fx2d_SetColor(aura_data[units[id].auras[i].id].color);
+              ASprite2d_Draw( tex_Item_Slots, x2, y2, 24, 24, 0, 6, 190, FX_BLEND or FX_COLOR);
+              SSprite2d_Draw(GetTex(aura_data[units[id].auras[i].id].icon), x2, y2, 24, 24, 0, 190);
               if units[id].auras[i].stacks > 0 then
                  Text_DrawInRectEx(fntCombat, rect(x + i * 25, y - 25, 24, 24), 0.2 / scaleXY, 1, u_IntToStr(units[id].auras[i].stacks), 200, $ff0000);
-
-            end;    }
-       s := IntToStr(id);
+            end;
        Text_DrawInRectEx( fntCombat, rect(x + 256/2 - w/2, y, w, h), 0.3 / scaleXY, 0, units[id].name + '#' + s, 255, color, TEXT_HALIGN_CENTER );
 end;
 
@@ -886,6 +1021,8 @@ begin
          units[i].WayProg:=0;
          units[i].data.pos := units[i].Way[0];
          units[i].TargetPos := units[i].Way[1];
+         units[i].data.Direct:=cm_SetDir(units[i].data.pos.x, units[i].data.pos.y,
+                                         units[i].TargetPos.x, units[i].TargetPos.y );
 
          in_action := true;
          if units[i].visible then
@@ -1118,7 +1255,7 @@ begin
          units[uLID].ani_frame := 29 + units[uLID].data.Direct * 32;
          units[uLID].ani_delay := 0;
          n1 := units[uLID].name;
-         Chat_AddMessage(3, high(word), n1 + ' miss.' );
+         if x + y = 0 then Chat_AddMessage(3, high(word), n1 + ' miss.' );
 end;
 
 procedure cm_SendMove( X, Y: byte );
@@ -1148,7 +1285,7 @@ finally
 end;
 end;
 
-procedure cm_EndTurn();
+procedure cm_EndTurn(_end : byte);
 var
   _pkg : TPkg105; _head: TPackHeader;
   mStr : TMemoryStream;
@@ -1158,6 +1295,7 @@ begin
 
   _pkg.comID := combat_id;
   _pkg.uLID  := your_unit;
+  _pkg.fail_code  := _end;
 try
        mStr := TMemoryStream.Create;
        mStr.Position := 0;
@@ -1230,7 +1368,7 @@ end;
 
 procedure cm_SendRange(tLID, skillID : dword);
 var
-  _pkg : TPkg108; _head: TPackHeader;
+  _pkg : TPkg111; _head: TPackHeader;
   mStr : TMemoryStream;
 begin
   _head._FLAG := $f;
@@ -1240,6 +1378,61 @@ begin
   _pkg.uLID    := your_unit;
   _pkg.skillID := skillID;
   _pkg.tLID    := tLID;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure cm_SendSpell(tLID, skillID : dword);
+var
+  _pkg : TPkg112; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 112;
+
+  _pkg.comID   := combat_id;
+  _pkg.uLID    := your_unit;
+  _pkg.skillID := skillID;
+  _pkg.tLID    := tLID;
+
+try
+       mStr := TMemoryStream.Create;
+       mStr.Position := 0;
+       mStr.Write(_head, sizeof(_head));
+       mStr.Write(_pkg, sizeof(_pkg));
+
+       TCP.FCon.IterReset;
+       TCP.FCon.IterNext;
+       TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
+       In_Request := true;
+finally
+       mStr.Free;
+end;
+end;
+
+procedure cm_SendSelfSpell(skillID : dword);
+var
+  _pkg : TPkg114; _head: TPackHeader;
+  mStr : TMemoryStream;
+begin
+  _head._FLAG := $f;
+  _head._ID   := 114;
+
+  _pkg.comID   := combat_id;
+  _pkg.uLID    := your_unit;
+  _pkg.spellID := skillID;
 
 try
        mStr := TMemoryStream.Create;
@@ -1271,6 +1464,36 @@ begin
          cText[i].spID:=_spID;
          exit;
        end;
+end;
+
+procedure cm_CloseCombat();
+begin
+  com_face := 50;
+  Chat_AddMessage(3, high(word), 'Team ' + IntToStr(Win_Team) + ' win.' );
+  Snd_Play(snd_gui[4], false, 0, 0, 0, gui_vol);
+  Nonameframe41.Hide;
+  fInGame.Show;
+  zglCam1.X := (1920 - scr_w) / 2;
+  zglCam1.Y := (1080 - scr_h) / 2;
+ // cam_x := 0; cam_y := 0;
+  gs  := gsLLoad;
+  iga := igaLoc;
+  igs := igsNone;
+
+  cur_type  := 1;
+  cur_angle := 0;
+
+  if theme_two then
+     begin
+       snd_Del(theme1);
+       theme1 := snd_LoadFromFile('Data\Sound\minstrel.ogg');
+       theme_change := true;
+     end else
+     begin
+       snd_Del(theme2);
+       theme2 := snd_LoadFromFile('Data\Sound\minstrel.ogg');
+       theme_change := true;
+     end;
 end;
 
 end.

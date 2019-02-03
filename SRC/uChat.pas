@@ -67,7 +67,7 @@ begin
   for i := 1 to 5 do
     begin
       ActionBar[i].exist:=true;
-      ActionBar[i].x:= (i - 1) * 36 + 2;
+      ActionBar[i].x:= (i - 1) * 36 + 7;
       ActionBar[i].y:= scr_h - 186;
       ActionBar[i].ddType:= 2;
       {if i = 1 then ActionBar[i].contains:= 1 else  }
@@ -130,6 +130,7 @@ if iga = igaCombat then
               for j := 0 to 4 do
               if KEY_PRESS(K_1 + j) and (not ch_message_inp) then
                  begin
+                 //  writeln(ActionBar[1 + j].data.contain);
                       if units[your_unit].data.cAP >= spells[ActionBar[1 + j].data.contain].AP_Cost then
                          begin
                            if units[your_unit].data.cMP >= spells[ActionBar[1 + j].data.contain].MP_Cost then
@@ -137,16 +138,13 @@ if iga = igaCombat then
                                 spID := ActionBar[1 + j].data.contain;
                                 if (spID = 11) or (spID = 8) or (spID = 13) or (spID = 14) or (spID = 15) then
                                    begin
-                                    { SendData( inline_pkgCompile(058, u_IntToStr(combat_id) + '`' +
-                                                                 u_IntToStr(units[your_unit].uType) + '`' +
-                                                                 u_IntToStr(units[your_unit].uID)  + '`' +
-                                                                 u_IntToStr(spID) ) ) ;    }
+                                     cm_SendSelfSpell( spID );
                                      if spID = 15 then
                                         begin
                                           sleep(50);
-                                        //  SendData( inline_pkgCompile(032, u_IntToStr(combat_id) + '`'));
                                           your_turn := false;
                                         end;
+                                     spID := 0;
                                      exit;
                                    end;
                                 spR := spells[ActionBar[1 + j].data.contain].range;
@@ -179,19 +177,25 @@ if iga = igaCombat then
                       begin
                         if systembar[i].data.contain = 1 then
                             begin
-                              cm_EndTurn();
+                              cm_EndTurn( 0 );
                               your_turn := false;
                             end;
 
-                        if systembar[i].data.contain = 4 then
-                     {   if activechar.Inv[4].iID <> 0 then
-                        if items[activechar.Inv[4].iID].data.iType = 5 then   }
-                           begin
-                             icm := icmRange;
-                             spR := 8;
-                             if skills[62].rank > 0 then
-                                spR := spR + skills[62].xyz[skills[62].rank].X;
-                           end;
+                        if systembar[i].data.contain = 5 then
+                            begin
+                              cm_EndTurn( 1 );
+                              your_turn := false;
+                            end;
+
+                      if systembar[i].data.contain = 4 then
+                      if activechar.Inv[4].iID <> 0 then
+                      if items[activechar.Inv[4].iID].data.iType = 5 then
+                         begin
+                           icm := icmRange;
+                           spR := 8;
+                           if skills[62].rank > 0 then
+                              spR := spR + skills[62].xyz[skills[62].rank].X;
+                         end;
 
                         if systembar[i].data.contain = 7 then
                            { TODO 1 -oVeresk -cbug : Добавить проверку на Keep Moving }
@@ -396,7 +400,9 @@ begin
                 ASprite2d_Draw( tex_Item_Slots, SystemBar[i].X, SystemBar[i].Y + com_face, 34, 34, 0, 6, 255, flag );
                 if SystemBar[i].data.contain > 0 then
                    SSprite2d_Draw( GetTex('i32,' + u_IntToStr(SystemBar[i].data.contain)), SystemBar[i].x, SystemBar[i].y + com_face, 34, 34, 0, 255);
+                text_Draw(fntMain, SystemBar[i].x + 5, SystemBar[i].y + 5 + com_face, 'F' + u_IntToStr(i) );
              end;
+
       { if your_turn then
            if units[your_unit].cAP < 5 then
               begin

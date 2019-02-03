@@ -17,6 +17,7 @@ uses
   uLocation,
   u_MM_GUI,
  // uCombat,
+  uSkillFl,
   uChat;
  // uParser;
 
@@ -46,6 +47,7 @@ begin
   snd_gui[3] := snd_LoadFromFile('Data\Sound\drag_onmouseup.ogg');
   snd_gui[4] := snd_LoadFromFile('Data\Sound\snare.ogg');
   snd_gui[5] := snd_LoadFromFile('Data\Sound\glassbell.ogg');
+  snd_gui[6] := snd_LoadFromFile('Data\Sound\item_coins_02.ogg');
 
   // шрифты
   if file_OpenArchive('Data\fonts.red') then
@@ -152,6 +154,8 @@ begin
       lProgress := 20;
       objMan_Clear;
       objMan_Fill;
+      SF_Zero();
+      objMan_HideAll();
 
       // video_Del(video);
 
@@ -207,8 +211,8 @@ begin
       texTiles4:= tex_LoadFromFile( dirRes + '\maps\wooden_barricade.png' );
       tex_SetFrameSize( texTiles4, 64, 32);
 
-      tex_Objs[1] := tex_LoadFromFile( dirRes + 'Struct\building_1.png' );
-      tex_Objs[2] := tex_LoadFromFile( dirRes + 'Struct\building_2.png', $000000 );
+      tex_Objs[1] := tex_LoadFromFile( dirRes + 'Struct\struct1.png' );
+      tex_Objs[2] := tex_LoadFromFile( dirRes + 'Struct\struct2.png' );
       tex_Objs[3] := tex_LoadFromFile( dirRes + 'Struct\monolith_1.png', $0000FF );
       tex_Objs[4] := tex_LoadFromFile( dirRes + 'Struct\npc1.png' );
       tex_SetFrameSize( tex_objs[4], 32, 64);
@@ -254,6 +258,8 @@ begin
              tex_Units[1, 0].OH[1] := tex_loadFromFile( 'female_buckler.png' );
              tex_Units[1, 0].OH[2] := tex_loadFromFile( 'female_shield.png' );
 
+
+             tex_Creatures[1] := tex_LoadFromFile('skeleton_occultist.png');
              file_CloseArchive();
 
            end else
@@ -262,6 +268,7 @@ begin
                  MessageBoxA( 0, 'Re: client seem to be broken.', 'Error', $00000010 );
                end;
 
+        tex_setFrameSize( tex_Creatures[1], 128, 128);
 
         tex_setFrameSize( tex_Units[0, 0].head[1], 128, 128);
         tex_setFrameSize( tex_Units[0, 0].body[1], 128, 128);
@@ -316,16 +323,13 @@ begin
            tex_UnkItem := tex_LoadFromFile('Data\Items\unknown.png');
 
            theme2 := snd_LoadFromFile('Data\Sound\minstrel.ogg');
-         // for i:= 1 to 33 do
-         //     for j:= 1 to 50 do
-         //         if file_exists('Data\Items\' + u_IntToStr(i) + '\i' + u_IntToStr(j) + '.png') then
-         //            tex_Items[i, j] := tex_LoadFromFile('Data\Items\' + u_IntToStr(i) + '\i' + u_IntToStr(j) + '.png');
          end;
 
 // блок шестой перевод игры в активное состояние
       if pbLoading.Progress >= 100 then
          begin
-            SendEnterTheWorld();
+           if not wait_for_05 then
+              SendEnterTheWorld();
          end;
    if lVProgress > pbLoading.Progress then
       pbLoading.Progress:=pbLoading.Progress + round((lVProgress - pbLoading.Progress)/3);

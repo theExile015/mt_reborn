@@ -216,6 +216,15 @@ begin
   if tut_frame > 30 then tut_frame := 1;
   if a_p > 1000 then a_p := 0;
 
+  if mWins[14].visible then
+     for i := 1 to 20 do
+         if mWins[14].dnds[i].data.contain <> 0 then
+         if mWins[14].texts[i * 2].Text = '' then
+         begin
+           mWins[14].texts[i * 2].Text := items[mWins[14].dnds[i].data.contain].data.name;
+           mWins[14].texts[1 + i * 2].Text := IntToStr(items[mWins[14].dnds[i].data.contain].data.price);
+         end;
+
   if theme_change then
   if not theme_two then
      begin
@@ -375,7 +384,7 @@ begin
 
        Chat_Update();
 
-       if wait_for_29 <> 255 then
+  {     if wait_for_29 <> 255 then
           begin
             GetTime(hh, mm, ss, ms);
             if wait_for_29 > 54 then
@@ -390,7 +399,7 @@ begin
                if ss < 10 then ss := ss + 54;
             if abs(ss - wait_for_05) > 5 then
                DoEnterTheWorld();
-          end;
+          end;  }
      end;
 
 {$R+}
@@ -454,6 +463,7 @@ end;
   Console_Update();
   oMX := Mouse_X;
   oMY := Mouse_Y;
+  if Key_Press(K_F9) then RunLUAScript('gui.lua');
 end;
 
 end.

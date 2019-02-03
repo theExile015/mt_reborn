@@ -29,7 +29,7 @@ procedure MyGui_Draw();
 procedure MyGui_Update();
 
 procedure itt_Open(iID, ittType : longword);
-procedure stt_Open( sID, sttType : longword);
+procedure stt_Open(sID, sttType : longword);
 
 procedure pum_Nick_open(sender : UTF8String);
 procedure pum_Item_open(wID, sID: longword; sender : utf8string);
@@ -423,13 +423,15 @@ procedure MyGui_Draw();
 var i, j, k  : integer;
     frame : byte;
     FLAG, color : longword;
-    dx, dy : single;
+    dx, dy, dwh : single;
     s : utf8string;
     hh, mm, ss, ms : word;
 begin
 // отрисовка портрета инфы на локации
  if (gs = gsGame) and (iga = igaLoc) then
      begin
+       for i := 1 to high(mWins[15].dnds) do
+         mWins[15].dnds[i].visible := false;
        mWins[15].visible:=true;
        mWins[16].visible:=false;
        mWins[15].pbs[3].visible:=false;
@@ -716,7 +718,7 @@ begin
 
              end;
           end;
-         // отрисовка диалоговых вариантов
+        // отрисовка диалоговых вариантов
         // if i = 7 then
         Scissor_Begin( round(mWins[i].rect.X + 25 ),  round(mWins[i].rect.Y + 25 ),  round(mWins[i].rect.W - 50 ),  round(mWins[i].rect.H - 50 ));
         for j := 1 to high(mWins[i].dlgs) do
@@ -747,11 +749,19 @@ begin
                      if mWins[i].dnds[j].omo then
                         fx2d_SetColor($CCCC00);
                    end else FLAG := FX_BLEND;
+                dwh := 32;
+                if mWins[i].dnds[j].ddType = 6 then
+                   begin
+                     dwh := 24;
+                     FLAG := FX_BLEND or FX_COLOR;
+                     fx2d_SetColor(aura_data[mWins[i].dnds[j].data.contain].color);
+                   end;
 
                 if mWins[i].dnds[j].data.contain > 0 then frame := 6 else frame := mWins[i].dnds[j].data.ddSubType;
 
+
                 ASprite2d_Draw( tex_Item_Slots, mWins[i].rect.X + frmPak[mWins[i].fType].w + mWins[i].dnds[j].x,
-                                mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y, 32, 32, 0,
+                                mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y, dwh, dwh, 0,
                                 frame, 255, FLAG );
 
                 if mWins[i].dnds[j].ddType = 1 then fx2d_SetColor($CC0000);
@@ -792,11 +802,19 @@ begin
                                          mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y, 32, 32, 0, 210, FLAG);
 
                 end else
+                begin
+                     if mWins[i].dnds[j].ddType = 2 then
                      if mWins[i].dnds[j].data.contain > 0 then
                      if Spells[mWins[i].dnds[j].data.contain].ID > 0 then
                          SSprite2d_Draw( GetTex('i33,' + u_IntToStr(Spells[mWins[i].dnds[j].data.contain].iID)),
                                          mWins[i].rect.X + frmPak[mWins[i].fType].w + mWins[i].dnds[j].x,
                                          mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y, 32, 32, 0, 255, FX_BLEND) ;
+         // отрисовка аур ** тут будет другой код выбора иконки **
+                     if mWins[i].dnds[j].ddType = 6 then
+                        SSprite2d_Draw(  GetTex(aura_data[mWins[i].dnds[j].data.contain].icon),
+                                         mWins[i].rect.X + frmPak[mWins[i].fType].w + mWins[i].dnds[j].x,
+                                         mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y, dwh, dwh, 0, 255, FX_BLEND) ;
+                end;
 
                 if Items[mWins[i].dnds[j].data.contain].data.iType > 21 then
                    if mWins[i].dnds[j].data.dur > 0 then
@@ -1063,15 +1081,26 @@ begin
       for j := 1 to high(mWins[i].dnds) do
         if mWins[i].dnds[j].exist and mWins[i].dnds[j].visible then
           begin
-            mWins[i].dnds[j].omo:= col2d_PointInRect( Mouse_X, Mouse_Y,
-                                   rect(mWins[i].rect.X + frmPak[mWins[i].fType].w + mWins[i].dnds[j].x,
-                                        mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y,
-                                        32, 32));
+            if mWins[i].dnds[j].ddType <> 6 then
+               mWins[i].dnds[j].omo:= col2d_PointInRect( Mouse_X, Mouse_Y,
+                                      rect(mWins[i].rect.X + frmPak[mWins[i].fType].w + mWins[i].dnds[j].x,
+                                           mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y,
+                                           32, 32))
+            else
+              mWins[i].dnds[j].omo:= col2d_PointInRect( Mouse_X, Mouse_Y,
+                                      rect(mWins[i].rect.X + frmPak[mWins[i].fType].w + mWins[i].dnds[j].x,
+                                           mWins[i].rect.Y + frmPak[mWins[i].fType].w + mWins[i].dnds[j].y,
+                                           24, 24));
+
             if mWins[i].dnds[j].omo and (mWins[i].dnds[j].data.contain > 0) then
-               if (mWins[i].dnds[j].ddType = 1) or (mWins[i].dnds[j].ddType = 3) then
-                  itt_open(mWins[i].dnds[j].data.contain, 2)
-               else
-                  stt_open(mWins[i].dnds[j].data.contain, 2);
+               begin
+                 if (mWins[i].dnds[j].ddType = 1) or (mWins[i].dnds[j].ddType = 3) then
+                    itt_open(mWins[i].dnds[j].data.contain, 2);
+                 if mWins[i].dnds[j].ddType = 2 then
+                    stt_open(mWins[i].dnds[j].data.contain, 2);
+                 if mWins[i].dnds[j].ddType = 6 then
+                    mgui_TTOpen(mWins[i].dnds[j].data.contain + 500);
+               end;
 
             if mWins[i].dnds[j].omo and (mWins[i].dnds[j].data.contain > 0) and mouse_click(m_bright) then
                begin
@@ -1079,15 +1108,17 @@ begin
                     begin
                       if (i = 5) then
                          begin
-                         { SendData(inline_pkgCompile(48, u_IntToStr(j) + '`'));
+                           DoSellItem(j);
+                           snd_Play(snd_gui[6], false, 0, 0, 0, gui_vol);
                            sleep(50);
-                           SendData(inline_PkgCompile(28, activechar.Name + '`')); }
+                           DoOpenInv();
                          end;
                       if (i = 14) then
                          begin
-                         { SendData(inline_pkgCompile(47, u_IntToStr(mWins[i].dnds[j].contains) + '`' + mWins[i].texts[1].Text + '`1`'));
+                           DoBuyItem(mWins[14].dnds[j].data.contain);
+                           snd_Play(snd_gui[6], false, 0, 0, 0, gui_vol);
                            sleep(50);
-                           SendData(inline_PkgCompile(28, activechar.Name + '`')); }
+                           DoOpenInv();
                          end;
                     end else
                       pum_item_open( i, j, mWins[i].texts[1].Text );
@@ -2448,6 +2479,36 @@ end;
     end;
 
   mWins[11].dnds[1].data.contain:=2;
+
+  aura_data[1].Name := 'Keep moving';
+  aura_data[1].icon := 'i33,24';
+  aura_data[1].Descr:= 'Direction change costs no action points.';
+  aura_data[1].color:= $0000DD;
+
+  aura_data[4].Name := 'Rend';
+  aura_data[4].icon := 'i33,9';
+  aura_data[4].Descr:= 'Victim is bleeding over 3 rounds.';
+  aura_data[4].color:= $DD0000;
+
+  aura_data[6].Name := 'Weak poison';
+  aura_data[6].icon := 'i33,12';
+  aura_data[6].Descr:= 'Cause damage over 5 rounds. Any direct healing will remove this effect.';
+  aura_data[6].color:= $DD0000;
+
+  aura_data[8].Name := 'Inner fire';
+  aura_data[8].icon := 'i33,22';
+  aura_data[8].Descr:= 'Healing over 3 rounds.';
+  aura_data[8].color:= $0000DD;
+
+  aura_data[11].Name := 'Supression';
+  aura_data[11].icon := 'i33,26';
+  aura_data[11].Descr:= 'Spirit reduced.';
+  aura_data[11].color:= $DD0000;
+
+  aura_data[25].Name := 'Passive behavior';
+  aura_data[25].icon := 'i33,25';
+  aura_data[25].Descr:= 'After skipping 3 turns without using any AP will make you leave fight.';
+  aura_data[25].color:= $DD0000;
 end;
 
 

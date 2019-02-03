@@ -13,6 +13,7 @@ uses
   uCharSelect,
   uLocalization,
   zglHeader,
+  uSkillFl,
   DOS;
 
 type
@@ -173,11 +174,23 @@ type
 
   TPkg044 = record
     _what : dword;
-    _num  : dword;
+    _num  : integer;
     fail_code : byte;
   end;
 
   TPkg045 = record
+    fail_code : byte;
+  end;
+
+  TPkg046 = record
+    vName     : string[50];
+    goods     : array [1..20] of TGood;
+    fail_code : byte;
+  end;
+
+  TPkg047 = record
+    vName     : string[50];
+    _id       : dword;
     fail_code : byte;
   end;
 
@@ -256,6 +269,31 @@ type
     fail_code     : byte;
   end;
 
+  TPkg112 = record
+    comID, uLID   : dword;
+    tLID, skillID : dword;
+    x, y, ap_left : byte;
+    victims       : array [1..8] of TVictim;
+    fail_code     : byte;
+  end;
+
+  TPkg113 = record
+    uLID, aID, _what : dword;
+    aura_data: array [0..20] of TPkgAura;
+    fail_code: byte;
+  end;
+
+  TPkg114 = record
+    comID, uLID, spellID : dword;
+    cAP, cMP             : dword;
+    fail_code            : byte ;
+  end;
+
+  TPkg115 = record
+    ATB_Data  : array [0..20] of TATBItem;
+    fail_code : byte;
+  end;
+
 procedure pkg000;
 procedure pkg001(pkg: TPkg001);   // Логин
 procedure pkg002(pkg: TPkg002);   // Список персонажей
@@ -292,6 +330,8 @@ procedure pkg042(pkg: TPkg042);   // q data
 
 procedure pkg044(pkg: TPkg044);   // NEW
 
+procedure pkg046(pkg: TPkg046);   // Vendor
+
 procedure pkg100(pkg: TPkg100);   // Enter Combat
 procedure pkg101(pkg: TPkg101);   // Combat Units
 
@@ -304,6 +344,10 @@ procedure pkg108(pkg: TPkg108);   // Melee
 procedure pkg109(pkg: TPkg109);   // Base Info
 procedure pkg110(pkg: TPkg110);   // Combat End
 procedure pkg111(pkg: TPkg111);   // Range
+procedure pkg112(pkg: TPkg112);   // Target Spell
+procedure pkg113(pkg: TPkg113);   // auras
+procedure pkg114(pkg: TPkg114);   // SELF CAST
+procedure pkg115(pkg: TPkg115);   // ATB Data
 
 procedure pkgProcess(var msg: string);
 
@@ -333,11 +377,13 @@ var
 
                         _pkg041: TPkg041;   _pkg042: TPkg042;
                         _pkg044: TPkg044;
-
+    _pkg046: TPkg046;
     _pkg100: Tpkg100;   _pkg101: TPkg101;
     _pkg103: TPkg103;   _pkg104: TPkg104;   _pkg105: TPkg105;
     _pkg106: TPkg106;   _pkg107: TPkg107;   _pkg108: TPkg108;
     _pkg109: TPkg109;   _pkg110: TPkg110;   _pkg111: TPkg111;
+    _pkg112: TPkg112;   _pkg113: TPkg113;   _pkg114: TPkg114;
+    _pkg115: TPkg115;
 begin
   try
        begin
@@ -472,6 +518,11 @@ begin
              mStr.Read(_pkg044, SizeOf(_pkg044));
              pkg044(_pkg044);
            end;
+           46:
+           begin
+             mStr.Read(_pkg046, SizeOf(_pkg046));
+             pkg046(_pkg046);
+           end;
            100:
            begin
              mStr.Read(_pkg100, SizeOf(_pkg100));
@@ -526,6 +577,26 @@ begin
            begin
              mStr.Read(_pkg111, SizeOf(_pkg111));
              pkg111(_pkg111);
+           end;
+           112:
+           begin
+             mStr.Read(_pkg112, SizeOf(_pkg112));
+             pkg112(_pkg112);
+           end;
+           113:
+           begin
+             mStr.Read(_pkg113, SizeOf(_pkg113));
+             pkg113(_pkg113);
+           end;
+           114:
+           begin
+             mStr.Read(_pkg114, SizeOf(_pkg114));
+             pkg114(_pkg114);
+           end;
+           115:
+           begin
+             mStr.Read(_pkg115, SizeOf(_pkg115));
+             pkg115(_pkg115);
            end;
          else
            // ID пакета кривой
@@ -647,25 +718,19 @@ begin
 end;
 
 procedure pkg005(pkg: TPkg005);
-var
-  _head : TPackHeader; _pkg029: TPkg029;
-  mStr  : TMemoryStream;
-  hh, mm, ss, ms : word;
 begin
   writeln('WORLD ENTERED!');
   if pkg.fail_code = high(byte) then
      TCP.FCon.Disconnect(false) else
-  begin
+begin
     ActiveChar.header := CharList[gSI];
     tutorial := activechar.header.tutorial;
     sleep(50);
 
     LoadComplete();
 
-    wait_for_05 := 255;
-    GetTime(hh, mm, ss, ms);
-    wait_for_29 := ss;
-    Writeln('Wait for 29 = ', wait_for_29);
+    wait_for_05 := false;
+    wait_for_29 := true ;
 
     if tutorial < 2 then
        begin
@@ -673,22 +738,8 @@ begin
          sleep(50);
        end;
 
-    _head._FLAG := $f;
-    _head._ID   := 29;
-  try
-    mStr := TMemoryStream.Create;
-    mStr.Position := 0;
-    mStr.Write(_head, sizeof(_head));
-    mStr.Write(_pkg029, sizeof(_pkg029));
-
-    TCP.FCon.IterReset;
-    TCP.FCon.IterNext;
-    TCP.FCon.Send(mStr.Memory^, mStr.Size, TCP.FCon.Iterator);
-    In_Request := true;
-  finally
-    mStr.Free;
-  end;
-  end;
+   DoRequestLocObjs();
+end;
 end;
 
 procedure pkg010(pkg: TPkg010);
@@ -891,7 +942,7 @@ begin
 try
   objMan_HideAll();
 
-  wait_for_29 := 255;
+  wait_for_29 := false;
 
   if pkg.fail_code < 1 then Writeln('Fail code ## ', pkg.fail_code) else
   for i := 1 to pkg.fail_code do
@@ -1063,7 +1114,13 @@ procedure pkg044(pkg: TPkg044);   // NEW
 begin
   case pkg._what of
     0: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' experience.');
-    1: Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' gold.');
+    1: begin
+         if pkg._num > 0 then
+            Chat_AddMessage(ch_tab_curr, high(word), 'You earn ' + IntToStr(pkg._num) + ' gold.')
+         else
+            Chat_AddMessage(ch_tab_curr, high(word), 'You lost ' + IntToStr(-1 * pkg._num) + ' gold.');
+         activechar.Numbers.gold := activechar.Numbers.gold + pkg._num;
+       end;
     2:
     begin
       Snd_Play(snd_gui[5], false, 0, 0, 0, gui_vol);
@@ -1075,6 +1132,41 @@ begin
   else
     Writeln('IDK what to add.');
   end;
+end;
+
+procedure pkg046(pkg: TPkg046);   // Vendor
+var i, n : integer;
+begin
+  mWins[14].visible:=true;
+  mWins[7].visible :=false;
+  mWins[14].texts[1].Text := pkg.vName;
+  mWins[14].rect.X:= 100;
+  mWins[14].rect.Y:= 50;
+  igs := igsInv;
+  mWins[5].rect.X:= mWins[14].rect.X + mWins[14].rect.W;
+  mWins[5].rect.Y:= mWins[14].rect.Y;
+//    writeln('Debug1');
+  for i := 1 to 20 do
+    begin
+      mWins[14].dnds[i].data.contain := 0;
+      mWins[14].texts[i * 2].Text := '';
+      mWins[14].texts[1 + i * 2].Text := ''
+    end;
+ // writeln('Debug2');
+  for i := 1 to high(pkg.goods) do
+  if pkg.goods[i].exist then
+    begin
+     // writeln('Debug 3 - ', i);
+      mWins[14].dnds[i].data.contain:= pkg.goods[i].id;
+      if not items[pkg.goods[i].id].exist then
+         begin
+           DoItemRequest(pkg.goods[i].id);
+           sleep(200);
+         end;
+      mWins[14].texts[i * 2].Text := items[pkg.goods[i].id].data.name;
+      mWins[14].texts[1 + i * 2].Text := IntToStr(items[pkg.goods[i].id].data.price);
+    end;
+  DoOpenInv();
 end;
 
 procedure pkg100(pkg: TPkg100);   // enter combat
@@ -1093,7 +1185,7 @@ begin
 end;
 
 procedure pkg101(pkg: TPkg101);   // Combat Units
-var i : integer; f : boolean;
+var i, j : integer; f : boolean;
     hh, mm, ss, ms : word;
 begin
   for i := 0 to high(pkg.list) do
@@ -1107,6 +1199,8 @@ begin
          units[i].uLID  := pkg.list[i].uLID;
          units[i].team  := pkg.list[i].uTeam;
          //writeln(units[i].uLID);
+         for j := 1 to high(units[i].auras) do
+           units[i].auras[j].exist := false;
          DoRequestUnit(units[i].uLID, units[i].uType, 1);
          sleep(20);
          f := true;
@@ -1116,15 +1210,14 @@ begin
        end;
   if f then
     begin
-      GetTime(hh, mm, ss, ms);
-      wait_for_103 := ss;
+      wait_for_103 := true;
     end;
 end;
 
 procedure pkg103(pkg: TPkg103);
-var I : integer;
+var I, J : integer;
 begin
-  wait_for_103 := 255;
+  wait_for_103 := false;
   for i := 0 to high(units) do
     if units[i].exist then
     if units[i].uType = pkg.uType then
@@ -1137,6 +1230,8 @@ begin
          units[i].fTargetPos := pkg.data.pos;
          units[i].data    := pkg.data;
          units[i].VData   := pkg.vdata;
+         for j := 1 to high(units[i].auras) do
+           units[i].auras[j].exist := false;
          Writeln('Unit ', i, ' x :', units[i].data.pos.x, ' y: ', units[i].data.pos.y);
          exit;
        end;
@@ -1197,6 +1292,7 @@ end;
 procedure pkg108(pkg: TPkg108);   // Melee
 begin
   if pkg.comID <> combat_id then Exit;
+//  if in_action then sleep(1000);
   { TODO 2 -oVeresk -cImprove : Добавить проверку на количество виктимов, и код их обработки }
   cm_MeleeAtk( pkg.uLID, pkg.victims[1].uLID, pkg.victims[1].dmg,
                pkg.victims[1].die, pkg.skillID, pkg.victims[1].result);
@@ -1217,32 +1313,9 @@ end;
 
 procedure pkg110(pkg: TPkg110);   // Combat End
 begin
-  com_face := 50;
-  Chat_AddMessage(3, high(word), 'Team ' + IntToStr(pkg.WinTeam) + ' win.' );
-  Snd_Play(snd_gui[4], false, 0, 0, 0, gui_vol);
-  Nonameframe41.Hide;
-  fInGame.Show;
-  zglCam1.X := (1920 - scr_w) / 2;
-  zglCam1.Y := (1080 - scr_h) / 2;
- // cam_x := 0; cam_y := 0;
-  gs  := gsLLoad;
-  iga := igaLoc;
-  igs := igsNone;
-
-  cur_type  := 1;
-  cur_angle := 0;
-
-  if theme_two then
-     begin
-       snd_Del(theme1);
-       theme1 := snd_LoadFromFile('Data\Sound\minstrel.ogg');
-       theme_change := true;
-     end else
-     begin
-       snd_Del(theme2);
-       theme2 := snd_LoadFromFile('Data\Sound\minstrel.ogg');
-       theme_change := true;
-     end;
+  if combat_id <> pkg.comID then Exit;
+  Close_Combat := true;
+  win_team := pkg.WinTeam;
 end;
 
 procedure pkg111(pkg: TPkg111);   // Range
@@ -1257,6 +1330,94 @@ begin
                      pkg.victims[1].die, pkg.skillID, pkg.victims[1].result);
   units[pkg.uLID].data.cAP := pkg.ap_left;
   units[pkg.victims[1].uLID].data.cHP := pkg.victims[1].hp_left;
+end;
+
+procedure pkg112(pkg: TPkg112);   // Target Spell
+begin
+  if pkg.comID <> combat_id then Exit;
+  { TODO 2 -oVeresk -cImprove : Добавить проверку на количество виктимов, и код их обработки }
+     cm_TargetSpell( pkg.uLID, pkg.victims[1].uLID, pkg.victims[1].dmg,
+                     0, pkg.skillID, 0);
+  units[pkg.uLID].data.cAP := pkg.ap_left;
+  units[pkg.victims[1].uLID].data.cHP := pkg.victims[1].hp_left;
+end;
+
+procedure pkg113(pkg: TPkg113);   // auras
+var i, j: Integer;
+begin
+ { for i := 0 to high(pkg.aura_data) do
+  if units[i].exist then
+    for j := 1 to high(pkg.aura_data[i]) do
+      begin
+        writeln(units[i].VData.name, '>>>', pkg.aura_data[i][j].exist);
+        writeln(units[i].VData.name, '>>>', pkg.aura_data[i][j].id);
+        writeln(units[i].VData.name, '>>>', pkg.aura_data[i][j].stacks);
+      end;    }
+
+  for i := 0 to high(units) do
+    if units[i].exist and units[i].visible then
+    begin
+       Writeln(units[i].VData.name, ' auras.');
+       units[i].auras := pkg.aura_data[i];
+    end;
+
+  if pkg._what = 1 then
+     chat_AddMessage(3, high(word), units[pkg.uLID].VData.name + ' gains ' + aura_data[pkg.aID].Name + '.');
+  if pkg._what = 2 then
+     chat_AddMessage(3, high(word), aura_data[pkg.aID].Name + ' fades from ' + units[pkg.uLID].VData.name + '.');
+end;
+
+procedure pkg114(pkg: TPkg114);   // SELF CAST
+begin
+  CM_RangeMiss(pkg.uLID, 0, 0);
+  units[pkg.uLID].data.cAP:=pkg.cAP;
+  units[pkg.uLID].data.cMP:=pkg.cMP;
+end;
+
+procedure pkg115(pkg: TPkg115);   // ATB DATA
+var i, j, k, n: integer;
+    tmp    : TATBItem;
+    ATB    : array [1..10] of integer;
+begin
+  for i := 0 to 20 do
+    ATB_Data[i] := pkg.ATB_Data[i];
+
+ // Сортируем полученные атб данные
+  for i := 0 to 19 do
+        for j := 0 to 19 - i do
+            if ATB_Data[j].atb > ATB_Data[j + 1].atb then
+            begin
+                tmp           := ATB_Data[j];
+                ATB_Data[j]   := ATB_Data[j+1];
+                ATB_Data[j+1] := tmp;
+            end;
+
+  k := 0; n := 0;
+  while k < 10 do
+    begin
+      inc(n);
+      if atb_data[20].ID > -1 then
+      if atb_data[20].atb >= 1000 then
+         begin
+           inc(k);
+           ATB[k] := atb_data[20].ID;
+           dec(atb_data[20].atb, 1000);
+         end else
+         begin
+           Rebuild_Atb(ATB_Data);
+         end;
+      if n > 1000 then break; // на случай всякой шляпы
+    end;
+
+  writeln('CYCLES == ', n);
+  writeln();
+{  for i := 1 to 10 do
+    Write(ATB[i], ' ');
+  writeln();
+  for i := 0 to 20 do
+    write(ATB_Data[i].ID, ' ');   }
+  for i := 1 to 10 do
+    ATB_Grid[i].id := ATB[i];
 end;
 
 end.
